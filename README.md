@@ -1,66 +1,80 @@
 # Keycan ⌨️
 
-**Keycan**, Linux sistemler için geliştirilmiş modern, hızlı ve kullanıcı dostu bir on parmak klavye pratik uygulamasıdır.
-
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Flatpak-orange.svg)
-
----
+Keycan, Linux sistemleri için geliştirilmiş modern, hızlı ve kullanıcı dostu bir **on parmak klavye pratik uygulamasıdır**.
 
 ## 🚀 Özellikler
 
-- **Çeşitli Egzersizler:** Farklı zorluk seviyelerinde kelime ve cümle pratikleri.
-- **Yerel Veritabanı:** İlerlemenizi ve verilerinizi tamamen çevrimdışı (SQLite) saklar.
-- **Modern Arayüz:** PyQt6 ile yazılmış temiz ve responsive tasarım.
-- **Flatpak Desteği:** Tüm Linux dağıtımlarında izole ve sorunsuz çalışma garantisi.
+- **On Parmak Klavye Pratiği:** Klavye kullanımını geliştirmek için kelime ve cümle egzersizleri.
+- **Çeşitli Egzersizler:** Farklı zorluk seviyelerinde pratik yapma imkânı.
+- **Yerel Veritabanı:** Egzersiz verileri ve ilerleme bilgileri SQLite ile yerel olarak saklanır.
+- **Çevrimdışı Kullanım:** Temel kullanım için internet bağlantısı gerekmez.
+- **Modern Arayüz:** PyQt6 ile hazırlanmış kullanıcı arayüzü.
+- **Linux Odaklı:** Linux masaüstü sistemleri için tasarlanmıştır.
+- **Flatpak:** Uygulama Flatpak üzerinden paketlenebilir ve dağıtılabilir.
+
+## 🛠️ Kurulum
+
+### Flatpak ile
+
+Flatpak kurulu bir Linux sisteminde uygulamayı yerel olarak derleyip kurmak için:
+
+```bash
+flatpak install flathub org.kde.Platform//6.8 org.kde.Sdk//6.8 -y
+flatpak-builder --user --install --force-clean build-dir org.keycan.Keycan.yml
+```
+
+Ardından uygulamayı çalıştırın:
+
+```bash
+flatpak run org.keycan.Keycan
+```
+
+### Python ile çalıştırma
+
+Kaynak koddan çalıştırmak için:
+
+```bash
+git clone https://github.com/Praxis1071/Keycan.git
+cd Keycan
+pip install -r requirements.txt
+python main.py
+```
+
+## 📁 Proje Yapısı
+
+```text
+Keycan/
+├── main.py
+├── data_loader.py
+├── typing_data.db
+├── requirements.txt
+├── org.keycan.Keycan.desktop
+├── org.keycan.Keycan.png
+├── org.keycan.Keycan.yml
+├── DakikaProgramlari.spec
+├── build.sh
+├── check.sh
+├── BUILD-INSTRUCTIONS.txt
+└── LICENSE
+```
+
+## 🧰 Teknolojiler
+
+- Python
+- PyQt6
+- SQLite
+- Flatpak
+
+## 📄 Lisans
+
+Bu proje **MIT Lisansı** altında lisanslanmıştır. Ayrıntılar için [`LICENSE`](LICENSE) dosyasına bakabilirsiniz.
+
+## 👤 Geliştirici
+
+**Praxis1071**
+
+GitHub: https://github.com/Praxis1071
 
 ---
 
-## 🛠️ Kurulum ve Çalıştırma Seçenekleri
-
-Uygulamayı 3 farklı yöntemle çalıştırabilirsiniz:
-
-### Seçenek 1: Hazır Flatpak Paketi İle Kurulum (En Kolay)
-
-Sisteminizde `flatpak` yüklü olması yeterlidir. Derlemeye ihtiyaç duymadan hazır `.flatpak` dosyasını indirip kurabilirsiniz:
-
-```bash
-# Hazır paket dosyasını yükleyin
-flatpak install keycan.flatpak
-
-# Uygulamayı başlatın
-flatpak run org.keycan.Keycan
-
-Seçenek 2: Kaynak Koddan Kendiniz Flatpak Derleyin
-
-Flatpak paketini yerelde kendiniz derleyip kurmak isterseniz:
-Bash
-
-# KDE SDK bağımlılığını indirin
-flatpak install flathub org.kde.Platform//6.8 org.kde.Sdk//6.8 -y
-
-# Uygulamayı derleyin ve kullanıcı dizinine kurun
-flatpak-builder --user --install --force-clean build-dir org.keycan.Keycan.yml
-
-# Uygulamayı çalıştırın
-flatpak run org.keycan.Keycan
-
-Seçenek 3: Doğrudan Python Kaynak Kodundan Çalıştırma
-
-Geliştiriciler veya Flatpak kullanmak istemeyenler doğrudan Python betiğini çalıştırabilir:
-Bash
-
-# Repoyu klonlayın
-git clone [https://github.com/Praxis1071/Keycan.git](https://github.com/Praxis1071/Keycan.git)
-cd Keycan
-
-# Gerekli kütüphaneleri yükleyin
-pip install -r requirements.txt
-
-# Uygulamayı başlatın
-python main.py
-
-📜 Lisans
-
-Bu proje MIT Lisansı altında lisanslanmıştır. Detaylar için LICENSE dosyasına göz atabilirsiniz.
-
+**Keycan** — On parmak klavye pratiği için Linux uygulaması. ⌨️
