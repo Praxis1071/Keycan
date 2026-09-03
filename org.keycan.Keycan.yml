@@ -1,26 +1,34 @@
 app-id: org.keycan.Keycan
-runtime: org.freedesktop.Platform
-runtime-version: '26.08'
-sdk: org.freedesktop.Sdk
-command: keycan-wrapper
+runtime: org.kde.Platform
+runtime-version: "6.8"
+sdk: org.kde.Sdk
+command: keycan
 finish-args:
   - --share=ipc
+  - --socket=fallback-x11
   - --socket=wayland
-  - --socket=x11
   - --device=dri
-  - --device=all
-  - --share=network
   - --filesystem=home
+
 modules:
+  - name: python-pyqt6
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app PyQt6 PyQt6-sip
+    build-options:
+      build-args:
+        - --share=network
+
   - name: keycan
     buildsystem: simple
     build-commands:
-      - install -Dm755 keycan-wrapper /app/bin/keycan-wrapper
-      - install -Dm755 app/bin/DakikaProgramlari /app/bin/DakikaProgramlari
-      - cp -a app/bin/_internal /app/bin/_internal
-      - install -Dm644 share/applications/org.keycan.Keycan.desktop /app/share/applications/org.keycan.Keycan.desktop
-      - install -Dm644 share/icons/hicolor/256x256/apps/org.keycan.Keycan.png /app/share/icons/hicolor/256x256/apps/org.keycan.Keycan.png
-      - install -Dm644 share/metainfo/org.keycan.Keycan.metainfo.xml /app/share/metainfo/org.keycan.Keycan.metainfo.xml
+      - install -dm755 /app/share/keycan
+      - cp main.py data_loader.py typing_data.db /app/share/keycan/
+      - install -dm755 /app/bin
+      - printf "#!/bin/sh\nexec python3 /app/share/keycan/main.py \"\$@\"\n" > /app/bin/keycan
+      - chmod +x /app/bin/keycan
+      - install -Dm644 org.keycan.Keycan.desktop /app/share/applications/org.keycan.Keycan.desktop
+      - install -Dm644 org.keycan.Keycan.png /app/share/icons/hicolor/256x256/apps/org.keycan.Keycan.png
     sources:
       - type: dir
-        path: files
+        path: .

@@ -14,3 +14,9 @@ repo/
 .vscode/
 .idea/
 .DS_Store
+.flatpak-builder/
+build-dir/
+repo/
+__pycache__/
+*.flatpak
+*.spec
