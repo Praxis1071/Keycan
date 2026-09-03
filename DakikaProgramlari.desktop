@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Dakika Programları
+Comment=On parmak klavye çalışma uygulaması
+Exec=DakikaProgramlari
+Icon=dakika-programlari
+Categories=Education;Utility;
+Terminal=false

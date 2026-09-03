@@ -1,0 +1,19 @@
+cat << 'EOF' > .gitignore
+# Python & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Build & AppImage çıktıları
+AppDir/
+build/
+dist/
+*.spec
+*.AppImage
+
+# IDE ve Sistem Dosyaları
+.vscode/
+.idea/
+.DS_Store
+EOF
