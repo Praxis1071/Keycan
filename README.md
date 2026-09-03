@@ -14,7 +14,16 @@ Keycan, Linux sistemleri için geliştirilmiş modern, hızlı ve kullanıcı do
 
 ## 🛠️ Kurulum
 
-### Flatpak ile
+### Hazır Paket İle Kurulum (Önerilen)
+
+GitHub Releases sayfasından indirdiğiniz `keycan.flatpak` dosyasını kurup çalıştırmak için:
+
+```bash
+# Indirilen paket dosyasını yükleyin
+flatpak install keycan.flatpak
+
+# Uygulamayı çalıştırın
+flatpak run org.keycan.Keycan
 
 Flatpak kurulu bir Linux sisteminde uygulamayı yerel olarak derleyip kurmak için:
 
