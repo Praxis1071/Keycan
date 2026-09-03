@@ -1,0 +1,26 @@
+app-id: org.keycan.Keycan
+runtime: org.freedesktop.Platform
+runtime-version: '26.08'
+sdk: org.freedesktop.Sdk
+command: keycan-wrapper
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=x11
+  - --device=dri
+  - --device=all
+  - --share=network
+  - --filesystem=home
+modules:
+  - name: keycan
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 keycan-wrapper /app/bin/keycan-wrapper
+      - install -Dm755 app/bin/DakikaProgramlari /app/bin/DakikaProgramlari
+      - cp -a app/bin/_internal /app/bin/_internal
+      - install -Dm644 share/applications/org.keycan.Keycan.desktop /app/share/applications/org.keycan.Keycan.desktop
+      - install -Dm644 share/icons/hicolor/256x256/apps/org.keycan.Keycan.png /app/share/icons/hicolor/256x256/apps/org.keycan.Keycan.png
+      - install -Dm644 share/metainfo/org.keycan.Keycan.metainfo.xml /app/share/metainfo/org.keycan.Keycan.metainfo.xml
+    sources:
+      - type: dir
+        path: files

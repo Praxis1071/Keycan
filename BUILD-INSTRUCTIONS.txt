@@ -1,0 +1,14 @@
+KEYCAN FLATPAK BUILD
+
+Bu paket, kullanıcının verdiği Keycan-x86_64.AppImage'ın içeriğinden hazırlanmıştır.
+Kaynak kod değiştirilmemiştir; AppImage içindeki PyInstaller uygulaması Flatpak içine taşınmıştır.
+
+CachyOS/Arch üzerinde:
+  sudo pacman -S flatpak flatpak-builder
+  flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+  flatpak install flathub org.freedesktop.Platform//26.08 org.freedesktop.Sdk//26.08
+  cd keycan-flatpak-build
+  flatpak-builder --user --install --force-clean build org.keycan.Keycan.yml
+  flatpak run org.keycan.Keycan
+
+Not: Bu ortamda flatpak/flatpak-builder bulunmadığı ve dış ağ erişimi olmadığı için burada gerçek .flatpak bundle üretilemedi. Bu klasör doğrudan flatpak-builder ile bundle üretmeye hazırdır.

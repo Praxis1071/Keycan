@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Keycan
+Comment=Linux İçin On Parmak Klavye Pratik Uygulaması
+Exec=keycan-wrapper
+Icon=org.keycan.Keycan
+Terminal=false
+Type=Application
+Categories=Utility;Education;
