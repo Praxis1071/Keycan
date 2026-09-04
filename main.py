@@ -20,6 +20,12 @@ from PyQt6.QtWidgets import (
 
 APP_DIR = Path(__file__).resolve().parent
 DEFAULT_DB = APP_DIR / "typing_data.db"
+SOURCE_PREFIX = re.compile(r"^REVERSE ENGINEERING[/\\]+", re.IGNORECASE)
+
+
+def clean_source_name(name: str) -> str:
+    """Kaynak adının başındaki gereksiz proje klasörü adını yalnızca görünümde kaldırır."""
+    return SOURCE_PREFIX.sub("", name, count=1)
 
 
 @dataclass
@@ -51,7 +57,8 @@ class Database:
         self.conn.commit()
 
     def sources(self) -> list[tuple[int, str]]:
-        return self.conn.execute("SELECT id, display_name FROM sources ORDER BY display_name").fetchall()
+        rows = self.conn.execute("SELECT id, display_name FROM sources ORDER BY display_name").fetchall()
+        return [(source_id, clean_source_name(name)) for source_id, name in rows]
 
     def lessons(self, source_id: int) -> list[tuple[int, str]]:
         rows = self.conn.execute(
