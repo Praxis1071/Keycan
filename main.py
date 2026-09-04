@@ -28,6 +28,12 @@ def clean_source_name(name: str) -> str:
     return SOURCE_PREFIX.sub("", name, count=1)
 
 
+def natural_sort_key(value: str) -> list[object]:
+    """Kaynak adlarını sayıları da dikkate alarak doğal sırada sıralar."""
+    parts = re.split(r"(\d+)", value.casefold())
+    return [int(part) if part.isdigit() else part for part in parts]
+
+
 @dataclass
 class Lesson:
     id: int
@@ -57,8 +63,9 @@ class Database:
         self.conn.commit()
 
     def sources(self) -> list[tuple[int, str]]:
-        rows = self.conn.execute("SELECT id, display_name FROM sources ORDER BY display_name").fetchall()
-        return [(source_id, clean_source_name(name)) for source_id, name in rows]
+        rows = self.conn.execute("SELECT id, display_name FROM sources").fetchall()
+        cleaned_rows = [(source_id, clean_source_name(name)) for source_id, name in rows]
+        return sorted(cleaned_rows, key=lambda row: natural_sort_key(row[1]))
 
     def lessons(self, source_id: int) -> list[tuple[int, str]]:
         rows = self.conn.execute(
