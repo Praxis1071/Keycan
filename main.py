@@ -3,24 +3,34 @@
 
 from __future__ import annotations
 
+import re
 import sqlite3
 import sys
-import re
 from dataclasses import dataclass
 from pathlib import Path
 
 from PyQt6.QtCore import QElapsedTimer, QTimer, Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QTextCursor
 from PyQt6.QtWidgets import (
-    QApplication, QComboBox, QGridLayout, QHBoxLayout, QLabel, QMainWindow,
-    QMessageBox, QPlainTextEdit, QPushButton, QSplitter, QTextEdit, QVBoxLayout,
-    QWidget, QSpinBox,
+    QApplication,
+    QComboBox,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QPlainTextEdit,
+    QPushButton,
+    QSpinBox,
+    QSplitter,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
 )
 
 
 APP_DIR = Path(__file__).resolve().parent
 DEFAULT_DB = APP_DIR / "typing_data.db"
 SOURCE_PREFIX = re.compile(r"^REVERSE ENGINEERING[/\\]+", re.IGNORECASE)
+WORD_PATTERN = re.compile(r"\S+")
 
 
 def clean_source_name(name: str) -> str:
@@ -32,6 +42,13 @@ def natural_sort_key(value: str) -> list[object]:
     """Kaynak adlarını sayıları da dikkate alarak doğal sırada sıralar."""
     parts = re.split(r"(\d+)", value.casefold())
     return [int(part) if part.isdigit() else part for part in parts]
+
+
+def format_remaining(seconds: float) -> str:
+    """Geri sayımı MM:SS biçiminde gösterir."""
+    remaining = max(0, int(seconds + 0.999))
+    minutes, seconds = divmod(remaining, 60)
+    return f"{minutes:02d}:{seconds:02d}"
 
 
 @dataclass
@@ -47,7 +64,7 @@ class Database:
         self._migrate_results_schema()
 
     def _migrate_results_schema(self) -> None:
-        """Önceki karakter-bazlı sonuç tablosunu kelime ölçüleriyle genişletir."""
+        """Eski veritabanlarında kelime sonucu alanlarını geriye dönük uyumlu biçimde ekler."""
         columns = {
             row[1] for row in self.conn.execute("PRAGMA table_info(practice_results)")
         }
@@ -59,7 +76,9 @@ class Database:
         }
         for name, definition in additions.items():
             if name not in columns:
-                self.conn.execute(f"ALTER TABLE practice_results ADD COLUMN {name} {definition}")
+                self.conn.execute(
+                    f"ALTER TABLE practice_results ADD COLUMN {name} {definition}"
+                )
         self.conn.commit()
 
     def sources(self) -> list[tuple[int, str]]:
@@ -78,7 +97,9 @@ class Database:
         ]
 
     def lesson(self, lesson_id: int) -> Lesson:
-        row = self.conn.execute("SELECT id, title, text FROM lessons WHERE id = ?", (lesson_id,)).fetchone()
+        row = self.conn.execute(
+            "SELECT id, title, text FROM lessons WHERE id = ?", (lesson_id,)
+        ).fetchone()
         if not row:
             raise ValueError("Metin bulunamadı")
         return Lesson(*row)
@@ -89,23 +110,14 @@ class Database:
         duration: float,
         correct_words: int,
         wrong_words: int,
-        words_per_minute: float,
-        characters_per_minute: float,
     ) -> None:
+        """Yalnızca süre ve kelime sonuçlarını kaydeder; hız hesabı yapılmaz."""
         self.conn.execute(
             """INSERT INTO practice_results(
                     lesson_id, duration_seconds, correct_chars, wrong_chars, wpm,
                     correct_words, wrong_words, words_per_minute, characters_per_minute
-                ) VALUES (?, ?, 0, 0, ?, ?, ?, ?, ?)""",
-            (
-                lesson_id,
-                duration,
-                words_per_minute,
-                correct_words,
-                wrong_words,
-                words_per_minute,
-                characters_per_minute,
-            ),
+                ) VALUES (?, ?, 0, 0, 0, ?, ?, 0, 0)""",
+            (lesson_id, duration, correct_words, wrong_words),
         )
         self.conn.commit()
 
@@ -135,13 +147,10 @@ class MainWindow(QMainWindow):
         self.db = Database(database_path)
         self.current_lesson: Lesson | None = None
         self.typed = ""
-        self.completed_correct_words = 0
-        self.completed_wrong_words = 0
-        self.completed_characters = 0
         self.finished = False
         self.timer = QElapsedTimer()
         self.stats_timer = QTimer(self)
-        self.stats_timer.setInterval(250)
+        self.stats_timer.setInterval(100)
         self.stats_timer.timeout.connect(self._check_time)
         self.setWindowTitle("Keycan — On Parmak")
         self.resize(1200, 760)
@@ -153,22 +162,34 @@ class MainWindow(QMainWindow):
         root = QWidget()
         self.setCentralWidget(root)
         layout = QVBoxLayout(root)
+
         controls = QHBoxLayout()
         controls.addWidget(QLabel("Ders grubu:"))
         self.source_combo = QComboBox()
         self.source_combo.currentIndexChanged.connect(self._load_lessons)
         controls.addWidget(self.source_combo, 2)
+
         controls.addWidget(QLabel("Metin:"))
         self.lesson_combo = QComboBox()
         self.lesson_combo.currentIndexChanged.connect(self._choose_lesson)
-        controls.addWidget(self.lesson_combo, 2)
+        controls.addWidget(self.lesson_combo, 1)
+
         controls.addWidget(QLabel("Süre:"))
         self.duration_spin = QSpinBox()
         self.duration_spin.setRange(1, 180)
         self.duration_spin.setValue(1)
         self.duration_spin.setSuffix(" dakika")
         self.duration_spin.setToolTip("Çalışma süresini dakika olarak belirleyin.")
+        self.duration_spin.valueChanged.connect(self._duration_changed)
         controls.addWidget(self.duration_spin)
+
+        self.countdown_label = QLabel("01:00")
+        self.countdown_label.setToolTip("Çalışma için kalan süre")
+        countdown_font = QFont("Noto Sans", 13)
+        countdown_font.setBold(True)
+        self.countdown_label.setFont(countdown_font)
+        controls.addWidget(self.countdown_label)
+
         self.restart_button = QPushButton("Baştan Başla")
         self.restart_button.clicked.connect(self._restart)
         controls.addWidget(self.restart_button)
@@ -181,6 +202,7 @@ class MainWindow(QMainWindow):
         self.target.setFont(QFont("Noto Sans", 16))
         self.target.setMinimumHeight(280)
         splitter.addWidget(self.target)
+
         self.input = TypingInput()
         self.input.setPlaceholderText("Buraya yazmaya başlayın…")
         self.input.setStyleSheet("background: white; color: black;")
@@ -219,57 +241,97 @@ class MainWindow(QMainWindow):
             self.current_lesson = self.db.lesson(int(lesson_id))
             self._restart()
 
+    def _duration_changed(self) -> None:
+        if not self.timer.isValid() or self.finished:
+            self.countdown_label.setText(format_remaining(self._duration_seconds()))
+
     def _restart(self) -> None:
         if not self.current_lesson:
             return
         self.typed = ""
-        self.completed_correct_words = 0
-        self.completed_wrong_words = 0
-        self.completed_characters = 0
         self.finished = False
         self.timer.invalidate()
         self.duration_spin.setEnabled(True)
+        self.countdown_label.setText(format_remaining(self._duration_seconds()))
         self.input.clear()
         self.input.setEnabled(True)
-        self._render_target()
-        self.status.setText("Yazmaya başlayınca sayaç çalışır.")
+        self._render_target_plain()
+        self.status.setText("Yazmaya başlayınca geri sayım çalışır.")
         self.input.setFocus()
 
     def _type_character(self, character: str) -> None:
         if not self.current_lesson or self.finished:
             return
-        if self.timer.isValid() and self._elapsed_seconds() >= self._duration_seconds():
-            self._finish()
-            return
+
         if not self.timer.isValid():
             self.timer.start()
             self.duration_spin.setEnabled(False)
-        if len(self.typed) >= len(self.current_lesson.text):
-            correct, wrong = self._current_word_counts()
-            self.completed_correct_words += correct
-            self.completed_wrong_words += wrong
-            self.completed_characters += len(self.typed)
-            self.typed = ""
-            self.input.clear()
-            self.status.setText("Metin baştan devam ediyor; süre dolunca sonuçlar gösterilecek.")
+
+        if self._elapsed_seconds() >= self._duration_seconds():
+            self._finish()
+            return
+
         self.typed += character
         self.input.setPlainText(self.typed)
         cursor = self.input.textCursor()
         cursor.movePosition(QTextCursor.MoveOperation.End)
         self.input.setTextCursor(cursor)
-        self._render_target()
+        self._render_target_plain()
 
     def _backspace(self) -> None:
         if not self.typed or self.finished:
             return
         self.typed = self.typed[:-1]
         self.input.setPlainText(self.typed)
-        self._render_target()
+        self._render_target_plain()
 
-    def _render_target(self) -> None:
+    def _render_target_plain(self) -> None:
         if not self.current_lesson:
             return
         self.target.setPlainText(self.current_lesson.text)
+
+    def _render_results(self) -> tuple[int, int]:
+        """Süre bitince yazılan kelimeleri hedef metindeki karşılıklarıyla karşılaştırır."""
+        assert self.current_lesson is not None
+        target = self.current_lesson.text
+        target_words = list(WORD_PATTERN.finditer(target))
+        typed_words = list(WORD_PATTERN.finditer(self.typed))
+
+        correct = 0
+        wrong = 0
+        html_parts: list[str] = []
+        cursor = 0
+
+        typed_index = 0
+        for target_match in target_words:
+            html_parts.append(self._escape(target[cursor : target_match.start()]))
+            target_word = target_match.group()
+
+            if typed_index < len(typed_words):
+                typed_word = typed_words[typed_index].group()
+                if typed_word == target_word:
+                    html_parts.append(f'<span style="color:#16803c;">{self._escape(target_word)}</span>')
+                    correct += 1
+                else:
+                    html_parts.append(f'<span style="color:#d32f2f;">{self._escape(target_word)}</span>')
+                    wrong += 1
+                typed_index += 1
+            else:
+                html_parts.append(self._escape(target_word))
+            cursor = target_match.end()
+
+        html_parts.append(self._escape(target[cursor:]))
+        self.target.setHtml("".join(html_parts))
+        return correct, wrong
+
+    @staticmethod
+    def _escape(value: str) -> str:
+        return (
+            value.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
+        ).replace("\n", "<br>")
 
     def _elapsed_seconds(self) -> float:
         return self.timer.elapsed() / 1000 if self.timer.isValid() else 0.0
@@ -278,55 +340,33 @@ class MainWindow(QMainWindow):
         return self.duration_spin.value() * 60
 
     def _check_time(self) -> None:
-        if self.timer.isValid() and not self.finished and self._elapsed_seconds() >= self._duration_seconds():
+        if not self.timer.isValid() or self.finished:
+            return
+        remaining = self._duration_seconds() - self._elapsed_seconds()
+        if remaining <= 0:
+            self.countdown_label.setText("00:00")
             self._finish()
-
-    def _current_word_counts(self) -> tuple[int, int]:
-        """Tamamlanmış kelimeleri, karakter dizileri bire bir eşleşiyorsa doğru sayar."""
-        assert self.current_lesson is not None
-        correct = wrong = 0
-        for word in re.finditer(r"\S+", self.current_lesson.text):
-            if word.end() > len(self.typed):
-                break
-            if self.typed[word.start() : word.end()] == word.group():
-                correct += 1
-            else:
-                wrong += 1
-        return correct, wrong
+        else:
+            self.countdown_label.setText(format_remaining(remaining))
 
     def _finish(self) -> None:
-        assert self.current_lesson is not None
+        if self.finished or not self.current_lesson:
+            return
         self.finished = True
+        self.countdown_label.setText("00:00")
         self.input.setEnabled(False)
+        self.duration_spin.setEnabled(True)
+
         elapsed = min(self._elapsed_seconds(), float(self._duration_seconds()))
-        current_correct, current_wrong = self._current_word_counts()
-        correct_words = self.completed_correct_words + current_correct
-        wrong_words = self.completed_wrong_words + current_wrong
-        characters = self.completed_characters + len(self.typed)
-        minutes_elapsed = elapsed / 60
-        words_per_minute = (correct_words + wrong_words) / minutes_elapsed if minutes_elapsed else 0.0
-        characters_per_minute = characters / minutes_elapsed if minutes_elapsed else 0.0
+        correct_words, wrong_words = self._render_results()
         self.db.save_result(
             self.current_lesson.id,
             elapsed,
             correct_words,
             wrong_words,
-            words_per_minute,
-            characters_per_minute,
         )
-        attempts = correct_words + wrong_words
-        accuracy = (correct_words / attempts * 100) if attempts else 0.0
-        minutes = self.duration_spin.value()
-        self.status.setText("Süre doldu. Sonuç kaydedildi.")
-        QMessageBox.information(
-            self,
-            "Süre Doldu",
-            f"Süre: {minutes} dakika\n"
-            f"Doğru kelime: {correct_words}\n"
-            f"Yanlış kelime: {wrong_words}\n"
-            f"Dakikadaki kelime: {words_per_minute:.1f} WPM\n"
-            f"Yazım hızı: {characters_per_minute:.1f} karakter/dakika\n"
-            f"Doğruluk: %{accuracy:.1f}",
+        self.status.setText(
+            f"Süre doldu. Doğru: {correct_words}  |  Yanlış: {wrong_words}"
         )
 
     def closeEvent(self, event) -> None:  # type: ignore[no-untyped-def]
