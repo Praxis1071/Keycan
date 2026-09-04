@@ -67,9 +67,18 @@ COURSE_PREFIX = re.compile(
     r"^\s*\[ÖZCAN[^\]]*(?:KLAVYE|KLAYVE)[^\]]*\]\s*", re.IGNORECASE
 )
 
+# Eski kaynak klasörlerinin kökünde bulunan gereksiz proje klasörü adı.
+# Konu adının kendisine dokunulmaz; yalnızca baştaki prefix kaldırılır.
+SOURCE_PREFIX = re.compile(r"^REVERSE ENGINEERING[/\\]+", re.IGNORECASE)
+
 
 def clean_lesson_text(text: str) -> str:
     return COURSE_PREFIX.sub("", text, count=1)
+
+
+def clean_source_path(path: str) -> str:
+    """Kaynak yolunun başındaki gereksiz REVERSE ENGINEERING prefixini kaldırır."""
+    return SOURCE_PREFIX.sub("", path, count=1)
 
 
 def export_rows(mdb_path: Path, table: str) -> list[dict[str, str]]:
@@ -84,14 +93,14 @@ def export_rows(mdb_path: Path, table: str) -> list[dict[str, str]]:
 
 def display_name(relative_mdb_path: Path) -> str:
     # dBase.mdb yerine onu barındıran ders klasörünün anlaşılır adını kullan.
-    return str(relative_mdb_path.parent)
+    return clean_source_path(str(relative_mdb_path.parent))
 
 
 def import_database(conn: sqlite3.Connection, root: Path, mdb_path: Path) -> tuple[int, int]:
-    relative_path = mdb_path.relative_to(root)
+    relative_path = clean_source_path(str(mdb_path.relative_to(root)))
     source = conn.execute(
         "INSERT INTO sources(relative_path, display_name) VALUES (?, ?)",
-        (str(relative_path), display_name(relative_path)),
+        (relative_path, display_name(Path(str(mdb_path.relative_to(root))))),
     )
     source_id = source.lastrowid
 
