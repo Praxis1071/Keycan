@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Dakika Programları için Linux masaüstü on parmak uygulaması."""
+"""Keycan için Linux masaüstü on parmak uygulaması."""
 
 from __future__ import annotations
 
@@ -54,10 +54,14 @@ class Database:
         return self.conn.execute("SELECT id, display_name FROM sources ORDER BY display_name").fetchall()
 
     def lessons(self, source_id: int) -> list[tuple[int, str]]:
-        return self.conn.execute(
+        rows = self.conn.execute(
             "SELECT id, title FROM lessons WHERE source_id = ? ORDER BY legacy_metin_id, id",
             (source_id,),
         ).fetchall()
+        return [
+            (lesson_id, f"Ders {index}")
+            for index, (lesson_id, _title) in enumerate(rows, start=1)
+        ]
 
     def lesson(self, lesson_id: int) -> Lesson:
         row = self.conn.execute("SELECT id, title, text FROM lessons WHERE id = ?", (lesson_id,)).fetchone()
@@ -125,7 +129,7 @@ class MainWindow(QMainWindow):
         self.stats_timer = QTimer(self)
         self.stats_timer.setInterval(250)
         self.stats_timer.timeout.connect(self._check_time)
-        self.setWindowTitle("Dakika Programları — On Parmak")
+        self.setWindowTitle("Keycan — On Parmak")
         self.resize(1200, 760)
         self._build_ui()
         self._load_sources()
@@ -234,7 +238,6 @@ class MainWindow(QMainWindow):
             self.typed = ""
             self.input.clear()
             self.status.setText("Metin baştan devam ediyor; süre dolunca sonuçlar gösterilecek.")
-        expected = self.current_lesson.text[len(self.typed)]
         self.typed += character
         self.input.setPlainText(self.typed)
         cursor = self.input.textCursor()
