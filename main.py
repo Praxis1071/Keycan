@@ -7,6 +7,7 @@ import html
 import re
 import sqlite3
 import sys
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -50,6 +51,15 @@ def format_remaining(seconds: float) -> str:
     remaining = max(0, int(seconds + 0.999))
     minutes, seconds = divmod(remaining, 60)
     return f"{minutes:02d}:{seconds:02d}"
+
+
+def normalize_word(word: str) -> str:
+    """Kelime karşılaştırmasında büyük/küçük harf ve noktalama işaretlerini yok sayar."""
+    return "".join(
+        char.casefold()
+        for char in word
+        if not unicodedata.category(char).startswith("P")
+    )
 
 
 @dataclass
@@ -301,12 +311,13 @@ class MainWindow(QMainWindow):
         typed_correct: list[bool] = []
 
         for typed_match in typed_matches:
-            typed_word = typed_match.group()
+            typed_word = normalize_word(typed_match.group())
             target_index = next(
                 (
                     index
                     for index in sorted(unused_target_indices)
-                    if target_matches[index].group() == typed_word
+                    if normalize_word(target_matches[index].group()) == typed_word
+                    and typed_word
                 ),
                 None,
             )
@@ -393,8 +404,9 @@ class MainWindow(QMainWindow):
             correct_words,
             wrong_words,
         )
+        total_words = correct_words + wrong_words
         self.status.setText(
-            f"Süre doldu. Doğru: {correct_words}  |  Yanlış: {wrong_words}"
+            f"Süre doldu. Doğru: {correct_words}  |  Yanlış: {wrong_words}  |  Toplam: {total_words}"
         )
 
     def closeEvent(self, event) -> None:  # type: ignore[no-untyped-def]
