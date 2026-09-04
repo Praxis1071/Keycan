@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import html
 import re
 import sqlite3
 import sys
@@ -10,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from PyQt6.QtCore import QElapsedTimer, QTimer, Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QTextCursor
+from PyQt6.QtGui import QFont, QTextCharFormat, QTextCursor
 from PyQt6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -64,7 +65,7 @@ class Database:
         self._migrate_results_schema()
 
     def _migrate_results_schema(self) -> None:
-        """Eski veritabanlarında kelime sonucu alanlarını geriye dönük uyumlu biçimde ekler."""
+        """Eski veritabanlarında sonuç alanlarını geriye dönük uyumlu biçimde ekler."""
         columns = {
             row[1] for row in self.conn.execute("PRAGMA table_info(practice_results)")
         }
@@ -111,7 +112,7 @@ class Database:
         correct_words: int,
         wrong_words: int,
     ) -> None:
-        """Yalnızca süre ve kelime sonuçlarını kaydeder; hız hesabı yapılmaz."""
+        """Sadece süre ve kelime sonuçlarını kaydeder; hız değerleri sıfır bırakılır."""
         self.conn.execute(
             """INSERT INTO practice_results(
                     lesson_id, duration_seconds, correct_chars, wrong_chars, wpm,
@@ -290,48 +291,75 @@ class MainWindow(QMainWindow):
             return
         self.target.setPlainText(self.current_lesson.text)
 
+    def _match_words_any_order(self) -> tuple[set[int], list[bool]]:
+        """Yazılan her kelimeyi metindeki henüz eşleşmemiş herhangi bir kelimeyle eşleştirir."""
+        assert self.current_lesson is not None
+        target_matches = list(WORD_PATTERN.finditer(self.current_lesson.text))
+        typed_matches = list(WORD_PATTERN.finditer(self.typed))
+        unused_target_indices = set(range(len(target_matches)))
+        matched_target_indices: set[int] = set()
+        typed_correct: list[bool] = []
+
+        for typed_match in typed_matches:
+            typed_word = typed_match.group()
+            target_index = next(
+                (
+                    index
+                    for index in sorted(unused_target_indices)
+                    if target_matches[index].group() == typed_word
+                ),
+                None,
+            )
+            if target_index is None:
+                typed_correct.append(False)
+            else:
+                typed_correct.append(True)
+                unused_target_indices.remove(target_index)
+                matched_target_indices.add(target_index)
+
+        return matched_target_indices, typed_correct
+
     def _render_results(self) -> tuple[int, int]:
-        """Süre bitince yazılan kelimeleri hedef metindeki karşılıklarıyla karşılaştırır."""
+        """Süre bitince doğru hedef kelimeleri yeşil, yanlış yazılan kelimeleri kırmızı gösterir."""
         assert self.current_lesson is not None
         target = self.current_lesson.text
-        target_words = list(WORD_PATTERN.finditer(target))
-        typed_words = list(WORD_PATTERN.finditer(self.typed))
+        target_matches = list(WORD_PATTERN.finditer(target))
+        matched_target_indices, typed_correct = self._match_words_any_order()
 
-        correct = 0
-        wrong = 0
         html_parts: list[str] = []
         cursor = 0
-
-        typed_index = 0
-        for target_match in target_words:
-            html_parts.append(self._escape(target[cursor : target_match.start()]))
-            target_word = target_match.group()
-
-            if typed_index < len(typed_words):
-                typed_word = typed_words[typed_index].group()
-                if typed_word == target_word:
-                    html_parts.append(f'<span style="color:#16803c;">{self._escape(target_word)}</span>')
-                    correct += 1
-                else:
-                    html_parts.append(f'<span style="color:#d32f2f;">{self._escape(target_word)}</span>')
-                    wrong += 1
-                typed_index += 1
+        for index, target_match in enumerate(target_matches):
+            html_parts.append(html.escape(target[cursor : target_match.start()]).replace("\n", "<br>"))
+            word = html.escape(target_match.group())
+            if index in matched_target_indices:
+                html_parts.append(f'<span style="color:#16803c;">{word}</span>')
             else:
-                html_parts.append(self._escape(target_word))
+                html_parts.append(word)
             cursor = target_match.end()
-
-        html_parts.append(self._escape(target[cursor:]))
+        html_parts.append(html.escape(target[cursor:]).replace("\n", "<br>"))
         self.target.setHtml("".join(html_parts))
+
+        self._render_input_results(typed_correct)
+        correct = sum(typed_correct)
+        wrong = len(typed_correct) - correct
         return correct, wrong
 
-    @staticmethod
-    def _escape(value: str) -> str:
-        return (
-            value.replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace('"', "&quot;")
-        ).replace("\n", "<br>")
+    def _render_input_results(self, typed_correct: list[bool]) -> None:
+        """Süre sonunda giriş alanındaki doğru kelimeleri yeşil, yanlışları kırmızı yapar."""
+        cursor = self.input.textCursor()
+        cursor.select(QTextCursor.SelectionType.Document)
+        default_format = QTextCharFormat()
+        cursor.setCharFormat(default_format)
+        cursor.clearSelection()
+
+        matches = list(WORD_PATTERN.finditer(self.typed))
+        for match, is_correct in zip(matches, typed_correct):
+            word_cursor = self.input.textCursor()
+            word_cursor.setPosition(match.start())
+            word_cursor.setPosition(match.end(), QTextCursor.MoveMode.KeepAnchor)
+            fmt = QTextCharFormat()
+            fmt.setForeground(Qt.GlobalColor.darkGreen if is_correct else Qt.GlobalColor.red)
+            word_cursor.setCharFormat(fmt)
 
     def _elapsed_seconds(self) -> float:
         return self.timer.elapsed() / 1000 if self.timer.isValid() else 0.0
