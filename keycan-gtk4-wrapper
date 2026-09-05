@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+
+APP_DIR="/app/share/keycan"
+DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/keycan"
+DB="$DATA_DIR/typing_data.db"
+
+mkdir -p "$DATA_DIR"
+if [ ! -f "$DB" ]; then
+    cp "$APP_DIR/typing_data.db" "$DB"
+fi
+
+exec python3 "$APP_DIR/gtk_main.py" "$DB"
