@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Keycan için stabilite ve veri bütünlüğü denetimleri.
+# Keycan 2.0 stabilite ve veri bütünlüğü denetimleri.
 set -euo pipefail
 
 project_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 cd "$project_dir"
 
-python -m py_compile data_loader.py gtk_main.py keycan-gtk4-launcher.py
+python -m py_compile main.py keycan/__init__.py keycan/app.py keycan/window.py keycan/core/__init__.py keycan/core/typing_engine.py keycan/data/__init__.py keycan/data/database.py keycan/utils/__init__.py keycan/utils/text.py
 
 python - <<'PY'
 import sqlite3
@@ -38,12 +38,8 @@ try:
         row[1] for row in connection.execute("PRAGMA table_info(practice_results)")
     }
     required_result_columns = {
-        "lesson_id",
-        "duration_seconds",
-        "correct_words",
-        "wrong_words",
-        "words_per_minute",
-        "characters_per_minute",
+        "lesson_id", "duration_seconds", "correct_words", "wrong_words",
+        "words_per_minute", "characters_per_minute",
     }
     assert required_result_columns <= result_columns, "practice_results şeması eksik"
 
@@ -59,12 +55,9 @@ try:
     ).fetchone()[0]
     assert invalid_counts == 0, "Sonuçlarda geçersiz kelime/hız değeri bulundu"
 
-    print(
-        f"Veri denetimi başarılı: {sources} kaynak, {lessons} metin, "
-        f"{statistics} eski istatistik."
-    )
+    print(f"Veri denetimi başarılı: {sources} kaynak, {lessons} metin, {statistics} eski istatistik.")
 finally:
     connection.close()
 PY
 
-echo "GTK4 uygulaması, gizlilik düzeltmesi, Python sözdizimi, veritabanı ve sonuç şeması denetimleri başarılı."
+echo "Keycan 2.0 Python sözdizimi, veritabanı ve sonuç şeması denetimleri başarılı."
