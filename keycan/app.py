@@ -32,4 +32,4 @@ def main(argv: list[str] | None = None) -> int:
     if not database_path.exists():
         print(f"Veritabanı bulunamadı: {database_path}", file=sys.stderr)
         return 1
-    return KeycanApplication(database_path).run(args)
+    return KeycanApplication(database_path).run([args[0]])
