@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Keycan için zarar vermeyen stabilite ve veri bütünlüğü denetimleri.
+# Keycan için stabilite ve veri bütünlüğü denetimleri.
 set -euo pipefail
 
 project_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 cd "$project_dir"
 
-python -m py_compile data_loader.py main.py gtk_main.py
+python -m py_compile data_loader.py gtk_main.py
 
 python - <<'PY'
 import sqlite3
@@ -67,6 +67,4 @@ finally:
     connection.close()
 PY
 
-python -c 'from PyQt6 import QtCore; print(f"PyQt6: {QtCore.PYQT_VERSION_STR}")'
-
-echo "Kod, GTK4 arayüzü, veritabanı, sonuç şeması ve PyQt6 denetimleri başarılı."
+echo "GTK4 uygulaması, Python sözdizimi, veritabanı ve sonuç şeması denetimleri başarılı."
