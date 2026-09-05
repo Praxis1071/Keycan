@@ -11,7 +11,7 @@ from gi.repository import Adw
 from keycan.window import KeycanWindow
 
 APP_DIR = Path(__file__).resolve().parent.parent
-DEFAULT_DB = APP_DIR / "data" / "typing_data.db"
+DEFAULT_DB = APP_DIR / "typing_data.db"
 
 
 class KeycanApplication(Adw.Application):
