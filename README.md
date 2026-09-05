@@ -48,11 +48,6 @@ CachyOS/Arch tabanlı sistemlerde gerekli araçları kurun:
 ```bash
 sudo pacman -S flatpak flatpak-builder
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-```
-
-GNOME 50 Platform ve SDK'yı kurun:
-
-```bash
 flatpak install flathub org.gnome.Platform//50 org.gnome.Sdk//50
 ```
 
@@ -61,6 +56,12 @@ Projeyi alın:
 ```bash
 git clone https://github.com/Praxis1071/Keycan.git
 cd Keycan
+```
+
+Önce denetimleri çalıştırın:
+
+```bash
+./check.sh
 ```
 
 Derleyip kurun:
@@ -77,20 +78,26 @@ flatpak run org.keycan.Keycan
 
 ## 🧪 Geliştirici Kontrolü
 
-Proje kök dizininde:
-
-```bash
-./check.sh
-```
-
-Bu kontrol Python sözdizimini, SQLite bütünlüğünü, ders/kaynak verilerini ve çalışma sonucu şemasını denetler.
+`./check.sh` Python sözdizimini, SQLite bütünlüğünü, ders/kaynak verilerini, sonuç şemasını ve eski `REVERSE ENGINEERING/` prefix'inin kalmadığını denetler.
 
 ## 📁 Proje Yapısı
 
 ```text
 Keycan/
-├── gtk_main.py
-├── data_loader.py
+├── main.py
+├── keycan/
+│   ├── __init__.py
+│   ├── app.py
+│   ├── window.py
+│   ├── core/
+│   │   ├── __init__.py
+│   │   └── typing_engine.py
+│   ├── data/
+│   │   ├── __init__.py
+│   │   └── database.py
+│   └── utils/
+│       ├── __init__.py
+│       └── text.py
 ├── typing_data.db
 ├── keycan-gtk4-wrapper
 ├── org.keycan.Keycan.gtk4.yml
@@ -103,9 +110,11 @@ Keycan/
 └── README.md
 ```
 
-### Veri yükleyici
+### Mimari
 
-`data_loader.py`, eski ders kaynaklarını SQLite veritabanına aktarmak için kullanılan yardımcı araçtır. Mevcut ders, kaynak ve kimlik ilişkileri korunur.
+`main.py` yalnızca uygulamayı başlatır. GTK4/libadwaita yaşam döngüsü `keycan/app.py`, arayüz `keycan/window.py`, yazım eşleştirme motoru `keycan/core/typing_engine.py`, SQLite erişimi `keycan/data/database.py` ve metin yardımcıları `keycan/utils/text.py` içinde tutulur.
+
+Flatpak wrapper yalnızca kullanıcıya yazılabilir çalışma veritabanını hazırlar. Ders ve kaynak verileri ile kimlik ilişkileri değiştirilmez.
 
 ## 🔐 Veri ve izinler
 
@@ -115,7 +124,7 @@ Keycan temel kullanım için internet erişimine ihtiyaç duymaz. Flatpak sürü
 
 ## 📄 Lisans
 
-Bu proje **MIT Lisansı** altında lisanslanmıştır. Ayrıntılar için [`LICENSE`](LICENSE) dosyasına bakabilirsiniz.
+Bu proje **MIT Lisansı** altında lisanslanmıştır. Ayrıntılar için `LICENSE` dosyasına bakabilirsiniz.
 
 ## 👤 Geliştirici
 
@@ -125,4 +134,4 @@ GitHub: https://github.com/Praxis1071/Keycan
 
 ---
 
-**Keycan** — Linux için on parmak klavye pratiği. ⌨️
+**Keycan 2.0** — Linux için on parmak klavye pratiği. ⌨️
