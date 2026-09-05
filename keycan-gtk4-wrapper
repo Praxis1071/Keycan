@@ -7,7 +7,7 @@ DB="$DATA_DIR/typing_data.db"
 
 mkdir -p "$DATA_DIR"
 if [ ! -f "$DB" ]; then
-    cp "$APP_DIR/typing_data.db" "$DB"
+    cp "$APP_DIR/data/typing_data.db" "$DB"
 fi
 
-exec python3 "$APP_DIR/keycan-gtk4-launcher.py" "$DB"
+exec python3 "$APP_DIR/main.py" "$DB"
