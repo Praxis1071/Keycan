@@ -1,0 +1,23 @@
+app-id: org.keycan.Keycan
+runtime: org.gnome.Platform
+runtime-version: "50"
+sdk: org.gnome.Sdk
+command: keycan
+
+# Stage 5: GTK4/libadwaita altyapı manifesti.
+# Mevcut PyQt6 manifesti (org.keycan.Keycan.yml) bu aşamada korunur.
+
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=x11
+  - --device=dri
+
+modules:
+  - name: keycan
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 gtk4_probe.py /app/bin/keycan
+    sources:
+      - type: dir
+        path: .
