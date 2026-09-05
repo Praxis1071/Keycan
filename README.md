@@ -8,37 +8,22 @@ Keycan, Linux sistemleri için geliştirilmiş modern, hızlı ve kullanıcı do
 - **Çeşitli Egzersizler:** Farklı zorluk seviyelerinde pratik yapma imkânı.
 - **Yerel Veritabanı:** Egzersiz verileri ve ilerleme bilgileri SQLite ile yerel olarak saklanır.
 - **Çevrimdışı Kullanım:** Temel kullanım için internet bağlantısı gerekmez.
-- **Modern Arayüz:** PyQt6 ile hazırlanmış kullanıcı arayüzü.
+- **Modern Arayüz:** Mevcut sürüm PyQt6 ile hazırlanmıştır; GTK4 + libadwaita geçişi planlanmaktadır.
 - **Linux Odaklı:** Linux masaüstü sistemleri için tasarlanmıştır.
-- **Flatpak Desteği:** Uygulama Flatpak ile paketlenebilir ve dağıtılabilir.
+- **Flatpak:** Projenin güncel paketleme ve dağıtım hedefi Flatpak'tır.
 
 ## 🛠️ Kurulum ve Çalıştırma
 
-Keycan'ı Linux sisteminizde **3 farklı şekilde** kurup çalıştırabilirsiniz. Size en uygun yöntemi seçin.
-
 ### 1. 📦 Hazır Flatpak Paketi — Önerilen
 
-En kolay yöntemdir. GitHub Releases bölümünden `.flatpak` paketini indirin.
-
-İndirdiğiniz dosyanın bulunduğu klasörde terminal açın:
+GitHub Releases bölümünden `.flatpak` paketini indirin.
 
 ```bash
 flatpak install ./Keycan.flatpak
-```
-
-Kurulum tamamlandıktan sonra:
-
-```bash
 flatpak run org.keycan.Keycan
 ```
 
-> **Önerilen yöntem:** Teknik bilgi gerektirmez ve uygulamayı Flatpak üzerinden izole bir ortamda çalıştırır.
-
----
-
 ### 2. 🔨 Kaynak Koddan Flatpak ile Kurulum
-
-Keycan'ın kaynak kodunu indirip Flatpak paketini kendiniz oluşturabilirsiniz.
 
 Gerekli Flatpak runtime ve SDK'yı kurun:
 
@@ -57,40 +42,17 @@ Uygulamayı derleyip kurun:
 
 ```bash
 flatpak-builder --user --install --force-clean build-dir org.keycan.Keycan.yml
-```
-
-Ardından çalıştırın:
-
-```bash
 flatpak run org.keycan.Keycan
 ```
 
-> **Bu yöntem**, geliştiriciler ve projeyi kaynak koddan incelemek veya değiştirmek isteyen kullanıcılar için uygundur.
-
----
-
 ### 3. 🐍 Python ile Kaynak Koddan Çalıştırma
-
-Flatpak kullanmadan uygulamayı doğrudan Python ortamında çalıştırmak için:
 
 ```bash
 git clone https://github.com/Praxis1071/Keycan.git
 cd Keycan
-```
-
-Gerekli Python paketlerini yükleyin:
-
-```bash
 pip install -r requirements.txt
-```
-
-Uygulamayı başlatın:
-
-```bash
 python main.py
 ```
-
-> **Bu yöntem**, kaynak kod üzerinde geliştirme ve test yapmak isteyenler için uygundur.
 
 ## 📁 Proje Yapısı
 
@@ -102,9 +64,8 @@ Keycan/
 ├── requirements.txt
 ├── org.keycan.Keycan.desktop
 ├── org.keycan.Keycan.png
+├── org.keycan.Keycan.svg
 ├── org.keycan.Keycan.yml
-├── DakikaProgramlari.spec
-├── build.sh
 ├── check.sh
 ├── BUILD-INSTRUCTIONS.txt
 └── LICENSE
