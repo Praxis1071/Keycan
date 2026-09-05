@@ -4,19 +4,16 @@ __pycache__/
 *$py.class
 *.so
 
-# Flatpak derleme klasörleri
+# Flatpak build artifacts
 .flatpak-builder/
 _build/
 flatpak-build/
+build/
+build-dir/
 repo/
+*.flatpak
 
-# IDE ve Sistem Dosyaları
+# IDE ve sistem dosyaları
 .vscode/
 .idea/
 .DS_Store
-.flatpak-builder/
-build-dir/
-repo/
-__pycache__/
-*.flatpak
-*.spec
