@@ -1,20 +1,27 @@
-KEYCAN FLATPAK BUILD
+KEYCAN — GTK4 + LIBADWAITA FLATPAK BUILD
 
-Keycan, GTK4/libadwaita dönüşümüne hazırlanan mevcut Python/PyQt6 sürümünden bağımsız olarak Flatpak ile paketlenir.
+Keycan'ın güncel uygulaması GTK4 + libadwaita tabanlıdır ve Flatpak ile paketlenir.
 
-CachyOS/Arch üzerinde:
+CachyOS/Arch üzerinde gerekli araçlar:
   sudo pacman -S flatpak flatpak-builder
   flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-  flatpak install flathub org.freedesktop.Platform//26.08 org.freedesktop.Sdk//26.08
 
-Projeyi indirin ve proje dizinine girin:
+GNOME 50 Platform ve SDK:
+  flatpak install flathub org.gnome.Platform//50 org.gnome.Sdk//50
+
+Projeyi indirin:
   git clone https://github.com/Praxis1071/Keycan.git
   cd Keycan
 
+Önce proje kontrollerini çalıştırın:
+  ./check.sh
+
 Flatpak'ı derleyip kurun:
-  flatpak-builder --user --install --force-clean build-dir org.keycan.Keycan.yml
+  flatpak-builder --user --install --force-clean build-dir org.keycan.Keycan.gtk4.yml
 
 Çalıştırın:
   flatpak run org.keycan.Keycan
 
-Not: AppImage paketleme araçları ve eski PyInstaller/AppImage betikleri projeden kaldırılmıştır. Keycan'ın dağıtım hedefi Flatpak'tır.
+Hazır paket oluşturmak için Flatpak bundle/export işlemini kullanabilirsiniz.
+
+Not: Eski PyQt6, PyInstaller ve AppImage paketleme altyapısı güncel uygulamanın parçası değildir. Keycan'ın güncel masaüstü uygulaması GTK4 + libadwaita, dağıtım hedefi ise Flatpak'tır.
