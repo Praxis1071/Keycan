@@ -6,7 +6,6 @@ Mevcut PyQt6 sürümündeki veri ve yazma davranışını koruyan Stage 6 arayü
 
 from __future__ import annotations
 
-import html
 import re
 import sqlite3
 import sys
@@ -83,7 +82,10 @@ class Database:
             "SELECT id, title FROM lessons WHERE source_id = ? ORDER BY legacy_metin_id, id",
             (source_id,),
         ).fetchall()
-        return [(lesson_id, f"Ders {index}") for index, (lesson_id, _) in enumerate(rows, 1)]
+        return [
+            (lesson_id, f"Ders {index}")
+            for index, (lesson_id, _) in enumerate(rows, 1)
+        ]
 
     def lesson(self, lesson_id: int) -> tuple[int, str, str]:
         row = self.conn.execute(
@@ -117,13 +119,12 @@ headerbar.keycan-header button,
 headerbar.keycan-header label {
     color: #f2f2f2;
 }
-.keycan-content {
-    background: #202124;
-}
+.keycan-content,
 .keycan-controls {
     background: #202124;
 }
-.keycan-controls label {
+.keycan-controls label,
+.keycan-status {
     color: #eeeeee;
 }
 .keycan-editor {
@@ -140,7 +141,6 @@ headerbar.keycan-header label {
     padding: 10px;
 }
 .keycan-status {
-    color: #eeeeee;
     padding: 4px 2px 8px;
 }
 .keycan-countdown {
@@ -148,7 +148,78 @@ headerbar.keycan-header label {
     font-weight: 700;
     font-size: 16px;
 }
+textview.keycan-hidden,
+textview.keycan-hidden text {
+    color: #ffffff;
+}
 """
+
+
+class SettingsWindow(Adw.Window):
+    def __init__(self, parent: "KeycanWindow") -> None:
+        super().__init__(transient_for=parent, modal=True, title="Ayarlar")
+        self.parent_window = parent
+        self.set_default_size(460, 360)
+        self.set_size_request(360, 280)
+
+        toolbar = Adw.ToolbarView()
+        header = Adw.HeaderBar()
+        toolbar.add_top_bar(header)
+
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=18)
+        content.set_margin_top(24)
+        content.set_margin_bottom(24)
+        content.set_margin_start(24)
+        content.set_margin_end(24)
+        toolbar.set_content(content)
+        self.set_content(toolbar)
+
+        about = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        title = Gtk.Label(label="Hakkında")
+        title.set_xalign(0)
+        title.add_css_class("title-3")
+        about.append(title)
+
+        developer = Gtk.Label(label="Geliştirici: Praxis1071")
+        developer.set_xalign(0)
+        about.append(developer)
+
+        github = Gtk.LinkButton(
+            uri="https://github.com/Praxis1071",
+            label="GitHub profili: github.com/Praxis1071",
+        )
+        github.set_halign(Gtk.Align.START)
+        about.append(github)
+        content.append(about)
+
+        separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        content.append(separator)
+
+        privacy = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        privacy_title = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+        privacy_label = Gtk.Label(label="Yazım metnini karart")
+        privacy_label.set_xalign(0)
+        privacy_label.set_hexpand(True)
+        privacy_title.append(privacy_label)
+        privacy_description = Gtk.Label(
+            label="Yazarken kendi yazdığın metni gizler; süre bitince sonuçları gösterir."
+        )
+        privacy_description.set_xalign(0)
+        privacy_description.set_wrap(True)
+        privacy_description.add_css_class("dim-label")
+        privacy_title.append(privacy_description)
+        privacy.append(privacy_title)
+
+        self.privacy_switch = Gtk.Switch()
+        self.privacy_switch.set_valign(Gtk.Align.CENTER)
+        self.privacy_switch.set_active(parent.privacy_enabled)
+        self.privacy_switch.connect("notify::active", self._on_privacy_changed)
+        privacy.append(self.privacy_switch)
+        content.append(privacy)
+
+    def _on_privacy_changed(self, switch: Gtk.Switch, _param) -> None:  # type: ignore[no-untyped-def]
+        self.parent_window.privacy_enabled = switch.get_active()
+        self.parent_window._apply_privacy_state()
 
 
 class KeycanWindow(Adw.ApplicationWindow):
@@ -164,6 +235,10 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.started_at: float | None = None
         self.updating_input = False
         self.tick_id: int | None = None
+        self.privacy_enabled = False
+        self.text_size = 16
+        self.text_providers: dict[Gtk.TextView, Gtk.CssProvider] = {}
+        self.settings_window: SettingsWindow | None = None
 
         self._install_css()
         self._build_ui()
@@ -211,8 +286,12 @@ class KeycanWindow(Adw.ApplicationWindow):
         controls.append(self.lesson_dropdown)
 
         controls.append(self._label("Süre:"))
-        adjustment = Gtk.Adjustment(value=1, lower=1, upper=180, step_increment=1, page_increment=10)
-        self.duration_spin = Gtk.SpinButton(adjustment=adjustment, climb_rate=1, digits=0)
+        adjustment = Gtk.Adjustment(
+            value=1, lower=1, upper=180, step_increment=1, page_increment=10
+        )
+        self.duration_spin = Gtk.SpinButton(
+            adjustment=adjustment, climb_rate=1, digits=0
+        )
         self.duration_spin.set_numeric(True)
         self.duration_spin.set_width_chars(3)
         self.duration_spin.connect("value-changed", self._on_duration_changed)
@@ -221,7 +300,6 @@ class KeycanWindow(Adw.ApplicationWindow):
 
         self.countdown = Gtk.Label(label="01:00")
         self.countdown.add_css_class("keycan-countdown")
-        self.countdown.set_margin_start(2)
         controls.append(self.countdown)
 
         self.restart_button = Gtk.Button(label="Baştan Başla")
@@ -237,16 +315,50 @@ class KeycanWindow(Adw.ApplicationWindow):
         editors.set_margin_bottom(8)
         root.append(editors)
 
-        self.target_view = self._make_text_view(False, 16)
+        self.target_view = self._make_text_view(False, False)
         self.target_scroll = self._wrap_editor(self.target_view)
         editors.set_start_child(self.target_scroll)
 
-        self.input_view = self._make_text_view(True, 16)
+        self.input_view = self._make_text_view(True, True)
         self.input_view.set_monospace(True)
         self.input_view.get_buffer().connect("changed", self._on_input_changed)
         self.input_scroll = self._wrap_editor(self.input_view)
         editors.set_end_child(self.input_scroll)
         editors.set_position(470)
+
+        bottom = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        bottom.set_margin_start(12)
+        bottom.set_margin_end(12)
+        bottom.set_margin_bottom(8)
+        root.append(bottom)
+
+        left_spacer = Gtk.Box()
+        left_spacer.set_hexpand(True)
+        bottom.append(left_spacer)
+
+        self.settings_button = Gtk.Button()
+        self.settings_button.set_icon_name("emblem-system-symbolic")
+        self.settings_button.set_tooltip_text("Ayarlar")
+        self.settings_button.add_css_class("flat")
+        self.settings_button.connect("clicked", self._open_settings)
+        bottom.append(self.settings_button)
+
+        right = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        right.set_hexpand(True)
+        right.set_halign(Gtk.Align.END)
+        size_label = Gtk.Label(label="Metin boyutu")
+        right.append(size_label)
+        self.size_scale = Gtk.Scale.new_with_range(
+            Gtk.Orientation.HORIZONTAL, 12, 30, 1
+        )
+        self.size_scale.set_value(self.text_size)
+        self.size_scale.set_size_request(170, -1)
+        self.size_scale.set_digits(0)
+        self.size_scale.set_draw_value(True)
+        self.size_scale.set_tooltip_text("Ders ve yazım metni boyutu")
+        self.size_scale.connect("value-changed", self._on_text_size_changed)
+        right.append(self.size_scale)
+        bottom.append(right)
 
         self.status = Gtk.Label(label="Bir ders ve metin seçin.")
         self.status.set_xalign(0)
@@ -261,11 +373,11 @@ class KeycanWindow(Adw.ApplicationWindow):
         label.set_xalign(0)
         return label
 
-    @staticmethod
-    def _make_text_view(editable: bool, size: int) -> Gtk.TextView:
+    def _make_text_view(self, editable: bool, monospace: bool) -> Gtk.TextView:
         view = Gtk.TextView()
         view.set_editable(editable)
         view.set_cursor_visible(editable)
+        view.set_monospace(monospace)
         view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
         view.set_vexpand(True)
         view.set_hexpand(True)
@@ -275,13 +387,28 @@ class KeycanWindow(Adw.ApplicationWindow):
         view.set_right_margin(8)
         view.set_top_margin(8)
         view.set_bottom_margin(8)
-        font = "Noto Sans 16" if not editable else "Noto Sans Mono 16"
         view.set_css_name("textview")
-        view.set_tooltip_text(None)
-        provider = Gtk.CssProvider()
-        provider.load_from_data(f"textview {{ font: {font}; }}", -1)
-        view.get_style_context().add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        self._apply_text_size(view)
         return view
+
+    def _apply_text_size(self, view: Gtk.TextView | None = None) -> None:
+        views = [view] if view is not None else [self.target_view, self.input_view]
+        for text_view in views:
+            provider = self.text_providers.get(text_view)
+            if provider is not None:
+                text_view.get_style_context().remove_provider(provider)
+            provider = Gtk.CssProvider()
+            provider.load_from_data(
+                f"textview {{ font-size: {self.text_size}px; }}", -1
+            )
+            text_view.get_style_context().add_provider(
+                provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            )
+            self.text_providers[text_view] = provider
+
+    def _on_text_size_changed(self, scale: Gtk.Scale) -> None:
+        self.text_size = int(scale.get_value())
+        self._apply_text_size()
 
     @staticmethod
     def _wrap_editor(view: Gtk.TextView) -> Gtk.ScrolledWindow:
@@ -305,7 +432,9 @@ class KeycanWindow(Adw.ApplicationWindow):
     def _load_lessons(self, source_id: int) -> None:
         lessons = self.db.lessons(source_id)
         self.lesson_ids = [lesson_id for lesson_id, _ in lessons]
-        self.lesson_dropdown.set_model(Gtk.StringList.new([title for _, title in lessons]))
+        self.lesson_dropdown.set_model(
+            Gtk.StringList.new([title for _, title in lessons])
+        )
         if lessons:
             self.lesson_dropdown.set_selected(0)
         else:
@@ -343,9 +472,12 @@ class KeycanWindow(Adw.ApplicationWindow):
         self._set_input_text("")
         self._set_target_text(self.current_text)
         self.input_view.set_editable(self.current_lesson_id is not None)
-        self.status.set_text("Yazmaya başlayınca geri sayım çalışır.") if self.current_lesson_id else self.status.set_text("Bir ders ve metin seçin.")
+        self._apply_privacy_state()
         if self.current_lesson_id:
+            self.status.set_text("Yazmaya başlayınca geri sayım çalışır.")
             self.input_view.grab_focus()
+        else:
+            self.status.set_text("Bir ders ve metin seçin.")
         if self.tick_id is None:
             self.tick_id = GLib.timeout_add(100, self._check_time)
 
@@ -357,6 +489,15 @@ class KeycanWindow(Adw.ApplicationWindow):
     def _set_target_text(self, text: str) -> None:
         self.target_view.get_buffer().set_text(text)
 
+    def _apply_privacy_state(self) -> None:
+        active = self.privacy_enabled and self.started_at is not None and not self.finished
+        if active:
+            self.input_view.add_css_class("keycan-hidden")
+            self.input_view.set_cursor_visible(False)
+        else:
+            self.input_view.remove_css_class("keycan-hidden")
+            self.input_view.set_cursor_visible(not self.finished and self.current_lesson_id is not None)
+
     def _on_input_changed(self, buffer: Gtk.TextBuffer) -> None:
         if self.updating_input or self.finished or self.current_lesson_id is None:
             return
@@ -364,6 +505,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         if self.started_at is None and self.typed:
             self.started_at = time.monotonic()
             self.duration_spin.set_sensitive(False)
+            self._apply_privacy_state()
         if self.started_at is not None and time.monotonic() - self.started_at >= self._duration_seconds():
             self._finish()
 
@@ -378,7 +520,8 @@ class KeycanWindow(Adw.ApplicationWindow):
             target_index = next(
                 (
                     index for index in sorted(unused)
-                    if typed_word and normalize_word(target_matches[index].group()) == typed_word
+                    if typed_word
+                    and normalize_word(target_matches[index].group()) == typed_word
                 ),
                 None,
             )
@@ -397,10 +540,17 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.countdown.set_text("00:00")
         self.input_view.set_editable(False)
         self.duration_spin.set_sensitive(True)
-        elapsed = 0.0 if self.started_at is None else min(time.monotonic() - self.started_at, self._duration_seconds())
+        self._apply_privacy_state()
+        elapsed = (
+            0.0
+            if self.started_at is None
+            else min(time.monotonic() - self.started_at, self._duration_seconds())
+        )
         correct, wrong = self._render_results()
         self.db.save_result(self.current_lesson_id, elapsed, correct, wrong)
-        self.status.set_text(f"Süre doldu. Doğru: {correct}  |  Yanlış: {wrong}  |  Toplam: {correct + wrong}")
+        self.status.set_text(
+            f"Süre doldu. Doğru: {correct}  |  Yanlış: {wrong}  |  Toplam: {correct + wrong}"
+        )
 
     def _render_results(self) -> tuple[int, int]:
         matched, correctness = self._match_words()
@@ -430,6 +580,16 @@ class KeycanWindow(Adw.ApplicationWindow):
             end = buffer.get_iter_at_offset(match.end())
             buffer.apply_tag(green if is_correct else red, start, end)
 
+    def _open_settings(self, _button: Gtk.Button) -> None:
+        if self.settings_window is None:
+            self.settings_window = SettingsWindow(self)
+            self.settings_window.connect("close-request", self._settings_closed)
+        self.settings_window.present()
+
+    def _settings_closed(self, _window: Adw.Window) -> bool:
+        self.settings_window = None
+        return False
+
     def _check_time(self) -> bool:
         if self.finished or self.started_at is None:
             return True
@@ -444,6 +604,9 @@ class KeycanWindow(Adw.ApplicationWindow):
         if self.tick_id is not None:
             GLib.source_remove(self.tick_id)
             self.tick_id = None
+        if self.settings_window is not None:
+            self.settings_window.close()
+            self.settings_window = None
         self.db.close()
         return False
 
