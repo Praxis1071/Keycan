@@ -18,6 +18,7 @@ modules:
     buildsystem: simple
     build-commands:
       - install -Dm644 gtk_main.py /app/share/keycan/gtk_main.py
+      - install -Dm644 keycan-gtk4-launcher.py /app/share/keycan/keycan-gtk4-launcher.py
       - install -Dm644 typing_data.db /app/share/keycan/typing_data.db
       - install -Dm755 keycan-gtk4-wrapper /app/bin/keycan
       - install -Dm644 org.keycan.Keycan.desktop /app/share/applications/org.keycan.Keycan.desktop
