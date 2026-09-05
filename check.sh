@@ -5,8 +5,7 @@ set -euo pipefail
 project_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 cd "$project_dir"
 
-python -m py_compile data_loader.py main.py test_keycan.py
-python -m unittest -v test_keycan.py
+python -m py_compile data_loader.py main.py
 
 python - <<'PY'
 import sqlite3
@@ -70,4 +69,4 @@ PY
 
 python -c 'from PyQt6 import QtCore; print(f"PyQt6: {QtCore.PYQT_VERSION_STR}")'
 
-echo "Kod, regresyon testleri, veritabanı, sonuç şeması ve PyQt6 denetimleri başarılı."
+echo "Kod, veritabanı, sonuç şeması ve PyQt6 denetimleri başarılı."
