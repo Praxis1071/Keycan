@@ -4,7 +4,7 @@ runtime-version: "50"
 sdk: org.gnome.Sdk
 command: keycan
 
-# Stage 5: GTK4/libadwaita altyapı manifesti.
+# Stage 6: GTK4 + libadwaita arayüzü.
 # Mevcut PyQt6 manifesti (org.keycan.Keycan.yml) bu aşamada korunur.
 
 finish-args:
@@ -17,7 +17,11 @@ modules:
   - name: keycan
     buildsystem: simple
     build-commands:
-      - install -Dm755 gtk4_probe.py /app/bin/keycan
+      - install -Dm644 gtk_main.py /app/share/keycan/gtk_main.py
+      - install -Dm644 typing_data.db /app/share/keycan/typing_data.db
+      - install -Dm755 keycan-gtk4-wrapper /app/bin/keycan
+      - install -Dm644 org.keycan.Keycan.desktop /app/share/applications/org.keycan.Keycan.desktop
+      - install -Dm644 org.keycan.Keycan.svg /app/share/icons/hicolor/scalable/apps/org.keycan.Keycan.svg
     sources:
       - type: dir
         path: .
