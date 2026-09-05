@@ -4,8 +4,8 @@ runtime-version: "50"
 sdk: org.gnome.Sdk
 command: keycan
 
-# Stage 6: GTK4 + libadwaita arayüzü.
-# Mevcut PyQt6 manifesti (org.keycan.Keycan.yml) bu aşamada korunur.
+# Keycan: GTK4 + libadwaita sürümü.
+# Uygulama Python + PyGObject ile çalışır.
 
 finish-args:
   - --share=ipc
