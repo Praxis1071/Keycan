@@ -141,7 +141,7 @@ headerbar.keycan-header label {
     padding: 10px;
 }
 .keycan-status {
-    padding: 4px 2px 8px;
+    padding: 2px 2px 4px;
 }
 .keycan-countdown {
     color: #eeeeee;
@@ -312,7 +312,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         editors.set_wide_handle(True)
         editors.set_margin_start(12)
         editors.set_margin_end(12)
-        editors.set_margin_bottom(8)
+        editors.set_margin_bottom(4)
         root.append(editors)
 
         self.target_view = self._make_text_view(False, False)
@@ -326,39 +326,41 @@ class KeycanWindow(Adw.ApplicationWindow):
         editors.set_end_child(self.input_scroll)
         editors.set_position(470)
 
-        bottom = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        bottom = Gtk.CenterBox()
         bottom.set_margin_start(12)
         bottom.set_margin_end(12)
-        bottom.set_margin_bottom(8)
+        bottom.set_margin_top(0)
+        bottom.set_margin_bottom(0)
+        bottom.set_size_request(-1, 34)
         root.append(bottom)
-
-        left_spacer = Gtk.Box()
-        left_spacer.set_hexpand(True)
-        bottom.append(left_spacer)
 
         self.settings_button = Gtk.Button()
         self.settings_button.set_icon_name("emblem-system-symbolic")
         self.settings_button.set_tooltip_text("Ayarlar")
         self.settings_button.add_css_class("flat")
         self.settings_button.connect("clicked", self._open_settings)
-        bottom.append(self.settings_button)
+        bottom.set_center_widget(self.settings_button)
 
-        right = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        right.set_hexpand(True)
-        right.set_halign(Gtk.Align.END)
-        size_label = Gtk.Label(label="Metin boyutu")
-        right.append(size_label)
-        self.size_scale = Gtk.Scale.new_with_range(
-            Gtk.Orientation.HORIZONTAL, 12, 30, 1
+        size_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        size_box.set_halign(Gtk.Align.END)
+        size_label = Gtk.Label(label="Metin boyutu:")
+        size_box.append(size_label)
+        size_adjustment = Gtk.Adjustment(
+            value=self.text_size,
+            lower=12,
+            upper=30,
+            step_increment=1,
+            page_increment=2,
         )
-        self.size_scale.set_value(self.text_size)
-        self.size_scale.set_size_request(170, -1)
-        self.size_scale.set_digits(0)
-        self.size_scale.set_draw_value(True)
-        self.size_scale.set_tooltip_text("Ders ve yazım metni boyutu")
-        self.size_scale.connect("value-changed", self._on_text_size_changed)
-        right.append(self.size_scale)
-        bottom.append(right)
+        self.size_spin = Gtk.SpinButton(
+            adjustment=size_adjustment, climb_rate=1, digits=0
+        )
+        self.size_spin.set_numeric(True)
+        self.size_spin.set_width_chars(3)
+        self.size_spin.set_tooltip_text("Ders ve yazım metni boyutu")
+        self.size_spin.connect("value-changed", self._on_text_size_changed)
+        size_box.append(self.size_spin)
+        bottom.set_end_widget(size_box)
 
         self.status = Gtk.Label(label="Bir ders ve metin seçin.")
         self.status.set_xalign(0)
@@ -406,8 +408,8 @@ class KeycanWindow(Adw.ApplicationWindow):
             )
             self.text_providers[text_view] = provider
 
-    def _on_text_size_changed(self, scale: Gtk.Scale) -> None:
-        self.text_size = int(scale.get_value())
+    def _on_text_size_changed(self, spin: Gtk.SpinButton) -> None:
+        self.text_size = int(spin.get_value())
         self._apply_text_size()
 
     @staticmethod
@@ -496,7 +498,9 @@ class KeycanWindow(Adw.ApplicationWindow):
             self.input_view.set_cursor_visible(False)
         else:
             self.input_view.remove_css_class("keycan-hidden")
-            self.input_view.set_cursor_visible(not self.finished and self.current_lesson_id is not None)
+            self.input_view.set_cursor_visible(
+                not self.finished and self.current_lesson_id is not None
+            )
 
     def _on_input_changed(self, buffer: Gtk.TextBuffer) -> None:
         if self.updating_input or self.finished or self.current_lesson_id is None:
@@ -506,7 +510,10 @@ class KeycanWindow(Adw.ApplicationWindow):
             self.started_at = time.monotonic()
             self.duration_spin.set_sensitive(False)
             self._apply_privacy_state()
-        if self.started_at is not None and time.monotonic() - self.started_at >= self._duration_seconds():
+        if (
+            self.started_at is not None
+            and time.monotonic() - self.started_at >= self._duration_seconds()
+        ):
             self._finish()
 
     def _match_words(self) -> tuple[set[int], list[bool]]:
@@ -519,7 +526,8 @@ class KeycanWindow(Adw.ApplicationWindow):
             typed_word = normalize_word(typed_match.group())
             target_index = next(
                 (
-                    index for index in sorted(unused)
+                    index
+                    for index in sorted(unused)
                     if typed_word
                     and normalize_word(target_matches[index].group()) == typed_word
                 ),
