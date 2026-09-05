@@ -4,8 +4,7 @@ runtime-version: "50"
 sdk: org.gnome.Sdk
 command: keycan
 
-# Keycan: GTK4 + libadwaita sürümü.
-# Uygulama Python + PyGObject ile çalışır.
+# Keycan 2.0: GTK4 + libadwaita + PyGObject.
 
 finish-args:
   - --share=ipc
@@ -17,9 +16,17 @@ modules:
   - name: keycan
     buildsystem: simple
     build-commands:
-      - install -Dm644 gtk_main.py /app/share/keycan/gtk_main.py
-      - install -Dm644 keycan-gtk4-launcher.py /app/share/keycan/keycan-gtk4-launcher.py
-      - install -Dm644 typing_data.db /app/share/keycan/typing_data.db
+      - install -Dm755 main.py /app/share/keycan/main.py
+      - install -Dm644 keycan/__init__.py /app/share/keycan/keycan/__init__.py
+      - install -Dm644 keycan/app.py /app/share/keycan/keycan/app.py
+      - install -Dm644 keycan/window.py /app/share/keycan/keycan/window.py
+      - install -Dm644 keycan/core/__init__.py /app/share/keycan/keycan/core/__init__.py
+      - install -Dm644 keycan/core/typing_engine.py /app/share/keycan/keycan/core/typing_engine.py
+      - install -Dm644 keycan/data/__init__.py /app/share/keycan/keycan/data/__init__.py
+      - install -Dm644 keycan/data/database.py /app/share/keycan/keycan/data/database.py
+      - install -Dm644 keycan/utils/__init__.py /app/share/keycan/keycan/utils/__init__.py
+      - install -Dm644 keycan/utils/text.py /app/share/keycan/keycan/utils/text.py
+      - install -Dm644 data/typing_data.db /app/share/keycan/data/typing_data.db
       - install -Dm755 keycan-gtk4-wrapper /app/bin/keycan
       - install -Dm644 org.keycan.Keycan.desktop /app/share/applications/org.keycan.Keycan.desktop
       - install -Dm644 org.keycan.Keycan.svg /app/share/icons/hicolor/scalable/apps/org.keycan.Keycan.svg
