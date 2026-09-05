@@ -5,7 +5,7 @@ set -euo pipefail
 project_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 cd "$project_dir"
 
-python -m py_compile data_loader.py gtk_main.py
+python -m py_compile data_loader.py gtk_main.py keycan-gtk4-launcher.py
 
 python - <<'PY'
 import sqlite3
@@ -67,4 +67,4 @@ finally:
     connection.close()
 PY
 
-echo "GTK4 uygulaması, Python sözdizimi, veritabanı ve sonuç şeması denetimleri başarılı."
+echo "GTK4 uygulaması, gizlilik düzeltmesi, Python sözdizimi, veritabanı ve sonuç şeması denetimleri başarılı."
