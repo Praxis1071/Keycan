@@ -53,17 +53,44 @@ class SettingsWindow(Adw.Window):
         general.append(self.privacy_switch)
         stack.add_titled(general, "general", "Genel")
 
-        about = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        about = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         about.set_valign(Gtk.Align.START)
+
+        title = Gtk.Label(label="Keycan Hakkında")
+        title.set_xalign(0)
+        title.add_css_class("title-3")
+        about.append(title)
+
+        description = Gtk.Label(
+            label="Keycan, Linux üzerinde on parmak yazma pratiği yapmayı kolaylaştırmak için geliştirilmiş, sade ve açık kaynaklı bir yazma uygulamasıdır."
+        )
+        description.set_xalign(0)
+        description.set_wrap(True)
+        about.append(description)
+
         developer = Gtk.Label(label="Geliştirici: Praxis1071")
         developer.set_xalign(0)
         about.append(developer)
+
         github = Gtk.LinkButton(uri="https://github.com/Praxis1071", label="GitHub profili: github.com/Praxis1071")
         github.set_halign(Gtk.Align.START)
         about.append(github)
+
         youtube = Gtk.LinkButton(uri="https://www.youtube.com/@Praxis1071", label="YouTube kanalı: youtube.com/@Praxis1071")
         youtube.set_halign(Gtk.Align.START)
         about.append(youtube)
+
+        website = Gtk.LinkButton(uri="https://ozcanbilgisayarkursu.com", label="Özcan Bilgisayar Kursu: ozcanbilgisayarkursu.com")
+        website.set_halign(Gtk.Align.START)
+        about.append(website)
+
+        thanks = Gtk.Label(
+            label="Keycan projesine verdiği destek ve katkıları için Malik Özcan Hocam'a teşekkür ederim."
+        )
+        thanks.set_xalign(0)
+        thanks.set_wrap(True)
+        about.append(thanks)
+
         stack.add_titled(about, "about", "Hakkında")
         stack.set_visible_child_name("general")
 
