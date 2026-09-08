@@ -62,7 +62,7 @@ class SettingsWindow(Adw.Window):
         about.append(title)
 
         description = Gtk.Label(
-            label="Keycan, Linux üzerinde on parmak yazma pratiği yapmayı kolaylaştırmak için geliştirilmiş, sade ve açık kaynaklı bir yazma uygulamasıdır."
+            label="Keycan, Linux üzerinde on parmak yazma pratiği yapmayı kolaylaştırmak için geliştirilmiş, sade ve açık kaynaklı bir projedir."
         )
         description.set_xalign(0)
         description.set_wrap(True)
