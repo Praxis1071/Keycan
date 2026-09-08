@@ -6,8 +6,26 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gtk
 
+import keycan.app as keycan_app
 import keycan.window as keycan_window
 from keycan.app import main
+
+
+class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
+    def __init__(self, app: Adw.Application, database_path):
+        super().__init__(app, database_path)
+
+        # Keycan starts maximized so the main workspace fills the screen.
+        self.maximize()
+
+        # 22 is the default text size; the existing size control remains unchanged.
+        self.text_size = 22
+        self.size_spin.set_value(22)
+        self._apply_text_size()
+
+        # Use GTK's native DropDown search for the long source list.
+        # GTK's string filter is case-insensitive by default and matches substrings.
+        self.source_dropdown.set_enable_search(True)
 
 
 class SettingsWindow(Adw.Window):
@@ -100,6 +118,8 @@ class SettingsWindow(Adw.Window):
 
 
 keycan_window.SettingsWindow = SettingsWindow
+keycan_window.KeycanWindow = ConfiguredKeycanWindow
+keycan_app.KeycanWindow = ConfiguredKeycanWindow
 
 
 if __name__ == "__main__":
