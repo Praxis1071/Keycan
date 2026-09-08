@@ -80,17 +80,26 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
 
             if not filtered:
                 self.source_dropdown.set_selected(Gtk.INVALID_LIST_POSITION)
-                return
-
-            selected_index = 0
-            if select_current and self._current_source_id is not None:
-                for index, (source_id, _name) in enumerate(filtered):
-                    if source_id == self._current_source_id:
-                        selected_index = index
-                        break
-            self.source_dropdown.set_selected(selected_index)
+            else:
+                selected_index = 0
+                if select_current and self._current_source_id is not None:
+                    for index, (source_id, _name) in enumerate(filtered):
+                        if source_id == self._current_source_id:
+                            selected_index = index
+                            break
+                self.source_dropdown.set_selected(selected_index)
         finally:
             self._updating_source_model = False
+
+        if not filtered:
+            self._current_source_id = None
+            self.lesson_ids = []
+            self.lesson_dropdown.set_model(Gtk.StringList.new([]))
+            self.current_lesson_id = None
+            self.current_text = ""
+            self._restart()
+            self.status.set_text("Eşleşen ders grubu bulunamadı.")
+            return
 
         if not select_current or self._current_source_id is None:
             source_id = filtered[0][0]
