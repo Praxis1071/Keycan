@@ -1,1 +1,0 @@
-Backup marker for commit 9b6094eab6ef4c3f2f67549da532a4149bedb1f8 before default window/text size/source search changes. This marker is temporary and should not be kept in the project tree.
