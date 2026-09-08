@@ -24,7 +24,14 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         self._apply_text_size()
 
         # Use GTK's native DropDown search for the long source list.
-        # GTK's string filter is case-insensitive by default and matches substrings.
+        # The expression tells GTK which string to search, while substring
+        # matching makes searches useful even when the term is in the middle.
+        self.source_dropdown.set_expression(
+            Gtk.PropertyExpression.new(Gtk.StringObject, None, "string")
+        )
+        self.source_dropdown.set_search_match_mode(
+            Gtk.StringFilterMatchMode.SUBSTRING
+        )
         self.source_dropdown.set_enable_search(True)
 
 
