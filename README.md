@@ -34,11 +34,17 @@ Keycan ile farklı ders gruplarındaki metinleri seçebilir, çalışma süresin
 
 ### Hazır Flatpak paketi
 
-GitHub Releases bölümündeki `.flatpak` paketini kullanabilirsiniz.
+**Keycan 2.0.0** için hazır Flatpak paketini [GitHub Releases](https://github.com/Praxis1071/Keycan/releases/tag/v2.0.0) sayfasından indirebilirsiniz.
 
 ```bash
-flatpak install ./Keycan.flatpak
+flatpak install ./Keycan-2.0.0.flatpak
 flatpak run org.keycan.Keycan
+```
+
+SHA256:
+
+```text
+37e3bbe127c7cb3af1eb22e526fe9fee92ff1b0ba85c8f9f8192347ca0a261a1
 ```
 
 ### Kaynak koddan Flatpak ile derleme
@@ -102,7 +108,6 @@ Keycan/
 ├── keycan-gtk4-wrapper
 ├── org.keycan.Keycan.gtk4.yml
 ├── org.keycan.Keycan.desktop
-├── org.keycan.Keycan.svg
 ├── org.keycan.Keycan.png
 ├── check.sh
 ├── BUILD-INSTRUCTIONS.txt
