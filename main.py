@@ -13,6 +13,10 @@ from keycan.app import main
 
 class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
     def __init__(self, app: Adw.Application, database_path):
+        self._all_source_entries = []
+        self._filtered_source_entries = []
+        self._current_source_id = None
+        self._updating_source_model = False
         super().__init__(app, database_path)
 
         # Keycan starts maximized so the main workspace fills the screen.
@@ -23,16 +27,103 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         self.size_spin.set_value(22)
         self._apply_text_size()
 
-        # Use GTK's native DropDown search for the long source list.
-        # The expression tells GTK which string to search, while substring
-        # matching makes searches useful even when the term is in the middle.
-        self.source_dropdown.set_expression(
-            Gtk.PropertyExpression.new(Gtk.StringObject, None, "string")
+    def _build_ui(self) -> None:
+        super()._build_ui()
+
+        # Use an application-controlled search field instead of GTK DropDown's
+        # internal search. This keeps filtering deterministic on the GNOME 50
+        # runtime used by the Flatpak.
+        parent = self.source_dropdown.get_parent()
+        self.source_search = Gtk.SearchEntry()
+        self.source_search.set_placeholder_text("Ders grubu ara…")
+        self.source_search.set_tooltip_text(
+            "Ders gruplarının başında, ortasında veya sonunda arama yap"
         )
-        self.source_dropdown.set_search_match_mode(
-            Gtk.StringFilterMatchMode.SUBSTRING
-        )
-        self.source_dropdown.set_enable_search(True)
+        self.source_search.set_width_chars(18)
+        self.source_search.set_hexpand(False)
+        self.source_search.set_search_delay(100)
+        self.source_search.connect("search-changed", self._on_source_search_changed)
+        self.source_search.connect("activate", self._on_source_search_activate)
+
+        if parent is not None:
+            self.source_search.insert_after(parent, self.source_dropdown)
+
+    @staticmethod
+    def _source_search_key(text: str) -> str:
+        # Make Turkish I/İ/ı variants behave consistently while preserving
+        # normal Unicode case-insensitive matching for the rest of the text.
+        return text.casefold().replace("ı", "i").replace("\u0307", "")
+
+    def _load_sources(self) -> None:
+        self._all_source_entries = self.db.sources()
+        self._apply_source_filter(select_current=False)
+
+    def _apply_source_filter(self, select_current: bool = True) -> None:
+        query = self._source_search_key(self.source_search.get_text().strip())
+        if query:
+            filtered = [
+                (source_id, name)
+                for source_id, name in self._all_source_entries
+                if query in self._source_search_key(name)
+            ]
+        else:
+            filtered = list(self._all_source_entries)
+
+        self._filtered_source_entries = filtered
+        self.source_ids = [source_id for source_id, _name in filtered]
+
+        self._updating_source_model = True
+        try:
+            self.source_dropdown.set_model(
+                Gtk.StringList.new([name for _source_id, name in filtered])
+            )
+
+            if not filtered:
+                self.source_dropdown.set_selected(Gtk.INVALID_LIST_POSITION)
+                return
+
+            selected_index = 0
+            if select_current and self._current_source_id is not None:
+                for index, (source_id, _name) in enumerate(filtered):
+                    if source_id == self._current_source_id:
+                        selected_index = index
+                        break
+            self.source_dropdown.set_selected(selected_index)
+        finally:
+            self._updating_source_model = False
+
+        if not select_current or self._current_source_id is None:
+            source_id = filtered[0][0]
+        else:
+            source_id = filtered[selected_index][0]
+
+        if source_id != self._current_source_id:
+            self._current_source_id = source_id
+            self._load_lessons(source_id)
+
+    def _on_source_search_changed(self, _entry: Gtk.SearchEntry) -> None:
+        self._apply_source_filter(select_current=True)
+
+    def _on_source_search_activate(self, _entry: Gtk.SearchEntry) -> None:
+        # Enter selects the first matching group, so keyboard-only searching
+        # behaves exactly like clicking a result.
+        if self._filtered_source_entries:
+            self.source_dropdown.set_selected(0)
+            source_id = self._filtered_source_entries[0][0]
+            if source_id != self._current_source_id:
+                self._current_source_id = source_id
+                self._load_lessons(source_id)
+
+    def _on_source_changed(self, _dropdown: Gtk.DropDown, _param) -> None:
+        if self._updating_source_model:
+            return
+
+        index = self.source_dropdown.get_selected()
+        if 0 <= index < len(self._filtered_source_entries):
+            source_id, _name = self._filtered_source_entries[index]
+            if source_id != self._current_source_id:
+                self._current_source_id = source_id
+                self._load_lessons(source_id)
 
 
 class SettingsWindow(Adw.Window):
