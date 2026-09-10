@@ -1,2 +1,0 @@
-Reference marker: previous layout state before responsive sizing fix.
-Previous main commit: bff0defeb9e0df0c1f535a7029b0b3d635058373
