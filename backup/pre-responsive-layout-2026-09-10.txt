@@ -1,0 +1,3 @@
+Backup marker for the current main state before the responsive source-selector/layout fix on 2026-09-10.
+
+Current main commit before this fix: bff0defeb9e0df0c1f535a7029b0b3d635058373
