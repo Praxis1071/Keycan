@@ -1,0 +1,1 @@
+Pre-change backup point: commit f1030cacd47387650d9ffc09d5b1a53613f59339 (before the Settings button relocation).
