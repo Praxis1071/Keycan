@@ -201,38 +201,27 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
             else:
                 parent.append(self.source_dropdown)
 
-        # Put Settings in a dedicated end slot so it stays at the far right
-        # regardless of the available width of the control row.
-        controls = self.get_content().get_content().get_first_child()
-        if controls is not None and self.settings_button is not None:
+        # Anchor Settings to the actual upper-right corner instead of making
+        # it part of the horizontal control allocation.
+        toolbar = self.get_content()
+        root = toolbar.get_content()
+        if root is not None and self.settings_button is not None:
             bottom = self.settings_button.get_parent()
             if bottom is not None:
                 self.settings_button.unparent()
 
-            center = Gtk.CenterBox()
-            center.set_margin_top(10)
-            center.set_margin_start(12)
-            center.set_margin_end(12)
-            center.set_margin_bottom(8)
-            center.add_css_class("keycan-controls")
+            root.unparent()
+            overlay = Gtk.Overlay()
+            overlay.set_child(root)
 
-            start_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-            start_box.set_halign(Gtk.Align.START)
-            while (child := controls.get_first_child()) is not None:
-                if child is self.settings_button:
-                    child.unparent()
-                    continue
-                child.unparent()
-                start_box.append(child)
-
-            center.set_start_widget(start_box)
             self.settings_button.set_tooltip_text("Ayarlar")
             self.settings_button.set_halign(Gtk.Align.END)
-            center.set_end_widget(self.settings_button)
+            self.settings_button.set_valign(Gtk.Align.START)
+            self.settings_button.set_margin_top(10)
+            self.settings_button.set_margin_end(12)
+            overlay.add_overlay(self.settings_button)
 
-            controls.unparent()
-            root = self.get_content().get_content()
-            root.insert_child_after(center, None)
+            toolbar.set_content(overlay)
 
     def _load_sources(self) -> None:
         sources = self.db.sources(); self.source_ids = [i for i, _ in sources]; self.source_dropdown.set_model(Gtk.StringList.new([n for _, n in sources]))
