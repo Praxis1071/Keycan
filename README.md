@@ -8,6 +8,7 @@ Keycan ile farklı ders gruplarındaki metinleri seçebilir, çalışma süresin
 
 - **On Parmak Klavye Pratiği** — Kelime ve cümlelerden oluşan ders metinleriyle pratik.
 - **Ders ve Metin Seçimi** — Kaynaklara göre düzenlenmiş ders grupları.
+- **Ders Grubu Arama** — Ders grubu adları içinde arama yaparak istediğiniz kaynağa hızlıca ulaşabilirsiniz.
 - **Ayarlanabilir Süre** — Çalışma süresi 1–180 dakika arasında seçilebilir.
 - **Doğru / Yanlış Sonuçları** — Süre sonunda yazılan kelimeler sonuç olarak renklendirilir.
 - **Büyük/Küçük Harf Bağımsızlığı** — Kelime karşılaştırmasında harf büyüklüğü önemsenmez.
@@ -34,17 +35,17 @@ Keycan ile farklı ders gruplarındaki metinleri seçebilir, çalışma süresin
 
 ### Hazır Flatpak paketi
 
-**Keycan 2.0.0** için hazır Flatpak paketini [GitHub Releases](https://github.com/Praxis1071/Keycan/releases/tag/v2.0.0) sayfasından indirebilirsiniz.
+**Keycan 2.1.0** için hazır Flatpak paketini [GitHub Releases](https://github.com/Praxis1071/Keycan/releases/tag/v2.1.0) sayfasından indirebilirsiniz.
 
 ```bash
-flatpak install ./Keycan-2.0.0.flatpak
+flatpak install ./Keycan-2.1.0.flatpak
 flatpak run org.keycan.Keycan
 ```
 
 SHA256:
 
 ```text
-37e3bbe127c7cb3af1eb22e526fe9fee92ff1b0ba85c8f9f8192347ca0a261a1
+a6795b7534d0e464ddbb07a112c47fe797bff96db0ba334633664efc88229b6a
 ```
 
 ### Kaynak koddan Flatpak ile derleme
@@ -139,4 +140,4 @@ GitHub: https://github.com/Praxis1071/Keycan
 
 ---
 
-**Keycan 2.0** — Linux için on parmak klavye pratiği. ⌨️
+**Keycan 2.1.0** — Linux için on parmak klavye pratiği. ⌨️
