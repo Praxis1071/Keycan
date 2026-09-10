@@ -94,13 +94,15 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.countdown = Gtk.Label(label="01:00"); self.countdown.add_css_class("keycan-countdown"); controls.append(self.countdown)
         self.restart_button = Gtk.Button(label="Baştan Başla"); self.restart_button.add_css_class("suggested-action"); self.restart_button.connect("clicked", self._restart); controls.append(self.restart_button)
 
+        self.settings_button = Gtk.Button(); self.settings_button.set_icon_name("emblem-system-symbolic"); self.settings_button.set_tooltip_text("Ayarlar"); self.settings_button.add_css_class("flat"); self.settings_button.connect("clicked", self._open_settings)
+        spacer = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL); spacer.set_hexpand(True); controls.append(spacer); controls.append(self.settings_button)
+
         editors = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL); editors.set_vexpand(True); editors.set_wide_handle(True); editors.set_margin_start(12); editors.set_margin_end(12); editors.set_margin_bottom(4); root.append(editors)
         self.target_view = self._make_text_view(False, False); editors.set_start_child(self._wrap_editor(self.target_view))
         self.input_view = self._make_text_view(True, True); self.input_view.get_buffer().connect("changed", self._on_input_changed); editors.set_end_child(self._wrap_editor(self.input_view)); editors.set_position(470)
 
         bottom = Gtk.CenterBox(); bottom.set_margin_start(12); bottom.set_margin_end(12); bottom.set_size_request(-1, 34); root.append(bottom)
         self.status = Gtk.Label(label="Bir ders ve metin seçin."); self.status.set_xalign(0); self.status.add_css_class("keycan-status"); bottom.set_start_widget(self.status)
-        self.settings_button = Gtk.Button(); self.settings_button.set_icon_name("emblem-system-symbolic"); self.settings_button.set_tooltip_text("Ayarlar"); self.settings_button.add_css_class("flat"); self.settings_button.connect("clicked", self._open_settings); bottom.set_center_widget(self.settings_button)
         size_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6); size_box.set_halign(Gtk.Align.END); size_box.append(Gtk.Label(label="Metin boyutu:"))
         size_adj = Gtk.Adjustment(value=self.text_size, lower=12, upper=30, step_increment=1, page_increment=2)
         self.size_spin = Gtk.SpinButton(adjustment=size_adj, climb_rate=1, digits=0); self.size_spin.set_numeric(True); self.size_spin.set_width_chars(3); self.size_spin.set_tooltip_text("Ders ve yazım metni boyutu"); self.size_spin.connect("value-changed", self._on_text_size_changed); size_box.append(self.size_spin); bottom.set_end_widget(size_box)
