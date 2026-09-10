@@ -200,24 +200,6 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
             else:
                 parent.append(self.source_dropdown)
 
-        # Keep Settings out of the source/control allocation. Move it into the
-        # existing controls row after an expanding spacer so it is always at
-        # the far right without changing the window's content hierarchy.
-        controls = parent
-        if controls is not None and self.settings_button is not None:
-            bottom = self.settings_button.get_parent()
-            if bottom is not None:
-                self.settings_button.unparent()
-
-            spacer = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-            spacer.set_hexpand(True)
-            controls.append(spacer)
-
-            self.settings_button.set_tooltip_text("Ayarlar")
-            self.settings_button.set_halign(Gtk.Align.END)
-            self.settings_button.set_valign(Gtk.Align.CENTER)
-            controls.append(self.settings_button)
-
     def _load_sources(self) -> None:
         sources = self.db.sources(); self.source_ids = [i for i, _ in sources]; self.source_dropdown.set_model(Gtk.StringList.new([n for _, n in sources]))
         if sources: self.source_dropdown.set_selected(0)
@@ -289,7 +271,7 @@ class SettingsWindow(Adw.Window):
         youtube = Gtk.LinkButton(uri="https://www.youtube.com/@Praxis1071", label="YouTube kanalı: youtube.com/@Praxis1071")
         youtube.set_halign(Gtk.Align.START)
         about.append(youtube)
-        website = Gtk.LinkButton(uri="https://ozcanbilgisayarkursu.com", label="Özcan Bilgisayar Kursu: ozcanbilgisayarkursu.com")
+        website = Gtk.LinkButton(uri="https://ozcanbilgisayarkursu.com", label="Özcan Bilgisayar Kursu: ozcanbilgisayar.kursu")
         website.set_halign(Gtk.Align.START)
         about.append(website)
         thanks = Gtk.Label(label="Keycan projesine verdiği destek ve katkıları için Malik Özcan Hocam'a teşekkür ederim.")
