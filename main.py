@@ -192,7 +192,7 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         self.source_dropdown.on_selected_changed = self._on_source_changed
         self.source_dropdown.set_hexpand(False)
         self.source_dropdown.set_halign(Gtk.Align.FILL)
-        self.source_dropdown.set_size_request(576, -1)
+        self.source_dropdown.set_size_request(826, -1)
 
         if parent is not None:
             old_dropdown.unparent()
