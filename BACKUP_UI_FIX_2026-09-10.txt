@@ -1,1 +1,0 @@
-Backup marker for UI fixes on 2026-09-10. Current main before the approved Ders grubu layout and startup sizing fixes.
