@@ -271,7 +271,7 @@ class SettingsWindow(Adw.Window):
         youtube = Gtk.LinkButton(uri="https://www.youtube.com/@Praxis1071", label="YouTube kanalı: youtube.com/@Praxis1071")
         youtube.set_halign(Gtk.Align.START)
         about.append(youtube)
-        website = Gtk.LinkButton(uri="https://ozcanbilgisayarkursu.com", label="Özcan Bilgisayar Kursu: ozcanbilgisayar.kursu")
+        website = Gtk.LinkButton(uri="https://ozcanbilgisayarkursu.com", label="Özcan Bilgisayar Kursu: ozcanbilgisayarkursu.com")
         website.set_halign(Gtk.Align.START)
         about.append(website)
         thanks = Gtk.Label(label="Keycan projesine verdiği destek ve katkıları için Malik Özcan Hocam'a teşekkür ederim.")
