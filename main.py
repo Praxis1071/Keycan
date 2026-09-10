@@ -4,7 +4,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, GObject, Gtk
+from gi.repository import Adw, Gtk
 
 import keycan.app as keycan_app
 import keycan.window as keycan_window
@@ -14,13 +14,13 @@ from keycan.app import main
 class SourceSearchDropdown(Gtk.Box):
     """Normal source chooser with search inside its opened popover."""
 
-    selected = GObject.Property(type=int, default=Gtk.INVALID_LIST_POSITION)
-
     def __init__(self) -> None:
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
         self.set_hexpand(True)
         self._entries: list[tuple[int, str]] = []
         self._rows: list[tuple[Gtk.ListBoxRow, int, str]] = []
+        self.selected = Gtk.INVALID_LIST_POSITION
+        self.on_selected_changed = None
 
         self.button = Gtk.Button()
         self.button.set_hexpand(True)
@@ -94,6 +94,9 @@ class SourceSearchDropdown(Gtk.Box):
             return
         self.selected = index
         self._update_button_label()
+        callback = self.on_selected_changed
+        if callback is not None:
+            callback(self, None)
 
     def _update_button_label(self) -> None:
         index = self.get_selected()
@@ -166,7 +169,7 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         parent = old_dropdown.get_parent()
         previous = old_dropdown.get_prev_sibling() if parent is not None else None
         self.source_dropdown = SourceSearchDropdown()
-        self.source_dropdown.connect("notify::selected", self._on_source_changed)
+        self.source_dropdown.on_selected_changed = self._on_source_changed
 
         if parent is not None:
             old_dropdown.unparent()
