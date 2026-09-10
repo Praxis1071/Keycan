@@ -158,7 +158,6 @@ class SourceSearchDropdown(Gtk.Box):
         self._apply_filter()
 
     def _on_search_activate(self, _entry: Gtk.SearchEntry) -> None:
-        # Enter only performs the search; it never selects a result.
         self._apply_filter()
 
     def _on_row_clicked(self, _button: Gtk.Button, index: int) -> None:
@@ -201,27 +200,23 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
             else:
                 parent.append(self.source_dropdown)
 
-        # Anchor Settings to the actual upper-right corner instead of making
-        # it part of the horizontal control allocation.
-        toolbar = self.get_content()
-        root = toolbar.get_content()
-        if root is not None and self.settings_button is not None:
+        # Keep Settings out of the source/control allocation. Move it into the
+        # existing controls row after an expanding spacer so it is always at
+        # the far right without changing the window's content hierarchy.
+        controls = parent
+        if controls is not None and self.settings_button is not None:
             bottom = self.settings_button.get_parent()
             if bottom is not None:
                 self.settings_button.unparent()
 
-            root.unparent()
-            overlay = Gtk.Overlay()
-            overlay.set_child(root)
+            spacer = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            spacer.set_hexpand(True)
+            controls.append(spacer)
 
             self.settings_button.set_tooltip_text("Ayarlar")
             self.settings_button.set_halign(Gtk.Align.END)
-            self.settings_button.set_valign(Gtk.Align.START)
-            self.settings_button.set_margin_top(10)
-            self.settings_button.set_margin_end(12)
-            overlay.add_overlay(self.settings_button)
-
-            toolbar.set_content(overlay)
+            self.settings_button.set_valign(Gtk.Align.CENTER)
+            controls.append(self.settings_button)
 
     def _load_sources(self) -> None:
         sources = self.db.sources(); self.source_ids = [i for i, _ in sources]; self.source_dropdown.set_model(Gtk.StringList.new([n for _, n in sources]))
