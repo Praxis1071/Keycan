@@ -201,18 +201,38 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
             else:
                 parent.append(self.source_dropdown)
 
-        # Keep Settings in the control row, aligned to the upper-right empty area.
+        # Put Settings in a dedicated end slot so it stays at the far right
+        # regardless of the available width of the control row.
         controls = self.get_content().get_content().get_first_child()
         if controls is not None and self.settings_button is not None:
             bottom = self.settings_button.get_parent()
             if bottom is not None:
                 self.settings_button.unparent()
-            spacer = Gtk.Box()
-            spacer.set_hexpand(True)
-            controls.append(spacer)
+
+            center = Gtk.CenterBox()
+            center.set_margin_top(10)
+            center.set_margin_start(12)
+            center.set_margin_end(12)
+            center.set_margin_bottom(8)
+            center.add_css_class("keycan-controls")
+
+            start_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+            start_box.set_halign(Gtk.Align.START)
+            while (child := controls.get_first_child()) is not None:
+                if child is self.settings_button:
+                    child.unparent()
+                    continue
+                child.unparent()
+                start_box.append(child)
+
+            center.set_start_widget(start_box)
             self.settings_button.set_tooltip_text("Ayarlar")
             self.settings_button.set_halign(Gtk.Align.END)
-            controls.append(self.settings_button)
+            center.set_end_widget(self.settings_button)
+
+            controls.unparent()
+            root = self.get_content().get_content()
+            root.insert_child_after(center, None)
 
     def _load_sources(self) -> None:
         sources = self.db.sources(); self.source_ids = [i for i, _ in sources]; self.source_dropdown.set_model(Gtk.StringList.new([n for _, n in sources]))
