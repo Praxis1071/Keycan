@@ -33,9 +33,12 @@ class SourceSearchDropdown(Gtk.Box):
         button_box.set_halign(Gtk.Align.FILL)
         self.button_label = Gtk.Label()
         self.button_label.set_xalign(0)
+        self.button_label.set_halign(Gtk.Align.FILL)
         self.button_label.set_hexpand(True)
         button_box.append(self.button_label)
-        button_box.append(Gtk.Image.new_from_icon_name("pan-down-symbolic"))
+        arrow = Gtk.Image.new_from_icon_name("pan-down-symbolic")
+        arrow.set_halign(Gtk.Align.END)
+        button_box.append(arrow)
         self.button.set_child(button_box)
         self.append(self.button)
 
@@ -187,6 +190,9 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         previous = old_dropdown.get_prev_sibling() if parent is not None else None
         self.source_dropdown = SourceSearchDropdown()
         self.source_dropdown.on_selected_changed = self._on_source_changed
+        self.source_dropdown.set_hexpand(True)
+        self.source_dropdown.set_halign(Gtk.Align.FILL)
+        self.source_dropdown.set_size_request(0, -1)
 
         if parent is not None:
             old_dropdown.unparent()
@@ -196,18 +202,12 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
                 parent.append(self.source_dropdown)
 
     def _load_sources(self) -> None:
-        sources = self.db.sources()
-        self.source_ids = [source_id for source_id, _name in sources]
-        self.source_dropdown.set_model(
-            Gtk.StringList.new([name for _source_id, name in sources])
-        )
-        if sources:
-            self.source_dropdown.set_selected(0)
+        sources = self.db.sources(); self.source_ids = [i for i, _ in sources]; self.source_dropdown.set_model(Gtk.StringList.new([n for _, n in sources]))
+        if sources: self.source_dropdown.set_selected(0)
 
     def _on_source_changed(self, _dropdown: SourceSearchDropdown, _param) -> None:
         index = self.source_dropdown.get_selected()
-        if 0 <= index < len(self.source_ids):
-            self._load_lessons(self.source_ids[index])
+        if 0 <= index < len(self.source_ids): self._load_lessons(self.source_ids[index])
 
 
 class SettingsWindow(Adw.Window):
