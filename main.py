@@ -53,7 +53,7 @@ class SourceSearchDropdown(Gtk.Box):
         panel.set_margin_bottom(8)
         panel.set_margin_start(8)
         panel.set_margin_end(8)
-        panel.set_size_request(1080, 420)
+        panel.set_size_request(700, 420)
         self.popover.set_child(panel)
 
         self.search_entry = Gtk.SearchEntry()
@@ -192,7 +192,7 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         self.source_dropdown.on_selected_changed = self._on_source_changed
         self.source_dropdown.set_hexpand(False)
         self.source_dropdown.set_halign(Gtk.Align.FILL)
-        self.source_dropdown.set_size_request(965, -1)
+        self.source_dropdown.set_size_request(700, -1)
 
         if parent is not None:
             old_dropdown.unparent()
