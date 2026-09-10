@@ -12,17 +12,15 @@ from keycan.app import main
 
 
 class SourceSearchDropdown(Gtk.Box):
-    """A normal source chooser with search inside its opened popover."""
+    """Normal source chooser with search inside its opened popover."""
 
     selected = GObject.Property(type=int, default=Gtk.INVALID_LIST_POSITION)
 
     def __init__(self) -> None:
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
         self.set_hexpand(True)
-
         self._entries: list[tuple[int, str]] = []
         self._rows: list[tuple[Gtk.ListBoxRow, int, str]] = []
-        self._updating = False
 
         self.button = Gtk.Button()
         self.button.set_hexpand(True)
@@ -51,9 +49,7 @@ class SourceSearchDropdown(Gtk.Box):
         self.search_entry.connect("search-changed", self._on_search_changed)
         self.search_entry.connect("activate", self._on_search_activate)
         panel.append(self.search_entry)
-
-        separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
-        panel.append(separator)
+        panel.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
 
         self.scrolled = Gtk.ScrolledWindow()
         self.scrolled.set_vexpand(True)
@@ -73,7 +69,6 @@ class SourceSearchDropdown(Gtk.Box):
         self.empty_label.add_css_class("dim-label")
         self.empty_label.set_visible(False)
         panel.append(self.empty_label)
-
         self._update_button_label()
 
     @staticmethod
@@ -81,11 +76,10 @@ class SourceSearchDropdown(Gtk.Box):
         return text.casefold().replace("ı", "i").replace("\u0307", "")
 
     def set_model(self, model: Gtk.StringList) -> None:
-        entries = []
-        for index in range(model.get_n_items()):
-            item = model.get_string(index)
-            entries.append((index, item))
-        self._entries = entries
+        self._entries = [
+            (index, model.get_string(index))
+            for index in range(model.get_n_items())
+        ]
         self._rebuild_rows()
 
     def get_selected(self) -> int:
@@ -114,8 +108,6 @@ class SourceSearchDropdown(Gtk.Box):
         self._rows.clear()
         for index, name in self._entries:
             row = Gtk.ListBoxRow()
-            row.set_activatable(True)
-            row.set_selectable(False)
             label = Gtk.Label(label=name)
             label.set_xalign(0)
             label.set_wrap(True)
@@ -143,11 +135,8 @@ class SourceSearchDropdown(Gtk.Box):
         self._apply_filter()
 
     def _on_search_activate(self, _entry: Gtk.SearchEntry) -> None:
-        # Enter only closes the search popover when there is a single result.
-        # It never changes the selected group automatically.
-        visible = [item for item in self._rows if item[0].get_visible()]
-        if len(visible) == 1:
-            visible[0][0].grab_focus()
+        # Enter performs only the search; it never selects a group.
+        self._apply_filter()
 
     def _on_row_activated(self, _row: Gtk.ListBoxRow, index: int) -> None:
         self.set_selected(index)
@@ -156,10 +145,10 @@ class SourceSearchDropdown(Gtk.Box):
     def _toggle_popover(self, _button: Gtk.Button) -> None:
         if self.popover.get_visible():
             self.popover.popdown()
-            return
-        self._apply_filter()
-        self.popover.popup()
-        self.search_entry.grab_focus()
+        else:
+            self._apply_filter()
+            self.popover.popup()
+            self.search_entry.grab_focus()
 
 
 class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
@@ -175,17 +164,23 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
 
         old_dropdown = self.source_dropdown
         parent = old_dropdown.get_parent()
+        previous = old_dropdown.get_prev_sibling() if parent is not None else None
         self.source_dropdown = SourceSearchDropdown()
-        self.source_dropdown.set_tooltip_text = lambda *_args: None
+        self.source_dropdown.connect("notify::selected", self._on_source_changed)
 
         if parent is not None:
             old_dropdown.unparent()
-            self.source_dropdown.insert_before(parent, parent.get_first_child().get_next_sibling())
+            if previous is not None:
+                self.source_dropdown.insert_after(parent, previous)
+            else:
+                parent.append(self.source_dropdown)
 
     def _load_sources(self) -> None:
         sources = self.db.sources()
         self.source_ids = [source_id for source_id, _name in sources]
-        self.source_dropdown.set_model(Gtk.StringList.new([name for _source_id, name in sources]))
+        self.source_dropdown.set_model(
+            Gtk.StringList.new([name for _source_id, name in sources])
+        )
         if sources:
             self.source_dropdown.set_selected(0)
 
