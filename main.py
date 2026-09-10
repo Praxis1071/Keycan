@@ -4,25 +4,168 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, GObject, Gtk
 
 import keycan.app as keycan_app
 import keycan.window as keycan_window
 from keycan.app import main
 
 
+class SourceSearchDropdown(Gtk.Box):
+    """A normal source chooser with search inside its opened popover."""
+
+    selected = GObject.Property(type=int, default=Gtk.INVALID_LIST_POSITION)
+
+    def __init__(self) -> None:
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
+        self.set_hexpand(True)
+
+        self._entries: list[tuple[int, str]] = []
+        self._rows: list[tuple[Gtk.ListBoxRow, int, str]] = []
+        self._updating = False
+
+        self.button = Gtk.Button()
+        self.button.set_hexpand(True)
+        self.button.set_halign(Gtk.Align.FILL)
+        self.button.connect("clicked", self._toggle_popover)
+        self.append(self.button)
+
+        self.popover = Gtk.Popover()
+        self.popover.set_has_arrow(False)
+        self.popover.set_autohide(True)
+        self.popover.set_position(Gtk.PositionType.BOTTOM)
+        self.popover.set_parent(self.button)
+
+        panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        panel.set_margin_top(8)
+        panel.set_margin_bottom(8)
+        panel.set_margin_start(8)
+        panel.set_margin_end(8)
+        panel.set_size_request(560, 420)
+        self.popover.set_child(panel)
+
+        self.search_entry = Gtk.SearchEntry()
+        self.search_entry.set_placeholder_text("Ders grubu ara…")
+        self.search_entry.set_hexpand(True)
+        self.search_entry.set_search_delay(100)
+        self.search_entry.connect("search-changed", self._on_search_changed)
+        self.search_entry.connect("activate", self._on_search_activate)
+        panel.append(self.search_entry)
+
+        separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        panel.append(separator)
+
+        self.scrolled = Gtk.ScrolledWindow()
+        self.scrolled.set_vexpand(True)
+        self.scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        panel.append(self.scrolled)
+
+        self.list_box = Gtk.ListBox()
+        self.list_box.set_selection_mode(Gtk.SelectionMode.NONE)
+        self.list_box.set_activate_on_single_click(True)
+        self.scrolled.set_child(self.list_box)
+
+        self.empty_label = Gtk.Label(label="Eşleşen ders grubu bulunamadı.")
+        self.empty_label.set_margin_top(16)
+        self.empty_label.set_margin_bottom(16)
+        self.empty_label.set_margin_start(12)
+        self.empty_label.set_margin_end(12)
+        self.empty_label.add_css_class("dim-label")
+        self.empty_label.set_visible(False)
+        panel.append(self.empty_label)
+
+        self._update_button_label()
+
+    @staticmethod
+    def _search_key(text: str) -> str:
+        return text.casefold().replace("ı", "i").replace("\u0307", "")
+
+    def set_model(self, model: Gtk.StringList) -> None:
+        entries = []
+        for index in range(model.get_n_items()):
+            item = model.get_string(index)
+            entries.append((index, item))
+        self._entries = entries
+        self._rebuild_rows()
+
+    def get_selected(self) -> int:
+        return int(self.selected)
+
+    def set_selected(self, index: int) -> None:
+        index = int(index)
+        if index != Gtk.INVALID_LIST_POSITION and not (0 <= index < len(self._entries)):
+            index = Gtk.INVALID_LIST_POSITION
+        if index == self.selected:
+            self._update_button_label()
+            return
+        self.selected = index
+        self._update_button_label()
+
+    def _update_button_label(self) -> None:
+        index = self.get_selected()
+        if 0 <= index < len(self._entries):
+            self.button.set_label(self._entries[index][1])
+        else:
+            self.button.set_label("Ders grubu seçin")
+
+    def _rebuild_rows(self) -> None:
+        while (child := self.list_box.get_first_child()) is not None:
+            self.list_box.remove(child)
+        self._rows.clear()
+        for index, name in self._entries:
+            row = Gtk.ListBoxRow()
+            row.set_activatable(True)
+            row.set_selectable(False)
+            label = Gtk.Label(label=name)
+            label.set_xalign(0)
+            label.set_wrap(True)
+            label.set_margin_top(7)
+            label.set_margin_bottom(7)
+            label.set_margin_start(8)
+            label.set_margin_end(8)
+            row.set_child(label)
+            row.connect("activate", self._on_row_activated, index)
+            self.list_box.append(row)
+            self._rows.append((row, index, name))
+        self._apply_filter()
+
+    def _apply_filter(self) -> None:
+        query = self._search_key(self.search_entry.get_text().strip())
+        visible_count = 0
+        for row, _index, name in self._rows:
+            visible = not query or query in self._search_key(name)
+            row.set_visible(visible)
+            if visible:
+                visible_count += 1
+        self.empty_label.set_visible(visible_count == 0)
+
+    def _on_search_changed(self, _entry: Gtk.SearchEntry) -> None:
+        self._apply_filter()
+
+    def _on_search_activate(self, _entry: Gtk.SearchEntry) -> None:
+        # Enter only closes the search popover when there is a single result.
+        # It never changes the selected group automatically.
+        visible = [item for item in self._rows if item[0].get_visible()]
+        if len(visible) == 1:
+            visible[0][0].grab_focus()
+
+    def _on_row_activated(self, _row: Gtk.ListBoxRow, index: int) -> None:
+        self.set_selected(index)
+        self.popover.popdown()
+
+    def _toggle_popover(self, _button: Gtk.Button) -> None:
+        if self.popover.get_visible():
+            self.popover.popdown()
+            return
+        self._apply_filter()
+        self.popover.popup()
+        self.search_entry.grab_focus()
+
+
 class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
     def __init__(self, app: Adw.Application, database_path):
-        self._all_source_entries = []
-        self._filtered_source_entries = []
-        self._current_source_id = None
-        self._updating_source_model = False
         super().__init__(app, database_path)
-
-        # Keycan starts maximized so the main workspace fills the screen.
         self.maximize()
-
-        # 22 is the default text size; the existing size control remains unchanged.
         self.text_size = 22
         self.size_spin.set_value(22)
         self._apply_text_size()
@@ -30,109 +173,26 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
     def _build_ui(self) -> None:
         super()._build_ui()
 
-        # Use an application-controlled search field instead of GTK DropDown's
-        # internal search. This keeps filtering deterministic on the GNOME 50
-        # runtime used by the Flatpak.
-        parent = self.source_dropdown.get_parent()
-        self.source_search = Gtk.SearchEntry()
-        self.source_search.set_placeholder_text("Ders grubu ara…")
-        self.source_search.set_tooltip_text(
-            "Ders gruplarının başında, ortasında veya sonunda arama yap"
-        )
-        self.source_search.set_width_chars(18)
-        self.source_search.set_hexpand(False)
-        self.source_search.set_search_delay(100)
-        self.source_search.connect("search-changed", self._on_source_search_changed)
-        self.source_search.connect("activate", self._on_source_search_activate)
+        old_dropdown = self.source_dropdown
+        parent = old_dropdown.get_parent()
+        self.source_dropdown = SourceSearchDropdown()
+        self.source_dropdown.set_tooltip_text = lambda *_args: None
 
         if parent is not None:
-            self.source_search.insert_after(parent, self.source_dropdown)
-
-    @staticmethod
-    def _source_search_key(text: str) -> str:
-        # Make Turkish I/İ/ı variants behave consistently while preserving
-        # normal Unicode case-insensitive matching for the rest of the text.
-        return text.casefold().replace("ı", "i").replace("\u0307", "")
+            old_dropdown.unparent()
+            self.source_dropdown.insert_before(parent, parent.get_first_child().get_next_sibling())
 
     def _load_sources(self) -> None:
-        self._all_source_entries = self.db.sources()
-        self._apply_source_filter(select_current=False)
-
-    def _apply_source_filter(self, select_current: bool = True) -> None:
-        query = self._source_search_key(self.source_search.get_text().strip())
-        if query:
-            filtered = [
-                (source_id, name)
-                for source_id, name in self._all_source_entries
-                if query in self._source_search_key(name)
-            ]
-        else:
-            filtered = list(self._all_source_entries)
-
-        self._filtered_source_entries = filtered
-        self.source_ids = [source_id for source_id, _name in filtered]
-
-        self._updating_source_model = True
-        try:
-            self.source_dropdown.set_model(
-                Gtk.StringList.new([name for _source_id, name in filtered])
-            )
-
-            if not filtered:
-                self.source_dropdown.set_selected(Gtk.INVALID_LIST_POSITION)
-            else:
-                selected_index = 0
-                if select_current and self._current_source_id is not None:
-                    for index, (source_id, _name) in enumerate(filtered):
-                        if source_id == self._current_source_id:
-                            selected_index = index
-                            break
-                self.source_dropdown.set_selected(selected_index)
-        finally:
-            self._updating_source_model = False
-
-        if not filtered:
-            self._current_source_id = None
-            self.lesson_ids = []
-            self.lesson_dropdown.set_model(Gtk.StringList.new([]))
-            self.current_lesson_id = None
-            self.current_text = ""
-            self._restart()
-            self.status.set_text("Eşleşen ders grubu bulunamadı.")
-            return
-
-        if not select_current or self._current_source_id is None:
-            source_id = filtered[0][0]
-        else:
-            source_id = filtered[selected_index][0]
-
-        if source_id != self._current_source_id:
-            self._current_source_id = source_id
-            self._load_lessons(source_id)
-
-    def _on_source_search_changed(self, _entry: Gtk.SearchEntry) -> None:
-        self._apply_source_filter(select_current=True)
-
-    def _on_source_search_activate(self, _entry: Gtk.SearchEntry) -> None:
-        # Enter selects the first matching group, so keyboard-only searching
-        # behaves exactly like clicking a result.
-        if self._filtered_source_entries:
+        sources = self.db.sources()
+        self.source_ids = [source_id for source_id, _name in sources]
+        self.source_dropdown.set_model(Gtk.StringList.new([name for _source_id, name in sources]))
+        if sources:
             self.source_dropdown.set_selected(0)
-            source_id = self._filtered_source_entries[0][0]
-            if source_id != self._current_source_id:
-                self._current_source_id = source_id
-                self._load_lessons(source_id)
 
-    def _on_source_changed(self, _dropdown: Gtk.DropDown, _param) -> None:
-        if self._updating_source_model:
-            return
-
+    def _on_source_changed(self, _dropdown: SourceSearchDropdown, _param) -> None:
         index = self.source_dropdown.get_selected()
-        if 0 <= index < len(self._filtered_source_entries):
-            source_id, _name = self._filtered_source_entries[index]
-            if source_id != self._current_source_id:
-                self._current_source_id = source_id
-                self._load_lessons(source_id)
+        if 0 <= index < len(self.source_ids):
+            self._load_lessons(self.source_ids[index])
 
 
 class SettingsWindow(Adw.Window):
@@ -180,42 +240,30 @@ class SettingsWindow(Adw.Window):
 
         about = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         about.set_valign(Gtk.Align.START)
-
         title = Gtk.Label(label="Keycan Hakkında")
         title.set_xalign(0)
         title.add_css_class("title-3")
         about.append(title)
-
-        description = Gtk.Label(
-            label="Keycan, Linux üzerinde on parmak yazma pratiği yapmayı kolaylaştırmak için geliştirilmiş, sade ve açık kaynaklı bir projedir."
-        )
+        description = Gtk.Label(label="Keycan, Linux üzerinde on parmak yazma pratiği yapmayı kolaylaştırmak için geliştirilmiş, sade ve açık kaynaklı bir projedir.")
         description.set_xalign(0)
         description.set_wrap(True)
         about.append(description)
-
         developer = Gtk.Label(label="Geliştirici: Praxis1071")
         developer.set_xalign(0)
         about.append(developer)
-
         github = Gtk.LinkButton(uri="https://github.com/Praxis1071", label="GitHub profili: github.com/Praxis1071")
         github.set_halign(Gtk.Align.START)
         about.append(github)
-
         youtube = Gtk.LinkButton(uri="https://www.youtube.com/@Praxis1071", label="YouTube kanalı: youtube.com/@Praxis1071")
         youtube.set_halign(Gtk.Align.START)
         about.append(youtube)
-
         website = Gtk.LinkButton(uri="https://ozcanbilgisayarkursu.com", label="Özcan Bilgisayar Kursu: ozcanbilgisayarkursu.com")
         website.set_halign(Gtk.Align.START)
         about.append(website)
-
-        thanks = Gtk.Label(
-            label="Keycan projesine verdiği destek ve katkıları için Malik Özcan Hocam'a teşekkür ederim."
-        )
+        thanks = Gtk.Label(label="Keycan projesine verdiği destek ve katkıları için Malik Özcan Hocam'a teşekkür ederim.")
         thanks.set_xalign(0)
         thanks.set_wrap(True)
         about.append(thanks)
-
         stack.add_titled(about, "about", "Hakkında")
         stack.set_visible_child_name("general")
 
