@@ -1,1 +1,0 @@
-This repository contains a temporary note only; do not use it as the code backup. The canonical pre-change commit is f1030cacd47387650d9ffc09d5b1a53613f59339.
