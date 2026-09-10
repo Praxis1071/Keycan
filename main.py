@@ -12,7 +12,7 @@ from keycan.app import main
 
 
 class SourceSearchDropdown(Gtk.Box):
-    """Normal source chooser with search inside its opened popover."""
+    """Source chooser with reliable substring search inside its popover."""
 
     def __init__(self) -> None:
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
@@ -25,7 +25,18 @@ class SourceSearchDropdown(Gtk.Box):
         self.button = Gtk.Button()
         self.button.set_hexpand(True)
         self.button.set_halign(Gtk.Align.FILL)
+        self.button.set_valign(Gtk.Align.CENTER)
         self.button.connect("clicked", self._toggle_popover)
+
+        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        button_box.set_hexpand(True)
+        button_box.set_halign(Gtk.Align.FILL)
+        self.button_label = Gtk.Label()
+        self.button_label.set_xalign(0)
+        self.button_label.set_hexpand(True)
+        button_box.append(self.button_label)
+        button_box.append(Gtk.Image.new_from_icon_name("pan-down-symbolic"))
+        self.button.set_child(button_box)
         self.append(self.button)
 
         self.popover = Gtk.Popover()
@@ -58,7 +69,6 @@ class SourceSearchDropdown(Gtk.Box):
 
         self.list_box = Gtk.ListBox()
         self.list_box.set_selection_mode(Gtk.SelectionMode.NONE)
-        self.list_box.set_activate_on_single_click(True)
         self.scrolled.set_child(self.list_box)
 
         self.empty_label = Gtk.Label(label="Eşleşen ders grubu bulunamadı.")
@@ -101,9 +111,9 @@ class SourceSearchDropdown(Gtk.Box):
     def _update_button_label(self) -> None:
         index = self.get_selected()
         if 0 <= index < len(self._entries):
-            self.button.set_label(self._entries[index][1])
+            self.button_label.set_text(self._entries[index][1])
         else:
-            self.button.set_label("Ders grubu seçin")
+            self.button_label.set_text("Ders grubu seçin")
 
     def _rebuild_rows(self) -> None:
         while (child := self.list_box.get_first_child()) is not None:
@@ -111,15 +121,22 @@ class SourceSearchDropdown(Gtk.Box):
         self._rows.clear()
         for index, name in self._entries:
             row = Gtk.ListBoxRow()
+            row.set_activatable(False)
+            button = Gtk.Button()
+            button.set_has_frame(False)
+            button.set_hexpand(True)
+            button.set_halign(Gtk.Align.FILL)
             label = Gtk.Label(label=name)
             label.set_xalign(0)
+            label.set_hexpand(True)
             label.set_wrap(True)
             label.set_margin_top(7)
             label.set_margin_bottom(7)
             label.set_margin_start(8)
             label.set_margin_end(8)
-            row.set_child(label)
-            row.connect("activate", self._on_row_activated, index)
+            button.set_child(label)
+            button.connect("clicked", self._on_row_clicked, index)
+            row.set_child(button)
             self.list_box.append(row)
             self._rows.append((row, index, name))
         self._apply_filter()
@@ -138,10 +155,10 @@ class SourceSearchDropdown(Gtk.Box):
         self._apply_filter()
 
     def _on_search_activate(self, _entry: Gtk.SearchEntry) -> None:
-        # Enter performs only the search; it never selects a group.
+        # Enter only performs the search; it never selects a result.
         self._apply_filter()
 
-    def _on_row_activated(self, _row: Gtk.ListBoxRow, index: int) -> None:
+    def _on_row_clicked(self, _button: Gtk.Button, index: int) -> None:
         self.set_selected(index)
         self.popover.popdown()
 
