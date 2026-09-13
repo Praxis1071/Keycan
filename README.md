@@ -2,11 +2,9 @@
 
 Keycan, Linux masaüstü sistemleri için geliştirilmiş modern ve kullanıcı dostu bir **on parmak klavye pratik uygulamasıdır**.
 
-Keycan ile farklı ders gruplarındaki metinleri seçebilir, çalışma süresini belirleyebilir ve yazma pratiği yapabilirsiniz. Uygulama temel kullanımda çevrimdışı çalışır ve verileri yerel SQLite veritabanında tutar.
+Keycan ile farklı ders gruplarındaki metinleri seçebilir, çalışma süresini belirleyebilir ve yazma pratiği yapabilirsiniz. Uygulama temel kullanımda çevrimdışı çalışır ve verileri yerel olarak saklar.
 
 ## 🚀 Geliştirme Yol Haritası
-
-Keycan'ın uzun vadeli hedefleri:
 
 ### ✅ Keycan 2.1.0
 
@@ -16,65 +14,69 @@ Keycan'ın uzun vadeli hedefleri:
 - Ders grubu arama
 - Ayarlar sistemi
 - Offline çalışma
-- SQLite tabanlı veri yönetimi
+
+### ⏳ GUI Yenileme ve Responsive Mimari
+
+Keycan'ın sade çalışma deneyimi korunarak daha güçlü bir arayüz altyapısı oluşturulacak.
+
+- Tüm monitörlerde uyumlu responsive tasarım
+- Modern GTK4/libadwaita düzeni
+- Yandan açılır navigasyon paneli
+- Çalışma, Dashboard, Kaynaklar, Başarılar ve Ayarlar bölümleri
+- Gelecek özelliklere hazır sayfa mimarisi
+
+### ⏳ Çalışma Alanı Geliştirmeleri
+
+Mevcut kullanıcı dostu çalışma ekranı korunacaktır.
+
+- Yazma hızı hesaplama
+- Sonuç ekranında hız bilgisi
+- Doğru, yanlış, toplam kelime ve hız verilerinin ileride Dashboard için kullanılması
 
 ### ⏳ Keycan 2.2.x — Kullanıcı Özelleştirme
 
 - Opsiyonel geri tuşu devre dışı bırakma seçeneği
 - Kullanıcı veritabanı desteği
-  - Hazır veritabanı yükleme
-  - Uygulama içinden yeni veritabanı oluşturma
-  - Veritabanına isim verme
-  - Kopyala-yapıştır ile içerik ekleme
-  - Kullanıcının kendi derslerini oluşturabilmesi
+- Hazır veritabanı yükleme
+- Uygulama içinden veritabanı oluşturma
+- Kullanıcının kendi metinlerini oluşturabilmesi
 
-### ⏳ Keycan 2.3.x — Dashboard ve İlerleme Sistemi
+### ⏳ Dashboard ve İlerleme Sistemi
 
-- Kullanıcı çalışma geçmişi
-- Günlük/haftalık/aylık grafikler
-- Toplam kelime, doğru ve yanlış analizleri
-- Çalışma süresi takibi
-- Kullanıcı gelişim raporları
+- Çalışma geçmişi
+- Grafikler
+- İstatistikler
+- Ortalama hız takibi
+- Doğru/yanlış/toplam kelime analizleri
 
 ### ⏳ XP, Seviye ve Rozet Sistemi
 
-- Çalışma performansına göre XP kazanımı
+- Performansa göre XP
 - Seviye sistemi
 - Başarı rozetleri
-- Kullanıcının gelişimini takip eden motivasyon sistemi
-
-### ⏳ Kullanıcı Dostu Geliştirmeler
-
-- Tema sistemi
-- Veri yedekleme ve geri yükleme
-- Çalışma takvimi
-- Odak/Pomodoro modu
-- Kullanıcı profili
 
 ### 🔮 Keycan 3.0 — Katiplik Sistemi
 
 - Katiplik sınavına yönelik özel çalışma modu
-- Sınav mantığına uygun değerlendirme sistemi
-- Profesyonel sınav deneyimi
+- Sınav deneyimine uygun değerlendirme sistemi
 
-Detaylı roadmap için: [ROADMAP.md](ROADMAP.md)
+Detaylı roadmap: [ROADMAP.md](ROADMAP.md)
 
 ## ✨ Özellikler
 
-- **On Parmak Klavye Pratiği** — Kelime ve cümlelerden oluşan ders metinleriyle pratik.
-- **Ders ve Metin Seçimi** — Kaynaklara göre düzenlenmiş ders grupları.
-- **Ders Grubu Arama** — Ders grubu adları içinde arama yaparak istediğiniz kaynağa hızlıca ulaşabilirsiniz.
-- **Ayarlanabilir Süre** — Çalışma süresi 1–180 dakika arasında seçilebilir.
-- **Doğru / Yanlış Sonuçları** — Süre sonunda yazılan kelimeler sonuç olarak renklendirilir.
-- **Büyük/Küçük Harf Bağımsızlığı** — Kelime karşılaştırmasında harf büyüklüğü önemsenmez.
-- **Noktalama İşaretlerini Yok Sayma** — Kelime eşleştirmesinde noktalama işaretleri zorunlu değildir.
-- **Karışık Sırada Yazma** — Kelimelerin metindeki sırasını takip etmek zorunlu değildir.
-- **Metin Boyutu** — Ders ve yazma alanlarının yazı boyutu ayarlanabilir.
-- **Yazım Metnini Karart** — Yazarken kendi yazdığınız metni gizleyerek yalnızca hedef metne odaklanabilirsiniz.
-- **Yerel SQLite Veritabanı** — Dersler ve çalışma sonuçları yerel olarak saklanır.
-- **Çevrimdışı Kullanım** — Temel uygulama kullanımı internet bağlantısı gerektirmez.
-- **GTK4 + libadwaita** — Modern Linux masaüstü arayüzü.
-- **Flatpak** — Linux dağıtımları için izole ve taşınabilir paketleme.
+- On Parmak Klavye Pratiği
+- Ders ve Metin Seçimi
+- Ders Grubu Arama
+- Ayarlanabilir Süre
+- Doğru / Yanlış Sonuçları
+- Büyük/Küçük Harf Bağımsızlığı
+- Noktalama İşaretlerini Yok Sayma
+- Karışık Sırada Yazma
+- Metin Boyutu Ayarı
+- Yerel veri yönetimi
+- Çevrimdışı kullanım
+- GTK4 + libadwaita
+- Flatpak desteği
 
 ## 🛠️ Teknolojiler
 
@@ -84,4 +86,4 @@ Detaylı roadmap için: [ROADMAP.md](ROADMAP.md)
 - PyGObject
 - SQLite
 - Flatpak
-- GNOME Platform 50
+- GNOME Platform
