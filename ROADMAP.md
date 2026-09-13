@@ -2,9 +2,8 @@
 
 Keycan'ın uzun vadeli geliştirme planı.
 
-## Completed
+## ✅ Keycan 2.1.0 — Mevcut Sürüm
 
-### Keycan 2.1.0
 - GTK4 + libadwaita modern arayüz
 - Flatpak desteği
 - Ders ve kaynak sistemi
@@ -13,7 +12,53 @@ Keycan'ın uzun vadeli geliştirme planı.
 - Offline çalışma
 - SQLite tabanlı veri yönetimi
 
-## Keycan 2.2.x — Kullanıcı Özelleştirme
+---
+
+# ⏳ Keycan GUI Yenileme — Responsive Mimari
+
+Amaç: Mevcut sade çalışma deneyimini koruyarak tüm monitörlerde çalışan, gelecekteki özelliklere hazır modern bir arayüz altyapısı oluşturmak.
+
+## Yapılacaklar
+
+- Responsive pencere ve widget düzeni
+- Farklı çözünürlüklerde taşma sorunlarının çözülmesi
+- GTK4/libadwaita standartlarına daha uygun yapı
+- HeaderBar tabanlı modern üst yapı
+- Yandan açılır navigasyon paneli (sidebar/drawer)
+- Sayfa tabanlı uygulama mimarisi
+
+## Navigasyon Yapısı
+
+- ⌨ Çalışma
+- 📊 Dashboard
+- 📚 Kaynaklar
+- 🏆 Başarılar
+- ⚙ Ayarlar
+- ℹ Hakkında
+
+---
+
+# ⏳ Keycan Çalışma Alanı Geliştirmeleri
+
+Mevcut çalışma alanının sade ve kullanıcı dostu yapısı korunacaktır.
+
+Korunacak yapı:
+
+- Üst kontrol bölümü
+- Kaynak metin alanı
+- Kullanıcı yazma alanı
+- Alt sonuç bölümü
+
+## Yeni geliştirmeler
+
+- Yazma hızı hesaplama
+- Süre sonunda hız bilgisini sonuçlara ekleme
+- Doğru, yanlış, toplam kelime ve hız verilerini kaydetme
+- Gelecekte Dashboard için çalışma verisi altyapısı oluşturma
+
+---
+
+# ⏳ Keycan 2.2.x — Kullanıcı Özelleştirme
 
 - Opsiyonel geri tuşu devre dışı bırakma seçeneği
 - Kullanıcı veritabanı sistemi
@@ -23,34 +68,43 @@ Keycan'ın uzun vadeli geliştirme planı.
   - Kopyala-yapıştır ile metin ekleme
   - Kullanıcının kendi metnini yazabilmesi
 
-## Keycan 2.3.x — Kullanıcı İlerlemesi ve Dashboard
+---
+
+# ⏳ Keycan 2.3.x — Kullanıcı İlerlemesi ve Dashboard
 
 - Çalışma geçmişi
 - Günlük/haftalık/aylık istatistikler
 - Grafikler
 - Toplam kelime, doğru/yanlış analizleri
-- Çalışma süresi takibi
+- Ortalama hız takibi
+- Gelişim raporları
 
-## XP, Seviye ve Rozet Sistemi
+---
 
-- Kullanıcı ilerlemesine göre XP kazanımı
+# ⏳ XP, Seviye ve Rozet Sistemi
+
+- Çalışma performansına göre XP kazanımı
 - Seviye sistemi
 - Başarı rozetleri
-- Toplam kelime, doğru kelime, çalışma süresi ve düzenli çalışma üzerinden ilerleme
+- Düzenli çalışma motivasyonu
 
-## Kullanıcı Dostu Geliştirmeler
+---
+
+# ⏳ Kullanıcı Dostu Geliştirmeler
 
 - Tema sistemi
+- Dil sistemi (varsayılan Türkçe, opsiyonel İngilizce)
 - Veri yedekleme ve geri yükleme
 - Çalışma takvimi
 - Odak/Pomodoro modu
 - Kullanıcı profili
 
-## Keycan 3.0 — Katiplik Sistemi
+---
 
-- Katiplik sınavına yönelik çalışma sistemi
-- Sınav modu
-- Özel değerlendirme mantığı
+# 🔮 Keycan 3.0 — Katiplik Sistemi
+
+- Katiplik sınavına yönelik çalışma modu
+- Sınav mantığına uygun değerlendirme
 - Profesyonel sınav deneyimi
 
-Bu roadmap zaman içerisinde kullanıcı geri bildirimleri ve teknik gereksinimlere göre güncellenebilir.
+Bu roadmap kullanıcı geri bildirimleri ve teknik gereksinimlere göre güncellenebilir.
