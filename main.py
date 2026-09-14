@@ -51,84 +51,94 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
 
         split_view = Adw.OverlaySplitView()
         split_view.set_sidebar_position(Gtk.PackType.START)
-        split_view.set_min_sidebar_width(280)
-        split_view.set_max_sidebar_width(360)
-        split_view.set_sidebar_width_fraction(0.30)
+        split_view.set_min_sidebar_width(260)
+        split_view.set_max_sidebar_width(340)
+        split_view.set_sidebar_width_fraction(0.25)
         split_view.set_show_sidebar(False)
         split_view.set_enable_show_gesture(True)
         split_view.set_enable_hide_gesture(True)
 
-        sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        sidebar.add_css_class("keycan-sidebar")
-        sidebar_provider = Gtk.CssProvider()
-        sidebar_provider.load_from_data(
-            ".keycan-sidebar { background: #202124; color: #eeeeee; }"
-            ".keycan-sidebar label { color: #eeeeee; }",
-            -1,
-        )
-        sidebar.get_style_context().add_provider(
-            sidebar_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-        )
+        # Settings lives in a utility pane below the shared window header bar.
+        # The structure is ready for future Dashboard/Profile pages without
+        # changing the main typing workspace.
+        sidebar_toolbar = Adw.ToolbarView()
+        sidebar_toolbar.set_top_bar_style(Adw.ToolbarStyle.FLAT)
 
-        sidebar_header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        sidebar_header.set_margin_top(12)
-        sidebar_header.set_margin_bottom(8)
-        sidebar_header.set_margin_start(12)
-        sidebar_header.set_margin_end(12)
-        title = Gtk.Label(label="Keycan")
-        title.set_xalign(0)
-        title.set_hexpand(True)
-        title.add_css_class("title-3")
-        sidebar_header.append(title)
+        sidebar_header = Adw.HeaderBar()
+        sidebar_title = Gtk.Label(label="Keycan")
+        sidebar_title.add_css_class("title-3")
+        sidebar_header.set_title_widget(sidebar_title)
+        sidebar_toolbar.add_top_bar(sidebar_header)
 
-        close_button = Gtk.Button()
-        close_button.set_icon_name("sidebar-hide-symbolic")
-        close_button.set_tooltip_text("Paneli kapat")
-        close_button.add_css_class("flat")
-        close_button.connect("clicked", lambda _button: split_view.set_show_sidebar(False))
-        sidebar_header.append(close_button)
-        sidebar.append(sidebar_header)
-        sidebar.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
+        sidebar_body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        sidebar_body.set_margin_top(12)
+        sidebar_body.set_margin_start(12)
+        sidebar_body.set_margin_end(12)
+        sidebar_body.set_margin_bottom(12)
 
-        nav = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        nav.set_margin_top(10)
-        nav.set_margin_start(12)
-        nav.set_margin_end(12)
-        settings_button = Gtk.ToggleButton(label="⚙  Ayarlar")
-        settings_button.set_active(True)
-        settings_button.set_hexpand(True)
-        nav.append(settings_button)
-        sidebar.append(nav)
+        navigation = Gtk.ListBox()
+        navigation.add_css_class("navigation-sidebar")
+        navigation.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        navigation.set_activate_on_single_click(True)
+        navigation.set_show_separators(False)
 
+        settings_row = Gtk.ListBoxRow()
+        settings_row.set_activatable(True)
+        settings_row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        settings_icon = Gtk.Image.new_from_icon_name("emblem-system-symbolic")
+        settings_icon.set_pixel_size(18)
+        settings_row_box.append(settings_icon)
+        settings_label = Gtk.Label(label="Ayarlar")
+        settings_label.set_xalign(0)
+        settings_row_box.append(settings_label)
+        settings_row.set_child(settings_row_box)
+        navigation.append(settings_row)
+        navigation.select_row(settings_row)
+        sidebar_body.append(navigation)
+
+        settings_scroll = Gtk.ScrolledWindow()
+        settings_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        settings_scroll.set_vexpand(True)
         settings_panel = SettingsPanel(self)
-        settings_panel.set_vexpand(True)
-        sidebar.append(settings_panel)
+        settings_panel.set_margin_top(0)
+        settings_panel.set_margin_bottom(0)
+        settings_panel.set_margin_start(8)
+        settings_panel.set_margin_end(8)
+        settings_scroll.set_child(settings_panel)
+        sidebar_body.append(settings_scroll)
 
-        split_view.set_sidebar(sidebar)
+        sidebar_toolbar.set_content(sidebar_body)
+        split_view.set_sidebar(sidebar_toolbar)
 
         # The existing root is already owned by the ToolbarView. Detach it
-        # before assigning it to the split view so GTK4 does not reject the
-        # reparenting and leave the window with an empty content area.
+        # before assigning it to the split view to preserve the main content.
         toolbar.set_content(None)
         split_view.set_content(root)
         toolbar.set_content(split_view)
         self.sidebar_view = split_view
 
         self.settings_button.set_visible(False)
-        controls = root.get_first_child()
-        if isinstance(controls, Gtk.Box):
-            panel_button = Gtk.Button()
-            panel_button.set_icon_name("sidebar-show-symbolic")
-            panel_button.set_tooltip_text("Yan panel")
-            panel_button.add_css_class("flat")
-            panel_button.connect(
-                "clicked",
-                lambda _button: split_view.set_show_sidebar(not split_view.get_show_sidebar()),
-            )
-            controls.prepend(panel_button)
 
-        breakpoint = Adw.Breakpoint.new(Adw.BreakpointCondition.parse("max-width: 900sp"))
+        # The sidebar toggle belongs in the shared header bar, not in the
+        # lesson controls row. This keeps the typing workspace unchanged.
+        show_sidebar_button = Gtk.ToggleButton()
+        show_sidebar_button.set_icon_name("sidebar-show-symbolic")
+        show_sidebar_button.set_tooltip_text("Yan paneli aç/kapat")
+        show_sidebar_button.connect(
+            "toggled",
+            lambda button: split_view.set_show_sidebar(button.get_active()),
+        )
+        split_view.connect(
+            "notify::show-sidebar",
+            lambda view, _param: show_sidebar_button.set_active(view.get_show_sidebar()),
+        )
+        header = toolbar.get_first_child()
+        if isinstance(header, Adw.HeaderBar):
+            header.pack_start(show_sidebar_button)
+
+        breakpoint = Adw.Breakpoint.new(
+            Adw.BreakpointCondition.parse("max-width: 900sp")
+        )
         breakpoint.add_setter(split_view, "collapsed", True)
         self.add_breakpoint(breakpoint)
 
