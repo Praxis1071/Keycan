@@ -58,18 +58,8 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         split_view.set_enable_show_gesture(True)
         split_view.set_enable_hide_gesture(True)
 
-        # Settings lives in a utility pane below the shared window header bar.
-        # The structure is ready for future Dashboard/Profile pages without
-        # changing the main typing workspace.
-        sidebar_toolbar = Adw.ToolbarView()
-        sidebar_toolbar.set_top_bar_style(Adw.ToolbarStyle.FLAT)
-
-        sidebar_header = Adw.HeaderBar()
-        sidebar_title = Gtk.Label(label="Keycan")
-        sidebar_title.add_css_class("title-3")
-        sidebar_header.set_title_widget(sidebar_title)
-        sidebar_toolbar.add_top_bar(sidebar_header)
-
+        # This is a utility pane rather than a second window. Keep it below
+        # the shared header bar and leave the typing workspace untouched.
         sidebar_body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         sidebar_body.set_margin_top(12)
         sidebar_body.set_margin_start(12)
@@ -107,8 +97,7 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         settings_scroll.set_child(settings_panel)
         sidebar_body.append(settings_scroll)
 
-        sidebar_toolbar.set_content(sidebar_body)
-        split_view.set_sidebar(sidebar_toolbar)
+        split_view.set_sidebar(sidebar_body)
 
         # The existing root is already owned by the ToolbarView. Detach it
         # before assigning it to the split view to preserve the main content.
@@ -119,8 +108,8 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
 
         self.settings_button.set_visible(False)
 
-        # The sidebar toggle belongs in the shared header bar, not in the
-        # lesson controls row. This keeps the typing workspace unchanged.
+        # GNOME's utility-pane pattern places the toggle in the shared header,
+        # keeping the lesson controls stable and close to the typing workspace.
         show_sidebar_button = Gtk.ToggleButton()
         show_sidebar_button.set_icon_name("sidebar-show-symbolic")
         show_sidebar_button.set_tooltip_text("Yan paneli aç/kapat")
