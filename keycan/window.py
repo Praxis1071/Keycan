@@ -64,8 +64,10 @@ class KeycanWindow(Adw.ApplicationWindow):
 
     def _build_ui(self) -> None:
         toolbar = Adw.ToolbarView()
+        toolbar.set_top_bar_style(Adw.ToolbarStyle.FLAT)
         header = Adw.HeaderBar()
         header.add_css_class("keycan-header")
+        self.header = header
         toolbar.add_top_bar(header)
         root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         root.add_css_class("keycan-content")
