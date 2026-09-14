@@ -120,7 +120,9 @@ class KeycanWindow(Adw.ApplicationWindow):
         controls.append(spacer)
         controls.append(self.settings_button)
 
-        narrow_breakpoint = Adw.Breakpoint.new("max-width: 900sp")
+        narrow_breakpoint = Adw.Breakpoint.new(
+            Adw.BreakpointCondition.parse("max-width: 900sp")
+        )
         narrow_breakpoint.add_setter(controls, "spacing", 4)
         narrow_breakpoint.add_setter(self.lesson_dropdown, "width-request", 120)
         self.add_breakpoint(narrow_breakpoint)
@@ -303,9 +305,8 @@ class KeycanWindow(Adw.ApplicationWindow):
         green = self._get_tag(buffer, "correct-input", "#16803c")
         red = self._get_tag(buffer, "wrong-input", "#e01b24")
         base.set_priority(0)
-        priority = buffer.get_tag_table().get_size() - 1
-        green.set_priority(priority)
-        red.set_priority(priority)
+        green.set_priority(buffer.get_tag_table().get_size() - 1)
+        red.set_priority(buffer.get_tag_table().get_size() - 1)
         buffer.apply_tag(base, start, end)
         for match, ok in zip(WORD_PATTERN.finditer(self.typed), correctness):
             buffer.apply_tag(green if ok else red, buffer.get_iter_at_offset(match.start()), buffer.get_iter_at_offset(match.end()))
