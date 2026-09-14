@@ -132,9 +132,7 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
             "notify::show-sidebar",
             lambda view, _param: show_sidebar_button.set_active(view.get_show_sidebar()),
         )
-        header = toolbar.get_first_child()
-        if isinstance(header, Adw.HeaderBar):
-            header.pack_start(show_sidebar_button)
+        self.header.pack_start(show_sidebar_button)
 
         breakpoint = Adw.Breakpoint.new(
             Adw.BreakpointCondition.parse("max-width: 900sp")
