@@ -3,7 +3,8 @@
 import gi
 
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk
+gi.require_version("Pango", "1.0")
+from gi.repository import Gtk, Pango
 
 
 class SourceSearchDropdown(Gtk.Box):
@@ -35,6 +36,8 @@ class SourceSearchDropdown(Gtk.Box):
         self.button_label.set_xalign(0)
         self.button_label.set_halign(Gtk.Align.FILL)
         self.button_label.set_hexpand(True)
+        self.button_label.set_single_line_mode(True)
+        self.button_label.set_ellipsize(Pango.EllipsizeMode.END)
         button_box.append(self.button_label)
         arrow = Gtk.Image.new_from_icon_name("pan-down-symbolic")
         arrow.set_halign(Gtk.Align.END)
