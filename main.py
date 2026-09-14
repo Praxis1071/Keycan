@@ -123,8 +123,10 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         )
         self.header.pack_start(show_sidebar_button)
 
+        # Collapse early enough that the lesson controls never get squeezed
+        # between the utility pane and the window edge on 1024px-class displays.
         breakpoint = Adw.Breakpoint.new(
-            Adw.BreakpointCondition.parse("max-width: 900sp")
+            Adw.BreakpointCondition.parse("max-width: 1050sp")
         )
         breakpoint.add_setter(split_view, "collapsed", True)
         self.add_breakpoint(breakpoint)
