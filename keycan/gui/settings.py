@@ -1,11 +1,12 @@
-"""Settings page for Keycan's sidebar."""
+"""Settings surfaces for Keycan's GUI layer."""
 
 from __future__ import annotations
 
 import gi
 
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk
+gi.require_version("Adw", "1")
+from gi.repository import Adw, Gtk
 
 
 class SettingsPanel(Gtk.Box):
@@ -71,3 +72,16 @@ class SettingsPanel(Gtk.Box):
     def _on_privacy_changed(self, switch: Gtk.Switch, _param) -> None:
         self.parent_window.privacy_enabled = switch.get_active()
         self.parent_window._apply_privacy_state()
+
+
+class SettingsWindow(Adw.Window):
+    """Compatibility wrapper kept while Settings moves into the sidebar."""
+
+    def __init__(self, parent: Gtk.Widget) -> None:
+        super().__init__(transient_for=parent, modal=True, title="Ayarlar")
+        self.set_default_size(460, 360)
+        self.set_size_request(360, 280)
+        toolbar = Adw.ToolbarView()
+        toolbar.add_top_bar(Adw.HeaderBar())
+        toolbar.set_content(SettingsPanel(parent))
+        self.set_content(toolbar)
