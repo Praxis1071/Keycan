@@ -10,6 +10,7 @@ import keycan.app as keycan_app
 import keycan.window as keycan_window
 from keycan.app import main
 from keycan.gui.search import SourceSearchDropdown
+from keycan.gui.settings import SettingsPanel
 
 
 class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
@@ -38,6 +39,86 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
             else:
                 parent.append(self.source_dropdown)
 
+        self._install_sidebar()
+
+    def _install_sidebar(self) -> None:
+        toolbar = self.get_content()
+        if not isinstance(toolbar, Adw.ToolbarView):
+            return
+        root = toolbar.get_content()
+        if root is None:
+            return
+
+        split_view = Adw.OverlaySplitView()
+        split_view.set_sidebar_position(Gtk.PackType.START)
+        split_view.set_min_sidebar_width(280)
+        split_view.set_max_sidebar_width(360)
+        split_view.set_sidebar_width_fraction(0.30)
+        split_view.set_show_sidebar(False)
+        split_view.set_enable_show_gesture(True)
+        split_view.set_enable_hide_gesture(True)
+
+        sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        sidebar.add_css_class("keycan-sidebar")
+
+        sidebar_header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        sidebar_header.set_margin_top(12)
+        sidebar_header.set_margin_bottom(8)
+        sidebar_header.set_margin_start(12)
+        sidebar_header.set_margin_end(12)
+        title = Gtk.Label(label="Keycan")
+        title.set_xalign(0)
+        title.set_hexpand(True)
+        title.add_css_class("title-3")
+        sidebar_header.append(title)
+
+        close_button = Gtk.Button()
+        close_button.set_icon_name("sidebar-hide-symbolic")
+        close_button.set_tooltip_text("Paneli kapat")
+        close_button.add_css_class("flat")
+        close_button.connect("clicked", lambda _button: split_view.set_show_sidebar(False))
+        sidebar_header.append(close_button)
+        sidebar.append(sidebar_header)
+        sidebar.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
+
+        nav = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        nav.set_margin_top(10)
+        nav.set_margin_start(12)
+        nav.set_margin_end(12)
+        settings_button = Gtk.ToggleButton(label="⚙  Ayarlar")
+        settings_button.set_active(True)
+        settings_button.set_hexpand(True)
+        nav.append(settings_button)
+        sidebar.append(nav)
+
+        settings_panel = SettingsPanel(self)
+        settings_panel.set_vexpand(True)
+        sidebar.append(settings_panel)
+
+        split_view.set_sidebar(sidebar)
+        split_view.set_content(root)
+        toolbar.set_content(split_view)
+        self.sidebar_view = split_view
+
+        self.settings_button.set_visible(False)
+        controls = self.workspace.get_parent().get_parent()
+        if isinstance(controls, Gtk.Paned):
+            controls = controls.get_parent()
+        if isinstance(controls, Gtk.Box):
+            panel_button = Gtk.Button()
+            panel_button.set_icon_name("sidebar-show-symbolic")
+            panel_button.set_tooltip_text("Yan panel")
+            panel_button.add_css_class("flat")
+            panel_button.connect(
+                "clicked",
+                lambda _button: split_view.set_show_sidebar(not split_view.get_show_sidebar()),
+            )
+            controls.prepend(panel_button)
+
+        breakpoint = Adw.Breakpoint.new(Adw.BreakpointCondition.parse("max-width: 900sp"))
+        breakpoint.add_setter(split_view, "collapsed", True)
+        self.add_breakpoint(breakpoint)
+
     def _load_sources(self) -> None:
         sources = self.db.sources()
         self.source_ids = [i for i, _ in sources]
@@ -51,84 +132,6 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
             self._load_lessons(self.source_ids[index])
 
 
-class SettingsWindow(Adw.Window):
-    def __init__(self, parent: "keycan_window.KeycanWindow") -> None:
-        super().__init__(transient_for=parent, modal=True, title="Ayarlar")
-        self.parent_window = parent
-        self.set_default_size(460, 360)
-        self.set_size_request(360, 280)
-
-        toolbar = Adw.ToolbarView()
-        toolbar.add_top_bar(Adw.HeaderBar())
-        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=18)
-        for margin in ("top", "bottom", "start", "end"):
-            getattr(content, f"set_margin_{margin}")(24)
-        toolbar.set_content(content)
-        self.set_content(toolbar)
-
-        stack = Gtk.Stack()
-        stack.set_vexpand(True)
-        switcher = Gtk.StackSwitcher()
-        switcher.set_stack(stack)
-        switcher.set_halign(Gtk.Align.CENTER)
-        content.append(switcher)
-        content.append(stack)
-
-        general = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        general.set_valign(Gtk.Align.START)
-        details = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
-        label = Gtk.Label(label="Yazım metnini karart")
-        label.set_xalign(0)
-        label.set_hexpand(True)
-        details.append(label)
-        description = Gtk.Label(label="Yazarken kendi yazdığın metni gizler; süre bitince sonuçları gösterir.")
-        description.set_xalign(0)
-        description.set_wrap(True)
-        description.add_css_class("dim-label")
-        details.append(description)
-        general.append(details)
-        self.privacy_switch = Gtk.Switch()
-        self.privacy_switch.set_valign(Gtk.Align.CENTER)
-        self.privacy_switch.set_active(parent.privacy_enabled)
-        self.privacy_switch.connect("notify::active", self._on_privacy_changed)
-        general.append(self.privacy_switch)
-        stack.add_titled(general, "general", "Genel")
-
-        about = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        about.set_valign(Gtk.Align.START)
-        title = Gtk.Label(label="Keycan Hakkında")
-        title.set_xalign(0)
-        title.add_css_class("title-3")
-        about.append(title)
-        description = Gtk.Label(label="Keycan, Linux üzerinde on parmak yazma pratiği yapmayı kolaylaştırmak için geliştirilmiş, sade ve açık kaynaklı bir projedir.")
-        description.set_xalign(0)
-        description.set_wrap(True)
-        about.append(description)
-        developer = Gtk.Label(label="Geliştirici: Praxis1071")
-        developer.set_xalign(0)
-        about.append(developer)
-        github = Gtk.LinkButton(uri="https://github.com/Praxis1071", label="GitHub profili: github.com/Praxis1071")
-        github.set_halign(Gtk.Align.START)
-        about.append(github)
-        youtube = Gtk.LinkButton(uri="https://www.youtube.com/@Praxis1071", label="YouTube kanalı: youtube.com/@Praxis1071")
-        youtube.set_halign(Gtk.Align.START)
-        about.append(youtube)
-        website = Gtk.LinkButton(uri="https://ozcanbilgisayarkursu.com", label="Özcan Bilgisayar Kursu: ozcanbilgisayarkursu.com")
-        website.set_halign(Gtk.Align.START)
-        about.append(website)
-        thanks = Gtk.Label(label="Keycan projesine verdiği destek ve katkıları için Malik Özcan Hocam'a teşekkür ederim.")
-        thanks.set_xalign(0)
-        thanks.set_wrap(True)
-        about.append(thanks)
-        stack.add_titled(about, "about", "Hakkında")
-        stack.set_visible_child_name("general")
-
-    def _on_privacy_changed(self, switch: Gtk.Switch, _param) -> None:
-        self.parent_window.privacy_enabled = switch.get_active()
-        self.parent_window._apply_privacy_state()
-
-
-keycan_window.SettingsWindow = SettingsWindow
 keycan_window.KeycanWindow = ConfiguredKeycanWindow
 keycan_app.KeycanWindow = ConfiguredKeycanWindow
 
