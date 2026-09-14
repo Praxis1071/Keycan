@@ -39,9 +39,9 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
             else:
                 parent.append(self.source_dropdown)
 
-        self._install_sidebar()
+        self._install_sidebar_navigation()
 
-    def _install_sidebar(self) -> None:
+    def _install_sidebar_navigation(self) -> None:
         toolbar = self.get_content()
         if not isinstance(toolbar, Adw.ToolbarView):
             return
@@ -49,7 +49,10 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         if not isinstance(root, Gtk.Box):
             return
 
+        # The sidebar is deliberately always collapsed: this makes it a true
+        # overlay/drawer, so opening it can never reduce the typing workspace.
         split_view = Adw.OverlaySplitView()
+        split_view.set_collapsed(True)
         split_view.set_sidebar_position(Gtk.PackType.START)
         split_view.set_min_sidebar_width(260)
         split_view.set_max_sidebar_width(340)
@@ -58,58 +61,69 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         split_view.set_enable_show_gesture(True)
         split_view.set_enable_hide_gesture(True)
 
-        # This is a utility pane rather than a second window. Keep it below
-        # the shared header bar and leave the typing workspace untouched.
-        sidebar_body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        sidebar_body.set_margin_top(12)
-        sidebar_body.set_margin_start(12)
-        sidebar_body.set_margin_end(12)
-        sidebar_body.set_margin_bottom(12)
-
         navigation = Gtk.ListBox()
         navigation.add_css_class("navigation-sidebar")
         navigation.set_selection_mode(Gtk.SelectionMode.SINGLE)
         navigation.set_activate_on_single_click(True)
         navigation.set_show_separators(False)
+        navigation.set_margin_top(12)
+        navigation.set_margin_start(12)
+        navigation.set_margin_end(12)
+        navigation.set_margin_bottom(12)
+        navigation.set_vexpand(True)
 
-        settings_row = Gtk.ListBoxRow()
-        settings_row.set_activatable(True)
-        settings_row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        settings_icon = Gtk.Image.new_from_icon_name("emblem-system-symbolic")
-        settings_icon.set_pixel_size(18)
-        settings_row_box.append(settings_icon)
-        settings_label = Gtk.Label(label="Ayarlar")
-        settings_label.set_xalign(0)
-        settings_row_box.append(settings_label)
-        settings_row.set_child(settings_row_box)
+        workspace_row = self._make_navigation_row(
+            "Çalışma Alanı",
+            "keyboard-symbolic",
+            "workspace",
+        )
+        settings_row = self._make_navigation_row(
+            "Ayarlar",
+            "emblem-system-symbolic",
+            "settings",
+        )
+        navigation.append(workspace_row)
         navigation.append(settings_row)
-        navigation.select_row(settings_row)
-        sidebar_body.append(navigation)
+        navigation.select_row(workspace_row)
 
-        settings_scroll = Gtk.ScrolledWindow()
-        settings_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        settings_scroll.set_vexpand(True)
-        settings_panel = SettingsPanel(self)
-        settings_panel.set_margin_top(0)
-        settings_panel.set_margin_bottom(0)
-        settings_panel.set_margin_start(8)
-        settings_panel.set_margin_end(8)
-        settings_scroll.set_child(settings_panel)
-        sidebar_body.append(settings_scroll)
+        # The main root remains intact as the existing typing workspace page.
+        # Gtk.Stack then provides the future page-based navigation boundary.
+        content_stack = Gtk.Stack()
+        content_stack.set_hexpand(True)
+        content_stack.set_vexpand(True)
+        content_stack.add_named(root, "workspace")
 
-        split_view.set_sidebar(sidebar_body)
+        settings_page = SettingsPanel(self)
+        settings_page.set_hexpand(True)
+        settings_page.set_vexpand(True)
+        content_stack.add_named(settings_page, "settings")
+        content_stack.set_visible_child_name("workspace")
 
-        # The existing root is already owned by the ToolbarView. Detach it
-        # before assigning it to the split view to preserve the main content.
+        def on_navigation_activated(_list_box: Gtk.ListBox, row: Gtk.ListBoxRow) -> None:
+            page_name = row.get_name()
+            if page_name not in {"workspace", "settings"}:
+                return
+            content_stack.set_visible_child_name(page_name)
+            split_view.set_show_sidebar(False)
+
+        navigation.connect("row-activated", on_navigation_activated)
+        workspace_row.set_name("workspace")
+        settings_row.set_name("settings")
+
+        split_view.set_sidebar(navigation)
+
+        # The existing root is already owned by ToolbarView. Detach it before
+        # moving it into the stack so GTK keeps one clear widget owner.
         toolbar.set_content(None)
-        split_view.set_content(root)
+        split_view.set_content(content_stack)
         toolbar.set_content(split_view)
         self.sidebar_view = split_view
+        self.navigation_list = navigation
+        self.content_stack = content_stack
 
+        # The old standalone settings button is superseded by navigation.
         self.settings_button.set_visible(False)
 
-        # GNOME's utility-pane pattern places the toggle in the shared header,
-        # keeping the lesson controls stable and close to the typing workspace.
         show_sidebar_button = Gtk.ToggleButton()
         show_sidebar_button.set_icon_name("sidebar-show-symbolic")
         show_sidebar_button.set_tooltip_text("Yan paneli aç/kapat")
@@ -122,14 +136,26 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
             lambda view, _param: show_sidebar_button.set_active(view.get_show_sidebar()),
         )
         self.header.pack_start(show_sidebar_button)
+        self.sidebar_toggle_button = show_sidebar_button
 
-        # Collapse early enough that the lesson controls never get squeezed
-        # between the utility pane and the window edge on 1024px-class displays.
-        breakpoint = Adw.Breakpoint.new(
-            Adw.BreakpointCondition.parse("max-width: 1050sp")
-        )
-        breakpoint.add_setter(split_view, "collapsed", True)
-        self.add_breakpoint(breakpoint)
+    @staticmethod
+    def _make_navigation_row(title: str, icon_name: str, page_name: str) -> Gtk.ListBoxRow:
+        row = Gtk.ListBoxRow()
+        row.set_name(page_name)
+        row.set_activatable(True)
+        row.set_selectable(True)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        icon = Gtk.Image.new_from_icon_name(icon_name)
+        icon.set_pixel_size(18)
+        box.append(icon)
+
+        label = Gtk.Label(label=title)
+        label.set_xalign(0)
+        label.set_hexpand(True)
+        box.append(label)
+        row.set_child(box)
+        return row
 
     def _load_sources(self) -> None:
         sources = self.db.sources()
