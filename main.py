@@ -28,9 +28,8 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         previous = old_dropdown.get_prev_sibling() if parent is not None else None
         self.source_dropdown = SourceSearchDropdown()
         self.source_dropdown.on_selected_changed = self._on_source_changed
-        self.source_dropdown.set_hexpand(False)
+        self.source_dropdown.set_hexpand(True)
         self.source_dropdown.set_halign(Gtk.Align.FILL)
-        self.source_dropdown.set_size_request(700, -1)
 
         if parent is not None:
             old_dropdown.unparent()
@@ -40,12 +39,16 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
                 parent.append(self.source_dropdown)
 
     def _load_sources(self) -> None:
-        sources = self.db.sources(); self.source_ids = [i for i, _ in sources]; self.source_dropdown.set_model(Gtk.StringList.new([n for _, n in sources]))
-        if sources: self.source_dropdown.set_selected(0)
+        sources = self.db.sources()
+        self.source_ids = [i for i, _ in sources]
+        self.source_dropdown.set_model(Gtk.StringList.new([n for _, n in sources]))
+        if sources:
+            self.source_dropdown.set_selected(0)
 
     def _on_source_changed(self, _dropdown: SourceSearchDropdown, _param) -> None:
         index = self.source_dropdown.get_selected()
-        if 0 <= index < len(self.source_ids): self._load_lessons(self.source_ids[index])
+        if 0 <= index < len(self.source_ids):
+            self._load_lessons(self.source_ids[index])
 
 
 class SettingsWindow(Adw.Window):
