@@ -46,7 +46,7 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         if not isinstance(toolbar, Adw.ToolbarView):
             return
         root = toolbar.get_content()
-        if root is None:
+        if not isinstance(root, Gtk.Box):
             return
 
         split_view = Adw.OverlaySplitView()
@@ -60,6 +60,16 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
 
         sidebar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         sidebar.add_css_class("keycan-sidebar")
+        sidebar_provider = Gtk.CssProvider()
+        sidebar_provider.load_from_data(
+            ".keycan-sidebar { background: #202124; color: #eeeeee; }"
+            ".keycan-sidebar label { color: #eeeeee; }",
+            -1,
+        )
+        sidebar.get_style_context().add_provider(
+            sidebar_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        )
 
         sidebar_header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         sidebar_header.set_margin_top(12)
@@ -101,9 +111,7 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         self.sidebar_view = split_view
 
         self.settings_button.set_visible(False)
-        controls = self.workspace.get_parent().get_parent()
-        if isinstance(controls, Gtk.Paned):
-            controls = controls.get_parent()
+        controls = root.get_first_child()
         if isinstance(controls, Gtk.Box):
             panel_button = Gtk.Button()
             panel_button.set_icon_name("sidebar-show-symbolic")
