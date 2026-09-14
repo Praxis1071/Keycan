@@ -106,6 +106,11 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         sidebar.append(settings_panel)
 
         split_view.set_sidebar(sidebar)
+
+        # The existing root is already owned by the ToolbarView. Detach it
+        # before assigning it to the split view so GTK4 does not reject the
+        # reparenting and leave the window with an empty content area.
+        toolbar.set_content(None)
         split_view.set_content(root)
         toolbar.set_content(split_view)
         self.sidebar_view = split_view
