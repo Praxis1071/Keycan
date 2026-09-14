@@ -32,7 +32,7 @@ class KeycanWindow(Adw.ApplicationWindow):
     def __init__(self, app: Adw.Application, database_path: Path) -> None:
         super().__init__(application=app, title="Keycan — On Parmak")
         self.set_default_size(1200, 760)
-        self.set_size_request(900, 600)
+        self.set_size_request(820, 600)
         self.db = Database(database_path)
         self.engine = TypingEngine()
         self.current_lesson_id: int | None = None
@@ -72,7 +72,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         toolbar.set_content(root)
         self.set_content(toolbar)
 
-        controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         controls.set_margin_top(10)
         controls.set_margin_start(12)
         controls.set_margin_end(12)
@@ -88,7 +88,7 @@ class KeycanWindow(Adw.ApplicationWindow):
 
         controls.append(self._label("Metin:"))
         self.lesson_dropdown = Gtk.DropDown()
-        self.lesson_dropdown.set_size_request(190, -1)
+        self.lesson_dropdown.set_size_request(150, -1)
         self.lesson_dropdown.connect("notify::selected", self._on_lesson_changed)
         controls.append(self.lesson_dropdown)
 
@@ -119,6 +119,11 @@ class KeycanWindow(Adw.ApplicationWindow):
         spacer.set_hexpand(True)
         controls.append(spacer)
         controls.append(self.settings_button)
+
+        narrow_breakpoint = Adw.Breakpoint.new("max-width: 900sp")
+        narrow_breakpoint.add_setter(controls, "spacing", 4)
+        narrow_breakpoint.add_setter(self.lesson_dropdown, "width-request", 120)
+        self.add_breakpoint(narrow_breakpoint)
 
         self.workspace = TypingWorkspace(self.text_size)
         self.target_view = self.workspace.target_view
