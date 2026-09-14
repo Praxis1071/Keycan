@@ -14,47 +14,103 @@ Keycan'ın uzun vadeli geliştirme planı.
 
 ---
 
-# ⏳ Keycan GUI Yenileme — Responsive Mimari
+# ⏳ GUI Yenileme ve Responsive Navigasyon Mimarisi
 
-Amaç: Mevcut sade çalışma deneyimini koruyarak tüm monitörlerde çalışan, gelecekteki özelliklere hazır modern bir arayüz altyapısı oluşturmak.
+Amaç: Keycan'ın sade ve kullanıcı dostu çalışma deneyimini korurken, farklı ekran boyutlarında sağlam çalışan ve gelecekteki bölümlerin eklenmesine uygun kalıcı bir navigasyon mimarisi oluşturmak.
 
-## Yapılacaklar
+## Temel tasarım kuralları
 
-- Responsive pencere ve widget düzeni
-- Farklı çözünürlüklerde taşma sorunlarının çözülmesi
-- GTK4/libadwaita standartlarına daha uygun yapı
-- HeaderBar tabanlı modern üst yapı
-- Yandan açılır navigasyon paneli (sidebar/drawer)
-- Sayfa tabanlı uygulama mimarisi
+- Mevcut yazma çalışma alanının görünümü ve kullanım mantığı gereksiz yere değiştirilmez.
+- Sidebar açıldığında ana çalışma alanının geometrisi ve genişliği değişmez; çalışma alanı fiziksel olarak küçültülmez.
+- Sidebar, ana içeriği daraltan kalıcı bir kolon yerine overlay/drawer davranışıyla açılır.
+- Küçük ekranlarda sidebar mutlaka overlay olarak çalışır.
+- Sidebar kapatıldığında çalışma alanı tamamen erişilebilir ve tam genişlikte kalır.
+- Responsive davranışlar sabit piksel ölçülerine bağımlı olmadan GTK4/libadwaita yaklaşımıyla kurulacaktır.
+- Ana yazma deneyimi, navigasyon işlemlerinden mümkün olduğunca bağımsız tutulacaktır.
 
-## Navigasyon Yapısı
+## Navigasyon mimarisi
 
-- ⌨ Çalışma
-- 📊 Dashboard
-- 📚 Kaynaklar
-- 🏆 Başarılar
+Sidebar, uygulamanın ana navigasyon alanı olacaktır. Sidebar'ın içinde seçilen bölümün ayrıntılı içeriği gösterilmeyecek; yalnızca navigasyon seçenekleri bulunacaktır.
+
+Başlangıç navigasyonu:
+
+- 🏠 Çalışma Alanı
 - ⚙ Ayarlar
-- ℹ Hakkında
+- 📊 İstatistikler — ileride
+- 👤 Profil — ileride
+
+Gelecekte ihtiyaç duyuldukça yeni bölümler aynı navigasyon yapısına eklenebilir.
+
+## Sayfa davranışı
+
+- 🏠 Çalışma Alanı seçildiğinde mevcut yazma çalışma ekranı gösterilir.
+- ⚙ Ayarlar seçildiğinde Ayarlar içeriği ana içerik alanında gösterilir.
+- 📊 İstatistikler seçildiğinde ileride İstatistikler sayfası ana içerik alanında gösterilir.
+- 👤 Profil seçildiğinde ileride Profil sayfası ana içerik alanında gösterilir.
+- Seçilen bölümün içeriği sidebar'ın içine gömülmez.
+- Navigasyon ile sayfa içeriği birbirinden ayrılmış olacaktır.
+
+## Responsive sidebar
+
+- GNOME/libadwaita uyumlu sidebar/drawer yaklaşımı kullanılacaktır.
+- Geniş ekranlarda sidebar açıldığında çalışma alanı küçültülmeyecektir; panel overlay mantığında çalışacaktır.
+- Orta ve küçük ekranlarda sidebar çalışma alanının üzerine açılacaktır.
+- Sidebar açılıp kapanırken ders kontrollerinin ve yazma alanının yatay ölçüsü değiştirilmemelidir.
+- Farklı çözünürlük ve ölçeklendirme değerlerinde taşma, kırpılma ve kontrol çakışmaları test edilecektir.
+- HeaderBar üzerindeki sidebar kontrolü, uygulamanın geri kalan kontrollerinden bağımsız ve tutarlı konumda tutulacaktır.
+
+## Sayfa mimarisi
+
+Her ana bölüm ileride bağımsız bir GUI sayfası/bileşeni olarak geliştirilecektir:
+
+```text
+Sidebar navigation
+├── 🏠 Çalışma Alanı
+├── ⚙ Ayarlar
+├── 📊 İstatistikler
+└── 👤 Profil
+
+Main content
+└── Seçilen sayfanın içeriği
+```
+
+Bu yapı, yeni özelliklerin sidebar veya mevcut çalışma alanına gereksiz müdahale yapılmadan eklenmesini sağlayacaktır.
 
 ---
 
-# ⏳ Keycan Çalışma Alanı Geliştirmeleri
+# ⏳ Mevcut GUI'nin Stabilizasyonu
 
-Mevcut çalışma alanının sade ve kullanıcı dostu yapısı korunacaktır.
+Sidebar ve sayfa mimarisi uygulanırken öncelik stabilite olacaktır.
+
+- Mevcut ders/metin seçimi korunacak.
+- Ders grubu araması korunacak.
+- Mevcut yazma motoruna gereksiz değişiklik yapılmayacak.
+- Ayarlar içeriği korunacak; yalnızca yeni sayfa mimarisine taşınacaktır.
+- Mevcut sonuç gösterimi korunacak.
+- Veritabanı ve ders kaynaklarının içeriği değiştirilmeden GUI çalışması sürdürülecektir.
+- Her önemli GUI değişikliğinden önce geri dönüş noktası oluşturulacaktır.
+
+---
+
+# ⏳ Çalışma Alanı Geliştirmeleri
+
+Mevcut kullanıcı dostu çalışma ekranı korunacaktır.
 
 Korunacak yapı:
 
-- Üst kontrol bölümü
+- Ders grubu / metin / süre kontrolleri
 - Kaynak metin alanı
 - Kullanıcı yazma alanı
-- Alt sonuç bölümü
+- Alt durum ve metin boyutu kontrolleri
+- Mevcut gizlilik davranışı
+- Mevcut doğru/yanlış sonuç gösterimi
 
 ## Yeni geliştirmeler
 
 - Yazma hızı hesaplama
 - Süre sonunda hız bilgisini sonuçlara ekleme
 - Doğru, yanlış, toplam kelime ve hız verilerini kaydetme
-- Gelecekte Dashboard için çalışma verisi altyapısı oluşturma
+- Gelecekte Dashboard/İstatistikler için çalışma verisi altyapısı oluşturma
 
 ---
 
@@ -70,7 +126,7 @@ Korunacak yapı:
 
 ---
 
-# ⏳ Keycan 2.3.x — Kullanıcı İlerlemesi ve Dashboard
+# ⏳ Keycan 2.3.x — Kullanıcı İlerlemesi ve İstatistikler
 
 - Çalışma geçmişi
 - Günlük/haftalık/aylık istatistikler
@@ -78,6 +134,7 @@ Korunacak yapı:
 - Toplam kelime, doğru/yanlış analizleri
 - Ortalama hız takibi
 - Gelişim raporları
+- İstatistiklerin ayrı bir navigasyon sayfasında gösterilmesi
 
 ---
 
@@ -87,6 +144,18 @@ Korunacak yapı:
 - Seviye sistemi
 - Başarı rozetleri
 - Düzenli çalışma motivasyonu
+- İleride İstatistikler ve Profil sayfalarıyla entegrasyon
+
+---
+
+# ⏳ Profil Sistemi
+
+- Kullanıcı profil sayfası
+- Temel kullanıcı bilgileri
+- Çalışma özeti
+- Seviye ve XP bilgileri
+- Başarı rozetleri
+- İlerleme verilerinin profille ilişkilendirilmesi
 
 ---
 
@@ -97,7 +166,6 @@ Korunacak yapı:
 - Veri yedekleme ve geri yükleme
 - Çalışma takvimi
 - Odak/Pomodoro modu
-- Kullanıcı profili
 
 ---
 
@@ -107,4 +175,4 @@ Korunacak yapı:
 - Sınav mantığına uygun değerlendirme
 - Profesyonel sınav deneyimi
 
-Bu roadmap kullanıcı geri bildirimleri ve teknik gereksinimlere göre güncellenebilir.
+Bu roadmap, kullanıcı geri bildirimleri ve teknik gereksinimler doğrultusunda güncellenebilir. Yeni özellik eklenmeden önce mimari ve stabilite etkisi değerlendirilmelidir.
