@@ -18,7 +18,7 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         self.maximize()
         self.text_size = 22
         self.size_spin.set_value(22)
-        self._apply_text_size()
+        self.workspace.set_text_size(self.text_size)
 
     def _build_ui(self) -> None:
         super()._build_ui()
