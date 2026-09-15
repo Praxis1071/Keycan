@@ -49,8 +49,8 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         if not isinstance(root, Gtk.Box):
             return
 
-        # The sidebar is deliberately always collapsed: this makes it a true
-        # overlay/drawer, so opening it can never reduce the typing workspace.
+        # The sidebar is always collapsed so it overlays the main content
+        # instead of changing the typing workspace geometry.
         split_view = Adw.OverlaySplitView()
         split_view.set_collapsed(True)
         split_view.set_sidebar_position(Gtk.PackType.START)
@@ -86,8 +86,10 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         navigation.append(settings_row)
         navigation.select_row(workspace_row)
 
-        # The main root remains intact as the existing typing workspace page.
-        # Gtk.Stack then provides the future page-based navigation boundary.
+        # Detach the existing root from ToolbarView before giving it to
+        # Gtk.Stack. A widget may have exactly one parent in GTK4.
+        toolbar.set_content(None)
+
         content_stack = Gtk.Stack()
         content_stack.set_hexpand(True)
         content_stack.set_vexpand(True)
@@ -111,17 +113,12 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         settings_row.set_name("settings")
 
         split_view.set_sidebar(navigation)
-
-        # The existing root is already owned by ToolbarView. Detach it before
-        # moving it into the stack so GTK keeps one clear widget owner.
-        toolbar.set_content(None)
         split_view.set_content(content_stack)
         toolbar.set_content(split_view)
         self.sidebar_view = split_view
         self.navigation_list = navigation
         self.content_stack = content_stack
 
-        # The old standalone settings button is superseded by navigation.
         self.settings_button.set_visible(False)
 
         show_sidebar_button = Gtk.ToggleButton()
