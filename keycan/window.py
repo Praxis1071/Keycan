@@ -71,10 +71,13 @@ class KeycanWindow(Adw.ApplicationWindow):
         toolbar.add_top_bar(header)
         root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         root.add_css_class("keycan-content")
+        root.set_hexpand(True)
+        root.set_vexpand(True)
         toolbar.set_content(root)
         self.set_content(toolbar)
 
         controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        controls.set_hexpand(True)
         controls.set_margin_top(10)
         controls.set_margin_start(12)
         controls.set_margin_end(12)
@@ -85,6 +88,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         controls.append(self._label("Ders grubu:"))
         self.source_dropdown = Gtk.DropDown()
         self.source_dropdown.set_hexpand(True)
+        self.source_dropdown.set_halign(Gtk.Align.FILL)
         self.source_dropdown.connect("notify::selected", self._on_source_changed)
         controls.append(self.source_dropdown)
 
@@ -112,15 +116,14 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.restart_button.connect("clicked", self._restart)
         controls.append(self.restart_button)
 
+        # Kept as a compatibility reference for the configured window, which
+        # now exposes Settings through the sidebar instead of this button.
         self.settings_button = Gtk.Button()
         self.settings_button.set_icon_name("emblem-system-symbolic")
         self.settings_button.set_tooltip_text("Ayarlar")
         self.settings_button.add_css_class("flat")
         self.settings_button.connect("clicked", self._open_settings)
-        spacer = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        spacer.set_hexpand(True)
-        controls.append(spacer)
-        controls.append(self.settings_button)
+        self.settings_button.set_visible(False)
 
         narrow_breakpoint = Adw.Breakpoint.new(
             Adw.BreakpointCondition.parse("max-width: 900sp")
