@@ -18,7 +18,7 @@ from keycan.utils.text import WORD_PATTERN, format_remaining
 CSS = """
 headerbar.keycan-header { background: #202124; color: #f2f2f2; }
 headerbar.keycan-header windowhandle, headerbar.keycan-header button, headerbar.keycan-header label { color: #f2f2f2; }
-.keycan-content, .keycan-controls { background: #202124; }
+.keycan-content, .keycan-controls, .keycan-bottom { background: #202124; }
 .keycan-controls label, .keycan-status { color: #eeeeee; }
 .keycan-editor { background: #ffffff; color: #111111; border: 1px solid #b8b8b8; }
 .keycan-editor textview, .keycan-editor textview text { background: #ffffff; color: #111111; }
@@ -76,45 +76,60 @@ class KeycanWindow(Adw.ApplicationWindow):
         toolbar.set_content(root)
         self.set_content(toolbar)
 
-        controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        # The controls span the complete available window width. The left
+        # group owns the flexible lesson/source controls, while the right
+        # group stays anchored to the trailing edge on every monitor size.
+        controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         controls.set_hexpand(True)
         controls.set_margin_top(10)
-        controls.set_margin_start(12)
-        controls.set_margin_end(12)
+        controls.set_margin_start(0)
+        controls.set_margin_end(0)
         controls.set_margin_bottom(8)
         controls.add_css_class("keycan-controls")
         root.append(controls)
 
-        controls.append(self._label("Ders grubu:"))
+        left_controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        left_controls.set_hexpand(True)
+        left_controls.set_halign(Gtk.Align.FILL)
+        left_controls.set_margin_start(12)
+        controls.append(left_controls)
+
+        right_controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        right_controls.set_halign(Gtk.Align.END)
+        right_controls.set_margin_start(12)
+        right_controls.set_margin_end(12)
+        controls.append(right_controls)
+
+        left_controls.append(self._label("Ders grubu:"))
         self.source_dropdown = Gtk.DropDown()
         self.source_dropdown.set_hexpand(True)
         self.source_dropdown.set_halign(Gtk.Align.FILL)
         self.source_dropdown.connect("notify::selected", self._on_source_changed)
-        controls.append(self.source_dropdown)
+        left_controls.append(self.source_dropdown)
 
-        controls.append(self._label("Metin:"))
+        left_controls.append(self._label("Metin:"))
         self.lesson_dropdown = Gtk.DropDown()
         self.lesson_dropdown.set_size_request(150, -1)
         self.lesson_dropdown.connect("notify::selected", self._on_lesson_changed)
-        controls.append(self.lesson_dropdown)
+        left_controls.append(self.lesson_dropdown)
 
-        controls.append(self._label("Süre:"))
+        right_controls.append(self._label("Süre:"))
         adj = Gtk.Adjustment(value=1, lower=1, upper=180, step_increment=1, page_increment=10)
         self.duration_spin = Gtk.SpinButton(adjustment=adj, climb_rate=1, digits=0)
         self.duration_spin.set_numeric(True)
         self.duration_spin.set_width_chars(3)
         self.duration_spin.connect("value-changed", self._on_duration_changed)
-        controls.append(self.duration_spin)
-        controls.append(self._label("dakika"))
+        right_controls.append(self.duration_spin)
+        right_controls.append(self._label("dakika"))
 
         self.countdown = Gtk.Label(label="01:00")
         self.countdown.add_css_class("keycan-countdown")
-        controls.append(self.countdown)
+        right_controls.append(self.countdown)
 
         self.restart_button = Gtk.Button(label="Baştan Başla")
         self.restart_button.add_css_class("suggested-action")
         self.restart_button.connect("clicked", self._restart)
-        controls.append(self.restart_button)
+        right_controls.append(self.restart_button)
 
         # Kept as a compatibility reference for the configured window, which
         # now exposes Settings through the sidebar instead of this button.
@@ -128,7 +143,8 @@ class KeycanWindow(Adw.ApplicationWindow):
         narrow_breakpoint = Adw.Breakpoint.new(
             Adw.BreakpointCondition.parse("max-width: 900sp")
         )
-        narrow_breakpoint.add_setter(controls, "spacing", 4)
+        narrow_breakpoint.add_setter(left_controls, "spacing", 4)
+        narrow_breakpoint.add_setter(right_controls, "spacing", 4)
         narrow_breakpoint.add_setter(self.lesson_dropdown, "width-request", 120)
         self.add_breakpoint(narrow_breakpoint)
 
