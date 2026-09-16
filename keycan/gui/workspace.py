@@ -39,19 +39,24 @@ class TypingWorkspace(Gtk.Box):
         editors.set_end_child(self._wrap_editor(self.input_view))
         editors.set_position(470)
 
+        # Keep the status bar background edge-to-edge while preserving a
+        # comfortable 12px inset for its actual controls.
         bottom = Gtk.CenterBox()
-        bottom.set_margin_start(12)
-        bottom.set_margin_end(12)
+        bottom.set_margin_start(0)
+        bottom.set_margin_end(0)
         bottom.set_size_request(-1, 34)
+        bottom.add_css_class("keycan-bottom")
         self.append(bottom)
 
         self.status = Gtk.Label(label="Bir ders ve metin seçin.")
         self.status.set_xalign(0)
+        self.status.set_margin_start(12)
         self.status.add_css_class("keycan-status")
         bottom.set_start_widget(self.status)
 
         size_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         size_box.set_halign(Gtk.Align.END)
+        size_box.set_margin_end(12)
         size_box.append(Gtk.Label(label="Metin boyutu:"))
         size_adj = Gtk.Adjustment(
             value=self.text_size,
