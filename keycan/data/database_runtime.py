@@ -21,8 +21,7 @@ def _ensure_default_snapshot(self: Database) -> None:
         self.conn.commit()
 
 
-def _init(self: Database,path):
-    _ORIGINAL_INIT(self,path); _ensure_default_snapshot(self)
+def _init(self: Database,path): _ORIGINAL_INIT(self,path); _ensure_default_snapshot(self)
 
 
 def _sources(self: Database):
@@ -34,6 +33,13 @@ def _sources(self: Database):
 
 def _lessons(self: Database,source_id: int):
     rows=self.conn.execute("SELECT id FROM lessons WHERE source_id=? AND is_deleted=0 ORDER BY custom_order,legacy_metin_id,id",(source_id,)).fetchall(); return [(lesson_id,f"Ders {index}") for index,(lesson_id,) in enumerate(rows,1)]
+
+
+def _custom_lesson_position(self: Database,lesson_id: int)->int:
+    row=self.conn.execute("SELECT source_id,custom_order FROM lessons WHERE id=?",(lesson_id,)).fetchone()
+    if not row: raise ValueError("Metin bulunamadı")
+    source_id,order=row
+    return int(self.conn.execute("SELECT COUNT(*) FROM lessons WHERE source_id=? AND is_deleted=0 AND (custom_order<? OR (custom_order=? AND id<=?))",(source_id,order,order,lesson_id)).fetchone()[0])
 
 
 def _managed_groups(self: Database): return self.conn.execute("SELECT id,display_name,custom_key,is_custom FROM sources WHERE is_deleted=0 ORDER BY display_name COLLATE NOCASE,id").fetchall()
@@ -122,19 +128,14 @@ def _import_data(self: Database,raw: str):
     lesson_map={}; imported=skipped=0; self.conn.execute("BEGIN")
     try:
         for group in groups:
-            key=str(group.get("key","")).strip(); name=self._validate_group_name(str(group.get("name",""))); is_custom=bool(group.get("is_custom",True)); default_id=group.get("default_source_id")
-            source_id=None
-            if not is_custom and isinstance(default_id,int):
-                found=self.conn.execute("SELECT id FROM sources WHERE id=?",(default_id,)).fetchone(); source_id=int(found[0]) if found else None
+            key=str(group.get("key","")).strip(); name=self._validate_group_name(str(group.get("name",""))); is_custom=bool(group.get("is_custom",True)); default_id=group.get("default_source_id"); source_id=None
+            if not is_custom and isinstance(default_id,int) and self.conn.execute("SELECT 1 FROM sources WHERE id=?",(default_id,)).fetchone(): source_id=int(default_id)
             if source_id is None:
-                found=self.conn.execute("SELECT id FROM sources WHERE custom_key=?",(key,)).fetchone()
-                if found: source_id=int(found[0]); self.conn.execute("UPDATE sources SET display_name=?,is_deleted=0,is_custom=? WHERE id=?",(name,int(is_custom),source_id))
-                else: source_id=int(self.conn.execute("INSERT INTO sources(display_name,relative_path,is_custom,is_deleted,custom_key) VALUES(?, '', ?,0,?)",(name,int(is_custom),key or uuid.uuid4().hex)).lastrowid)
-            else: self.conn.execute("UPDATE sources SET display_name=?,is_deleted=0,is_custom=0 WHERE id=?",(name,source_id))
+                found=self.conn.execute("SELECT id FROM sources WHERE custom_key=?",(key,)).fetchone(); source_id=int(found[0]) if found else int(self.conn.execute("INSERT INTO sources(display_name,relative_path,is_custom,is_deleted,custom_key) VALUES(?, '', ?,0,?)",(name,int(is_custom),key or uuid.uuid4().hex)).lastrowid)
+            self.conn.execute("UPDATE sources SET display_name=?,is_deleted=0,is_custom=? WHERE id=?",(name,int(is_custom),source_id))
             for order,item in enumerate(group.get("lessons",[])):
                 text=self._validate_text(str(item.get("text",""))); default_lesson_id=item.get("default_lesson_id"); lesson_key=str(item.get("key","")).strip() or uuid.uuid4().hex; lesson_id=None
-                if not is_custom and isinstance(default_lesson_id,int):
-                    found=self.conn.execute("SELECT id FROM lessons WHERE id=?",(default_lesson_id,)).fetchone(); lesson_id=int(found[0]) if found else None
+                if not is_custom and isinstance(default_lesson_id,int) and self.conn.execute("SELECT 1 FROM lessons WHERE id=?",(default_lesson_id,)).fetchone(): lesson_id=int(default_lesson_id)
                 if lesson_id is None:
                     found=self.conn.execute("SELECT id FROM lessons WHERE custom_key=?",(lesson_key,)).fetchone(); lesson_id=int(found[0]) if found else None
                 if lesson_id is not None: self.conn.execute("UPDATE lessons SET source_id=?,text=?,custom_order=?,is_deleted=0,is_custom=? WHERE id=?",(source_id,text,order,int(is_custom),lesson_id))
@@ -154,6 +155,6 @@ def _import_data(self: Database,raw: str):
 
 
 def _patch():
-    Database.__init__=_init; Database.sources=_sources; Database.lessons=_lessons; Database.managed_groups=_managed_groups; Database.managed_lessons=_managed_lessons; Database.rename_group=_rename_group; Database.delete_group=_delete_group; Database.create_lesson=_create_lesson; Database.update_lesson=_update_lesson; Database.delete_lesson=_delete_lesson; Database.move_lesson=_move_lesson; Database.reset_all_content=_reset_all_content; Database.restore_defaults=_restore_defaults; Database.export_data=_export_data; Database.import_data=_import_data
+    Database.__init__=_init; Database.sources=_sources; Database.lessons=_lessons; Database._custom_lesson_position=_custom_lesson_position; Database.managed_groups=_managed_groups; Database.managed_lessons=_managed_lessons; Database.rename_group=_rename_group; Database.delete_group=_delete_group; Database.create_lesson=_create_lesson; Database.update_lesson=_update_lesson; Database.delete_lesson=_delete_lesson; Database.move_lesson=_move_lesson; Database.reset_all_content=_reset_all_content; Database.restore_defaults=_restore_defaults; Database.export_data=_export_data; Database.import_data=_import_data
 
 _patch()
