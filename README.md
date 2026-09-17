@@ -87,3 +87,7 @@ Detaylı roadmap: [ROADMAP.md](ROADMAP.md)
 - SQLite
 - Flatpak
 - GNOME Platform
+
+## 📄 Lisans
+
+Keycan, **GNU General Public License v3 veya sonrası (GPL-3.0-or-later)** altında dağıtılan özgür ve açık kaynaklı bir yazılımdır. Ayrıntılar için [LICENSE](LICENSE) dosyasına bakın.
