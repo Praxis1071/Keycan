@@ -9,8 +9,7 @@ from __future__ import annotations
 import gi
 
 gi.require_version("Gtk", "4.0")
-gi.require_version("Adw", "1")
-from gi.repository import Adw, Gtk
+from gi.repository import Gtk
 
 
 class StatCard(Gtk.Box):
@@ -77,7 +76,13 @@ class StatisticsPanel(Gtk.Box):
         header.append(description)
         content.append(header)
 
-        cards = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        cards = Gtk.FlowBox()
+        cards.set_selection_mode(Gtk.SelectionMode.NONE)
+        cards.set_row_spacing(8)
+        cards.set_column_spacing(8)
+        cards.set_min_children_per_line(1)
+        cards.set_max_children_per_line(4)
+        cards.set_homogeneous(True)
         cards.set_hexpand(True)
         self.summary_cards = [
             StatCard("Toplam çalışma"),
@@ -97,7 +102,6 @@ class StatisticsPanel(Gtk.Box):
 
         self.period_buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self.period_buttons.add_css_class("linked")
-        self._period_group = None
         for index, period in enumerate(self.PERIODS):
             button = Gtk.ToggleButton(label=period)
             button.set_active(index == 1)
@@ -142,22 +146,28 @@ class StatisticsPanel(Gtk.Box):
         graph_frame.set_child(graph_content)
         content.append(graph_frame)
 
-        analysis = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        analysis = Gtk.FlowBox()
+        analysis.set_selection_mode(Gtk.SelectionMode.NONE)
+        analysis.set_row_spacing(8)
+        analysis.set_column_spacing(8)
+        analysis.set_min_children_per_line(1)
+        analysis.set_max_children_per_line(2)
+        analysis.set_homogeneous(True)
         analysis.set_hexpand(True)
-
-        accuracy_frame = self._make_analysis_card(
-            "Doğruluk analizi",
-            "Henüz veri yok",
-            "Doğru ve yanlış kelimeler, çalışmalar tamamlandıkça burada özetlenecek.",
+        analysis.append(
+            self._make_analysis_card(
+                "Doğruluk analizi",
+                "Henüz veri yok",
+                "Doğru ve yanlış kelimeler, çalışmalar tamamlandıkça burada özetlenecek.",
+            )
         )
-        analysis.append(accuracy_frame)
-
-        result_frame = self._make_analysis_card(
-            "Çalışma özeti",
-            "Henüz veri yok",
-            "Tamamlanan çalışmaların toplam ve ortalama sonuçları burada gösterilecek.",
+        analysis.append(
+            self._make_analysis_card(
+                "Çalışma özeti",
+                "Henüz veri yok",
+                "Tamamlanan çalışmaların toplam ve ortalama sonuçları burada gösterilecek.",
+            )
         )
-        analysis.append(result_frame)
         content.append(analysis)
 
         history_frame = Gtk.Frame()
@@ -182,19 +192,21 @@ class StatisticsPanel(Gtk.Box):
         self.history_placeholder.add_css_class("dim-label")
         history_content.append(self.history_placeholder)
 
-        columns = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        columns.set_hexpand(True)
+        table_scroll = Gtk.ScrolledWindow()
+        table_scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER)
+        table_scroll.set_hexpand(True)
+        table_header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        table_header.set_size_request(720, -1)
         for column in ("Tarih", "Ders", "Süre", "Sonuç", "Doğruluk", "Hız"):
             label = Gtk.Label(label=column)
             label.set_xalign(0)
             label.set_hexpand(True)
             label.add_css_class("dim-label")
-            columns.append(label)
-        history_content.append(columns)
+            table_header.append(label)
+        table_scroll.set_child(table_header)
+        history_content.append(table_scroll)
         history_frame.set_child(history_content)
         content.append(history_frame)
-
-        self._apply_responsive_behavior()
 
     def _make_analysis_card(self, title: str, value: str, description: str) -> Gtk.Frame:
         frame = Gtk.Frame()
@@ -221,21 +233,17 @@ class StatisticsPanel(Gtk.Box):
         frame.set_child(box)
         return frame
 
-    def _on_period_toggled(self, button: Gtk.ToggleButton, index: int) -> None:
+    def _on_period_toggled(self, button: Gtk.ToggleButton, _index: int) -> None:
         if not button.get_active():
             return
-        for child in self.period_buttons.observe_children():
+        child = self.period_buttons.get_first_child()
+        while child is not None:
             if child is not button and isinstance(child, Gtk.ToggleButton):
                 child.set_active(False)
+            child = child.get_next_sibling()
         self._active_period = button
         # Real period-specific data is intentionally wired in Stage 3.
         self.graph_placeholder.set_text(
             "Henüz tamamlanmış bir çalışma yok.\n"
             "İlk çalışmanı tamamladığında bu görünümde ilerlemen gösterilecek."
         )
-
-    def _apply_responsive_behavior(self) -> None:
-        # The compact view keeps cards usable without requiring a separate
-        # window. Gtk.Box naturally clips/reflows through the scrolled page;
-        # the main window's minimum size protects the typing workspace.
-        self.set_size_request(0, 0)
