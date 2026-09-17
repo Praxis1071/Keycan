@@ -78,7 +78,28 @@ Tablo tasarımında gereksiz teknik alanlar gösterilmeyecek; ayrıntılı veril
 - Profil, XP ve rozet sistemi aynı temel çalışma kayıtlarını kullanabilmelidir.
 - Veri modeli kullanıcı arayüzünden bağımsız tutulmalıdır.
 
-**Durum:** Tasarım kararı tamamlandı. Uygulama koduna henüz müdahale edilmeyecek; sonraki adım Aşama 1 veri modelinin mevcut SQLite şemasıyla karşılaştırılması ve kontrollü uygulanmasıdır.
+### Aşama 1 uygulama sonucu
+
+Çalışma sonuçlarının SQLite'a kaydedilmesi veri modeliyle uyumlu hale getirildi.
+
+Eklenen/aktif kullanılan çalışma alanları:
+
+- `completed_at`
+- `source_name_snapshot`
+- `lesson_title_snapshot`
+- `target_word_count`
+- `typed_word_count`
+- `total_characters`
+- `correct_characters`
+- `wrong_characters`
+- `accuracy_percent`
+- mevcut hız alanları (`words_per_minute`, `characters_per_minute`)
+
+Yeni çalışma kayıtları kaynak ve ders adlarını o anki haliyle saklayarak geçmiş kayıtların daha sonra değişen ders/kaynak adlarından etkilenmesini önleyecek şekilde tasarlanmıştır.
+
+Hız, doğruluk ve karakter ölçümleri çalışma tamamlandığı anda hesaplanır. Eski veritabanları için migration mevcut sütunları koruyarak eksik alanları ekler. SQLite migration uyumluluğu nedeniyle `completed_at` eski satırlarda boş bırakılabilir; yeni kayıtlar ekleme sırasında `CURRENT_TIMESTAMP` ile oluşturulur.
+
+**Durum:** Tamamlandı.
 
 ### Aşama 2 — İstatistikler sayfası UX tasarımı
 
