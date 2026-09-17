@@ -11,6 +11,7 @@ import keycan.data.database_runtime  # noqa: F401 — installs custom content an
 import keycan.window as keycan_window
 from keycan.app import main
 from keycan.gui.search import SourceSearchDropdown
+import keycan.gui.statistics_runtime  # noqa: F401 — prevents stale KPI animations.
 from keycan.gui.settings2 import SettingsPanel
 from keycan.gui.statistics_clean import StatisticsPanel
 
