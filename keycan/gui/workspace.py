@@ -3,22 +3,21 @@
 This module owns the typing surface and result-display widgets only. Application
 state, typing logic, privacy state, and persistence remain in the main window.
 
-The practice views deliberately disable clipboard editing actions so a session
-cannot be completed by pasting text. Normal keyboard input and backspace remain
-available in the input view.
+The practice views deliberately disable clipboard editing and drag-and-drop
+paths so a session cannot be completed by importing or exporting text through
+the editor. Normal keyboard input and backspace remain available.
 """
 
 from __future__ import annotations
 
 import gi
 
-gi.require_version("Gdk", "4.0")
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gdk, Gtk
+from gi.repository import Gtk
 
 
 class PracticeTextView(Gtk.TextView):
-    """Text view with the clipboard/editing loopholes closed for practice."""
+    """Text view with clipboard and drag-and-drop loopholes closed."""
 
     _BLOCKED_ACTIONS = (
         "clipboard.copy",
@@ -60,8 +59,20 @@ class PracticeTextView(Gtk.TextView):
         self._middle_click_guard.connect("pressed", self._block_middle_click)
         self.add_controller(self._middle_click_guard)
 
+        # TextView also has built-in drag source/destination behavior. A
+        # practice surface should not be able to import text by dropping it,
+        # nor export selected practice text by dragging it elsewhere.
+        self._drag_guard = Gtk.GestureDrag()
+        self._drag_guard.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        self._drag_guard.connect("drag-begin", self._block_drag)
+        self.add_controller(self._drag_guard)
+
     @staticmethod
     def _block_middle_click(gesture: Gtk.GestureClick, *_args) -> None:
+        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+
+    @staticmethod
+    def _block_drag(gesture: Gtk.GestureDrag, *_args) -> None:
         gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
 
