@@ -3,7 +3,7 @@
 This module owns the typing surface and result-display widgets only. Application
 state, typing logic, privacy state, and persistence remain in the main window.
 
-The typing views deliberately disable clipboard editing actions so a practice
+The practice views deliberately disable clipboard editing actions so a session
 cannot be completed by pasting text. Normal keyboard input and backspace remain
 available in the input view.
 """
@@ -12,8 +12,9 @@ from __future__ import annotations
 
 import gi
 
+gi.require_version("Gdk", "4.0")
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk
+from gi.repository import Gdk, Gtk
 
 
 class PracticeTextView(Gtk.TextView):
@@ -40,8 +41,8 @@ class PracticeTextView(Gtk.TextView):
         self.set_extra_menu(None)
 
         # GTK4 TextView exposes clipboard operations as built-in widget
-        # actions. Disabling the actions covers keyboard shortcuts and the
-        # corresponding context-menu commands in one place.
+        # actions. Disabling them covers keyboard shortcuts and the matching
+        # context-menu commands without affecting ordinary typing.
         for action_name in self._BLOCKED_ACTIONS:
             self.action_set_enabled(action_name, False)
 
@@ -50,6 +51,18 @@ class PracticeTextView(Gtk.TextView):
         self.action_set_enabled("text.undo", False)
         self.action_set_enabled("text.redo", False)
         self.get_buffer().set_enable_undo(False)
+
+        # GTK can use PRIMARY selection on middle-click. Capture the middle
+        # button before TextView sees it so it cannot become a paste shortcut.
+        self._middle_click_guard = Gtk.GestureClick()
+        self._middle_click_guard.set_button(2)
+        self._middle_click_guard.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        self._middle_click_guard.connect("pressed", self._block_middle_click)
+        self.add_controller(self._middle_click_guard)
+
+    @staticmethod
+    def _block_middle_click(gesture: Gtk.GestureClick, *_args) -> None:
+        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
 
 class TypingWorkspace(Gtk.Box):
