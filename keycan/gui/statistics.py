@@ -1,45 +1,55 @@
-"""Statistics page UI for Keycan.
+"""Simple, progress-focused statistics surface for Keycan Stage 2.
 
-Stage 2 defines the presentation and navigation surface only. Real practice
-records are intentionally supplied by the data layer in Stage 3.
+Stage 2 owns presentation and interaction only. Real SQLite records are wired
+in Stage 3; this screen is deliberately designed so no fake statistics are
+shown while the data source is empty.
 """
 
 from __future__ import annotations
 
 import gi
 
+gi.require_version("Adw", "1")
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk
+from gi.repository import Adw, GLib, Gtk
 
 
-class StatCard(Gtk.Box):
-    """Small summary card with a user-facing label and value."""
+class ProgressChart(Gtk.DrawingArea):
+    """Lightweight chart surface ready for real Stage 3 data."""
 
-    def __init__(self, title: str, value: str = "—") -> None:
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        self.add_css_class("card")
+    def __init__(self) -> None:
+        super().__init__()
+        self.set_content_width(720)
+        self.set_content_height(250)
         self.set_hexpand(True)
-        self.set_margin_top(2)
-        self.set_margin_bottom(2)
-        self.set_margin_start(2)
-        self.set_margin_end(2)
+        self.set_vexpand(False)
+        self.set_draw_func(self._draw)
 
-        title_label = Gtk.Label(label=title)
-        title_label.set_xalign(0)
-        title_label.add_css_class("dim-label")
-        self.append(title_label)
+    @staticmethod
+    def _draw(_area: Gtk.DrawingArea, cr, width: int, height: int, _data) -> None:
+        left = 42
+        right = max(left + 1, width - 18)
+        top = 18
+        bottom = max(top + 1, height - 34)
 
-        self.value_label = Gtk.Label(label=value)
-        self.value_label.set_xalign(0)
-        self.value_label.add_css_class("title-3")
-        self.append(self.value_label)
-
-    def set_value(self, value: str) -> None:
-        self.value_label.set_text(value)
+        # The empty chart keeps the same geometry that Stage 3 will use for
+        # real points. No fabricated measurements are drawn.
+        cr.set_line_width(1.0)
+        cr.set_source_rgba(0.45, 0.45, 0.45, 0.22)
+        for fraction in (0.0, 0.25, 0.5, 0.75, 1.0):
+            y = bottom - (bottom - top) * fraction
+            cr.move_to(left, y)
+            cr.line_to(right, y)
+            cr.stroke()
+        cr.set_source_rgba(0.45, 0.45, 0.45, 0.45)
+        cr.move_to(left, top)
+        cr.line_to(left, bottom)
+        cr.line_to(right, bottom)
+        cr.stroke()
 
 
 class StatisticsPanel(Gtk.Box):
-    """Responsive Stage 2 statistics surface, independent of SQLite queries."""
+    """Responsive, understandable progress page independent of SQLite."""
 
     PERIODS = ("Günlük", "Haftalık", "Aylık")
 
@@ -54,196 +64,209 @@ class StatisticsPanel(Gtk.Box):
         scrolled.set_vexpand(True)
         self.append(scrolled)
 
+        clamp = Adw.Clamp()
+        clamp.set_maximum_size(1100)
+        clamp.set_tightening_threshold(760)
+        scrolled.set_child(clamp)
+
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=18)
         content.set_margin_top(24)
-        content.set_margin_bottom(28)
-        content.set_margin_start(24)
-        content.set_margin_end(24)
+        content.set_margin_bottom(32)
+        content.set_margin_start(20)
+        content.set_margin_end(20)
         content.set_hexpand(True)
-        scrolled.set_child(content)
+        clamp.set_child(content)
 
-        header = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        self._add_revealed(content, self._make_header(), 60)
+        self._add_revealed(content, self._make_overview(), 120)
+        self._add_revealed(content, self._make_progress_section(), 180)
+        self._add_revealed(content, self._make_accuracy_section(), 240)
+        self._add_revealed(content, self._make_history_section(), 300)
+
+    def _add_revealed(self, parent: Gtk.Box, child: Gtk.Widget, delay_ms: int) -> None:
+        revealer = Gtk.Revealer()
+        revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_DOWN)
+        revealer.set_transition_duration(220)
+        revealer.set_reveal_child(False)
+        revealer.set_child(child)
+        parent.append(revealer)
+        GLib.timeout_add(delay_ms, self._reveal, revealer)
+
+    @staticmethod
+    def _reveal(revealer: Gtk.Revealer) -> bool:
+        revealer.set_reveal_child(True)
+        return GLib.SOURCE_REMOVE
+
+    @staticmethod
+    def _section_title(title: str, description: str | None = None) -> Gtk.Box:
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+        label = Gtk.Label(label=title)
+        label.set_xalign(0)
+        label.add_css_class("title-3")
+        box.append(label)
+        if description:
+            detail = Gtk.Label(label=description)
+            detail.set_xalign(0)
+            detail.set_wrap(True)
+            detail.add_css_class("dim-label")
+            box.append(detail)
+        return box
+
+    def _make_header(self) -> Gtk.Box:
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         title = Gtk.Label(label="İstatistikler")
         title.set_xalign(0)
         title.add_css_class("title-1")
-        header.append(title)
-        description = Gtk.Label(
-            label="Yazma çalışmalarındaki ilerlemeni zaman içinde takip et."
-        )
+        box.append(title)
+        description = Gtk.Label(label="Yazma gelişimini tek bakışta takip et.")
         description.set_xalign(0)
         description.set_wrap(True)
         description.add_css_class("dim-label")
-        header.append(description)
-        content.append(header)
+        box.append(description)
+        return box
 
-        cards = Gtk.FlowBox()
-        cards.set_selection_mode(Gtk.SelectionMode.NONE)
-        cards.set_row_spacing(8)
-        cards.set_column_spacing(8)
-        cards.set_min_children_per_line(1)
-        cards.set_max_children_per_line(4)
-        cards.set_homogeneous(True)
-        cards.set_hexpand(True)
-        self.summary_cards = [
-            StatCard("Toplam çalışma"),
-            StatCard("Toplam süre"),
-            StatCard("Toplam kelime"),
-            StatCard("Ortalama doğruluk"),
-        ]
-        for card in self.summary_cards:
-            cards.append(card)
-        content.append(cards)
-
-        period_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        period_label = Gtk.Label(label="Zaman aralığı")
-        period_label.set_xalign(0)
-        period_label.set_valign(Gtk.Align.CENTER)
-        period_row.append(period_label)
-
-        self.period_buttons = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        self.period_buttons.add_css_class("linked")
-        for index, period in enumerate(self.PERIODS):
-            button = Gtk.ToggleButton(label=period)
-            button.set_active(index == 1)
-            button.connect("toggled", self._on_period_toggled, index)
-            self.period_buttons.append(button)
-            if index == 1:
-                self._active_period = button
-        period_row.append(self.period_buttons)
-        content.append(period_row)
-
-        graph_frame = Gtk.Frame()
-        graph_frame.set_hexpand(True)
-        graph_frame.set_vexpand(True)
-        graph_frame.set_size_request(-1, 250)
-        graph_frame.add_css_class("card")
-        graph_content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        graph_content.set_margin_top(18)
-        graph_content.set_margin_bottom(18)
-        graph_content.set_margin_start(18)
-        graph_content.set_margin_end(18)
-
-        graph_header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        graph_title = Gtk.Label(label="Yazma gelişimi")
-        graph_title.set_xalign(0)
-        graph_title.add_css_class("title-3")
-        graph_header.append(graph_title)
-        graph_header.append(Gtk.Label(label="·"))
-        graph_metric = Gtk.Label(label="Dakikada kelime")
-        graph_metric.add_css_class("dim-label")
-        graph_header.append(graph_metric)
-        graph_content.append(graph_header)
-
-        self.graph_placeholder = Gtk.Label(
-            label="Henüz tamamlanmış bir çalışma yok.\nİlk çalışmanı tamamladığında ilerlemen burada görünecek."
-        )
-        self.graph_placeholder.set_justify(Gtk.Justification.CENTER)
-        self.graph_placeholder.set_wrap(True)
-        self.graph_placeholder.set_hexpand(True)
-        self.graph_placeholder.set_vexpand(True)
-        self.graph_placeholder.add_css_class("dim-label")
-        graph_content.append(self.graph_placeholder)
-        graph_frame.set_child(graph_content)
-        content.append(graph_frame)
-
-        analysis = Gtk.FlowBox()
-        analysis.set_selection_mode(Gtk.SelectionMode.NONE)
-        analysis.set_row_spacing(8)
-        analysis.set_column_spacing(8)
-        analysis.set_min_children_per_line(1)
-        analysis.set_max_children_per_line(2)
-        analysis.set_homogeneous(True)
-        analysis.set_hexpand(True)
-        analysis.append(
-            self._make_analysis_card(
-                "Doğruluk analizi",
-                "Henüz veri yok",
-                "Doğru ve yanlış kelimeler, çalışmalar tamamlandıkça burada özetlenecek.",
-            )
-        )
-        analysis.append(
-            self._make_analysis_card(
-                "Çalışma özeti",
-                "Henüz veri yok",
-                "Tamamlanan çalışmaların toplam ve ortalama sonuçları burada gösterilecek.",
-            )
-        )
-        content.append(analysis)
-
-        history_frame = Gtk.Frame()
-        history_frame.set_hexpand(True)
-        history_frame.add_css_class("card")
-        history_content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        history_content.set_margin_top(18)
-        history_content.set_margin_bottom(18)
-        history_content.set_margin_start(18)
-        history_content.set_margin_end(18)
-
-        history_title = Gtk.Label(label="Çalışmalarım")
-        history_title.set_xalign(0)
-        history_title.add_css_class("title-3")
-        history_content.append(history_title)
-
-        self.history_placeholder = Gtk.Label(
-            label="Henüz tamamlanmış bir çalışma yok.\nİlk çalışmanı tamamladığında geçmiş çalışmaların burada görünecek."
-        )
-        self.history_placeholder.set_xalign(0)
-        self.history_placeholder.set_wrap(True)
-        self.history_placeholder.add_css_class("dim-label")
-        history_content.append(self.history_placeholder)
-
-        table_scroll = Gtk.ScrolledWindow()
-        table_scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER)
-        table_scroll.set_hexpand(True)
-        table_header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        table_header.set_size_request(720, -1)
-        for column in ("Tarih", "Ders", "Süre", "Sonuç", "Doğruluk", "Hız"):
-            label = Gtk.Label(label=column)
-            label.set_xalign(0)
-            label.set_hexpand(True)
-            label.add_css_class("dim-label")
-            table_header.append(label)
-        table_scroll.set_child(table_header)
-        history_content.append(table_scroll)
-        history_frame.set_child(history_content)
-        content.append(history_frame)
-
-    def _make_analysis_card(self, title: str, value: str, description: str) -> Gtk.Frame:
+    def _make_overview(self) -> Gtk.Frame:
         frame = Gtk.Frame()
-        frame.set_hexpand(True)
         frame.add_css_class("card")
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        box.set_margin_top(16)
+        box.set_margin_bottom(16)
+        box.set_margin_start(16)
+        box.set_margin_end(16)
+        box.append(self._section_title("Genel durum"))
+
+        metrics = Gtk.FlowBox()
+        metrics.set_selection_mode(Gtk.SelectionMode.NONE)
+        metrics.set_row_spacing(10)
+        metrics.set_column_spacing(10)
+        metrics.set_min_children_per_line(1)
+        metrics.set_max_children_per_line(4)
+        metrics.set_homogeneous(True)
+        metrics.set_hexpand(True)
+        for title in ("Çalışma", "Toplam süre", "Kelime", "Doğruluk"):
+            metrics.append(self._make_metric(title))
+        box.append(metrics)
+        frame.set_child(box)
+        return frame
+
+    @staticmethod
+    def _make_metric(title: str) -> Gtk.Box:
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+        box.add_css_class("card")
+        box.set_margin_top(1)
+        box.set_margin_bottom(1)
+        box.set_margin_start(1)
+        box.set_margin_end(1)
+        label = Gtk.Label(label=title)
+        label.set_xalign(0)
+        label.add_css_class("dim-label")
+        box.append(label)
+        value = Gtk.Label(label="—")
+        value.set_xalign(0)
+        value.add_css_class("title-3")
+        box.append(value)
+        return box
+
+    def _make_progress_section(self) -> Gtk.Frame:
+        frame = Gtk.Frame()
+        frame.add_css_class("card")
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         box.set_margin_top(16)
         box.set_margin_bottom(16)
         box.set_margin_start(16)
         box.set_margin_end(16)
 
-        title_label = Gtk.Label(label=title)
-        title_label.set_xalign(0)
-        title_label.add_css_class("title-3")
-        box.append(title_label)
-        value_label = Gtk.Label(label=value)
-        value_label.set_xalign(0)
-        box.append(value_label)
-        detail = Gtk.Label(label=description)
-        detail.set_xalign(0)
-        detail.set_wrap(True)
-        detail.add_css_class("dim-label")
-        box.append(detail)
+        heading = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        heading.append(self._section_title("Yazma hızın", "Zaman içindeki gelişimin"))
+        period_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        period_box.add_css_class("linked")
+        self.period_buttons: list[Gtk.ToggleButton] = []
+        for index, period in enumerate(self.PERIODS):
+            button = Gtk.ToggleButton(label=period)
+            button.set_active(index == 1)
+            button.connect("toggled", self._on_period_toggled, index)
+            self.period_buttons.append(button)
+            period_box.append(button)
+        heading.append(period_box)
+        box.append(heading)
+
+        self.chart = ProgressChart()
+        box.append(self.chart)
+
+        empty = Gtk.Label(
+            label="Henüz tamamlanmış bir çalışma yok.\nİlk çalışmanı tamamladığında hızındaki değişim burada görünecek."
+        )
+        empty.set_justify(Gtk.Justification.CENTER)
+        empty.set_wrap(True)
+        empty.set_margin_top(-120)
+        empty.set_margin_bottom(80)
+        empty.add_css_class("dim-label")
+        box.append(empty)
+        frame.set_child(box)
+        return frame
+
+    def _make_accuracy_section(self) -> Gtk.Frame:
+        frame = Gtk.Frame()
+        frame.add_css_class("card")
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        box.set_margin_top(16)
+        box.set_margin_bottom(16)
+        box.set_margin_start(16)
+        box.set_margin_end(16)
+        box.append(self._section_title("Doğruluk", "Doğru ve yanlış kelimelerin dengesi"))
+
+        message = Gtk.Label(
+            label="Çalışmalar tamamlandıkça doğru kelimeler, yanlış kelimeler ve doğruluk yüzdesi burada gösterilecek."
+        )
+        message.set_xalign(0)
+        message.set_wrap(True)
+        message.add_css_class("dim-label")
+        box.append(message)
+        frame.set_child(box)
+        return frame
+
+    def _make_history_section(self) -> Gtk.Frame:
+        frame = Gtk.Frame()
+        frame.add_css_class("card")
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        box.set_margin_top(16)
+        box.set_margin_bottom(16)
+        box.set_margin_start(16)
+        box.set_margin_end(16)
+        box.append(self._section_title("Son çalışmaların", "En yeni çalışmalar burada listelenecek."))
+
+        table = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        header = Gtk.Grid()
+        header.set_column_spacing(18)
+        header.set_row_spacing(8)
+        columns = ("Tarih", "Ders", "Süre", "Sonuç", "Doğruluk", "Hız")
+        for column, title in enumerate(columns):
+            label = Gtk.Label(label=title)
+            label.set_xalign(0)
+            label.add_css_class("dim-label")
+            label.set_hexpand(True)
+            header.attach(label, column, 0, 1, 1)
+        table.append(header)
+
+        separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        separator.set_margin_top(8)
+        separator.set_margin_bottom(8)
+        table.append(separator)
+
+        empty = Gtk.Label(label="Henüz tamamlanmış bir çalışma yok.")
+        empty.set_xalign(0)
+        empty.set_margin_top(8)
+        empty.set_margin_bottom(8)
+        empty.add_css_class("dim-label")
+        table.append(empty)
+        box.append(table)
         frame.set_child(box)
         return frame
 
     def _on_period_toggled(self, button: Gtk.ToggleButton, _index: int) -> None:
         if not button.get_active():
             return
-        child = self.period_buttons.get_first_child()
-        while child is not None:
-            if child is not button and isinstance(child, Gtk.ToggleButton):
-                child.set_active(False)
-            child = child.get_next_sibling()
-        self._active_period = button
-        # Real period-specific data is intentionally wired in Stage 3.
-        self.graph_placeholder.set_text(
-            "Henüz tamamlanmış bir çalışma yok.\n"
-            "İlk çalışmanı tamamladığında bu görünümde ilerlemen gösterilecek."
-        )
+        for other in self.period_buttons:
+            if other is not button:
+                other.set_active(False)
+        # Stage 3 will replace the empty chart with period-specific data.

@@ -1,7 +1,11 @@
 """Typing workspace UI for Keycan.
 
-This module owns the editor and result-display widgets only. Application state,
-typing logic, privacy state, and persistence remain in the main window.
+This module owns the typing surface and result-display widgets only. Application
+state, typing logic, privacy state, and persistence remain in the main window.
+
+The typing views deliberately disable clipboard editing actions so a practice
+cannot be completed by pasting text. Normal keyboard input and backspace remain
+available in the input view.
 """
 
 from __future__ import annotations
@@ -12,12 +16,44 @@ gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk
 
 
-class TypingWorkspace(Gtk.Box):
-    """Reusable typing workspace surface.
+class PracticeTextView(Gtk.TextView):
+    """Text view with the clipboard/editing loopholes closed for practice."""
 
-    The workspace deliberately contains no database or typing-engine logic.
-    The parent window owns state and connects to the input buffer when needed.
-    """
+    _BLOCKED_ACTIONS = (
+        "clipboard.copy",
+        "clipboard.cut",
+        "clipboard.paste",
+    )
+
+    def __init__(self, editable: bool, monospace: bool) -> None:
+        super().__init__()
+        self.set_editable(editable)
+        self.set_cursor_visible(editable)
+        self.set_monospace(monospace)
+        self.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        self.set_vexpand(True)
+        self.set_hexpand(True)
+        self.set_left_margin(8)
+        self.set_right_margin(8)
+        self.set_top_margin(8)
+        self.set_bottom_margin(8)
+        self.set_extra_menu(None)
+
+        # GTK4 TextView exposes clipboard operations as built-in widget
+        # actions. Disabling the actions covers keyboard shortcuts and the
+        # corresponding context-menu commands in one place.
+        for action_name in self._BLOCKED_ACTIONS:
+            self.action_set_enabled(action_name, False)
+
+        # Undo/redo must not become an alternate way to alter a practice
+        # result. Backspace itself remains enabled for normal typing.
+        self.action_set_enabled("text.undo", False)
+        self.action_set_enabled("text.redo", False)
+        self.get_buffer().set_enable_undo(False)
+
+
+class TypingWorkspace(Gtk.Box):
+    """Reusable typing workspace surface."""
 
     def __init__(self, text_size: int = 16) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -39,8 +75,6 @@ class TypingWorkspace(Gtk.Box):
         editors.set_end_child(self._wrap_editor(self.input_view))
         editors.set_position(470)
 
-        # Keep the status bar background edge-to-edge while preserving a
-        # comfortable 12px inset for its actual controls.
         bottom = Gtk.CenterBox()
         bottom.set_margin_start(0)
         bottom.set_margin_end(0)
@@ -72,18 +106,8 @@ class TypingWorkspace(Gtk.Box):
         size_box.append(self.size_spin)
         bottom.set_end_widget(size_box)
 
-    def _make_text_view(self, editable: bool, monospace: bool) -> Gtk.TextView:
-        view = Gtk.TextView()
-        view.set_editable(editable)
-        view.set_cursor_visible(editable)
-        view.set_monospace(monospace)
-        view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
-        view.set_vexpand(True)
-        view.set_hexpand(True)
-        view.set_left_margin(8)
-        view.set_right_margin(8)
-        view.set_top_margin(8)
-        view.set_bottom_margin(8)
+    def _make_text_view(self, editable: bool, monospace: bool) -> PracticeTextView:
+        view = PracticeTextView(editable, monospace)
         self._apply_text_size(view)
         return view
 

@@ -1,10 +1,10 @@
 # Keycan — Aşama 2 İstatistikler Sayfası Tasarım Belgesi
 
-Bu belge, İstatistikler sayfasının kodlanmasından önce kabul edilen UX ve bilgi hiyerarşisini tanımlar. Aşama 2'nin amacı önce doğru ekran yapısını kesinleştirmek, Aşama 3'te ise bu yapıyı gerçek SQLite verileriyle beslemektir.
+Bu belge, Aşama 2'nin uygulama içinde nasıl görünmesi gerektiğini ve kullanıcı tarafından onaylanan son UX kararlarını tanımlar. Aşama 3'te aynı arayüz gerçek SQLite kayıtlarıyla beslenecektir.
 
 ## 1. Temel hedef
 
-İstatistikler sayfası kullanıcının yazma gelişimini teknik terimlere ihtiyaç duymadan anlamasını sağlamalıdır.
+İstatistikler bir "teknik dashboard" değil, kullanıcının yazma gelişimini tek bakışta anlayabildiği sade bir **ilerleme ekranı** olacaktır.
 
 Ana dil:
 - `Dakikada 42 kelime`
@@ -14,69 +14,61 @@ Ana dil:
 
 `WPM` ve `CPM` ana kullanıcı arayüzünde tek başına gösterilmeyecektir.
 
-## 2. Sayfa düzeni
+## 2. Onaylanan bilgi hiyerarşisi
 
-Sayfa üstten alta şu bilgi hiyerarşisini kullanacaktır:
+Sayfa üstten alta şu sırayı kullanacaktır:
 
-1. Sayfa başlığı ve kısa açıklama
-2. Genel özet kartları
-3. Zaman aralığı seçici: `Günlük`, `Haftalık`, `Aylık`
-4. Yazma gelişimi grafiği
-5. Doğruluk / doğru-yanlış analizi
-6. `Çalışmalarım` geçmiş tablosu
+1. **İstatistikler** — kısa ve anlaşılır açıklama
+2. **Genel durum** — çalışma sayısı, toplam süre, toplam kelime, doğruluk
+3. **Yazma hızın** — Günlük / Haftalık / Aylık seçici + gelişim grafiği
+4. **Doğruluk** — doğru/yanlış kelime dengesi ve doğruluk yüzdesi
+5. **Son çalışmaların** — geçmiş çalışmaların sade tablosu
 
-İlk sürümde gereksiz çok sayıda grafik veya ayar eklenmeyecektir.
+Gereksiz ikinci derece kartlar, çok sayıda grafik veya teknik ayrıntı eklenmeyecektir.
 
-## 3. Genel özet kartları
+## 3. Genel durum
 
-İlk sürüm için dört temel özet:
+Dört temel ölçüm gösterilecektir:
 
-- **Toplam çalışma** — tamamlanan çalışma sayısı
+- **Çalışma** — tamamlanan çalışma sayısı
 - **Toplam süre** — toplam çalışma süresi
-- **Toplam kelime** — yazılan toplam kelime
-- **Ortalama doğruluk** — tamamlanan çalışmaların doğruluk özeti
+- **Kelime** — yazılan toplam kelime
+- **Doğruluk** — genel doğruluk özeti
 
-Kartlar kısa tutulacak; ham alan adları kullanıcıya gösterilmeyecektir.
+Bu alan kısa tutulacak ve ham veritabanı alan adlarını göstermeyecektir.
 
 ## 4. Zaman aralığı
 
-Grafik ve özetlerde üç görünüm bulunacaktır:
+Grafik için üç görünüm bulunacaktır:
 
 - `Günlük`
 - `Haftalık`
 - `Aylık`
 
-Varsayılan görünüm `Haftalık` olacaktır; böylece kullanıcının son günlerdeki ilerlemesi tek bakışta anlaşılabilir. Veri katmanı seçilen döneme göre yeniden sorgulanabilecek şekilde tasarlanacaktır.
+Varsayılan görünüm `Haftalık` olacaktır. Seçim, Aşama 3'te aynı veri arayüzü üzerinden dönem sorgusunu değiştirecektir.
 
-## 5. Ana gelişim grafiği
+## 5. Gelişim grafiği
 
-Grafiğin amacı tek bir teknik değer göstermek değil, zaman içindeki gelişimi anlaşılır biçimde göstermektir.
+Grafik tek bir sayıyı büyük bir kart olarak göstermek yerine zaman içindeki değişimi görselleştirecektir.
 
 Birincil ölçüm:
 - Ortalama yazma hızı: `Dakikada X kelime`
 
-Grafik noktalarının üzerine gelindiğinde/tıklandığında ilgili dönem için:
-- çalışma sayısı
-- ortalama hız
-- ortalama doğruluk
+Aşama 3'te grafik noktaları gerçek çalışma kayıtlarından üretilecektir. Bir nokta seçildiğinde ilgili dönem için çalışma sayısı, ortalama hız ve ortalama doğruluk gösterilebilecek şekilde tasarlanacaktır.
 
-gösterilebilecektir.
+Aşama 2'de **sahte veri çizilmeyecektir**. Bunun yerine gerçek veri geldiğinde kullanılacak eksen/çizim yüzeyi ve anlaşılır boş durum hazırlanacaktır.
 
-Grafik veri üretimi Aşama 3'te gerçek SQLite kayıtlarından yapılacaktır.
+## 6. Doğruluk
 
-## 6. Doğruluk analizi
-
-Ayrı bir bölümde:
+Teknik ve kalabalık bir grafik yerine sade bir analiz alanı kullanılacaktır:
 
 - doğru kelimeler
 - yanlış kelimeler
 - doğruluk yüzdesi
 
-anlaşılır biçimde gösterilecektir.
+Aşama 3'te gerçek kayıtlar bağlandığında oran ve değerler burada gösterilecektir.
 
-Burada mümkün olduğunca teknik grafik yerine kolay okunabilen oran/özet kullanılacaktır.
-
-## 7. Çalışmalarım tablosu
+## 7. Son çalışmaların tablosu
 
 Geçmiş çalışmaların ana listesi:
 
@@ -88,59 +80,85 @@ Kurallar:
 - En yeni çalışma üstte olacaktır.
 - Teknik sütun adları kullanılmayacaktır.
 - Kaynak/ders snapshot bilgileri kullanılacaktır.
-- Tablo boşsa kullanıcıya anlaşılır bir boş durum mesajı gösterilecektir.
-- Çok sayıda kayıt için sayfalama veya kontrollü listeleme daha sonra değerlendirilebilir.
+- Tablo boşsa anlaşılır boş durum mesajı gösterilecektir.
+- Çok sayıda kayıt için kontrollü listeleme daha sonra değerlendirilebilir.
 
 ## 8. Boş durum
 
 Henüz çalışma yapılmadıysa sahte istatistik gösterilmeyecektir.
 
-Örnek mesaj:
+Örnek:
 
 > Henüz tamamlanmış bir çalışma yok.
 > İlk çalışmanı tamamladığında ilerlemen burada görünecek.
 
-## 9. Veri ve mimari sınırlar
+## 9. Animasyon
+
+Animasyonlar işlevsel ve hafif olacaktır:
+
+- sayfa bölümleri kısa bir açılma/geçiş ile görünebilir
+- gerçek veri geldiğinde grafik ve değerler yumuşak biçimde güncellenebilir
+- sürekli hareket, neon efektleri ve dikkat dağıtan animasyonlar kullanılmayacaktır
+- GTK/libadwaita'nın animasyon ve erişilebilirlik davranışlarıyla çelişen özel efektler eklenmeyecektir
+
+## 10. Sidebar ve ikonlar
+
+Overlay sidebar korunacaktır. Tüm ana navigasyon öğeleri ikon + metin ile gösterilecektir:
+
+- `keyboard-symbolic` — Çalışma Alanı
+- `view-statistics-symbolic` — İstatistikler
+- `preferences-system-symbolic` — Ayarlar
+
+Sidebar açılıp kapandığında çalışma alanının geometrisi değişmemelidir.
+
+## 11. Yazma alanı güvenliği
+
+Çalışma sırasında metin kopyalama/yapıştırma bir hızlandırma yolu olmamalıdır. GTK4'ün TextView yerleşik clipboard eylemleri kullanılarak:
+
+- kopyalama
+- kesme
+- yapıştırma
+- clipboard üzerinden kısayol kullanımı
+- undo/redo ile yazılan metni değiştirme
+
+çalışma alanında kapatılacaktır. Normal klavye ile yazma ve mevcut backspace davranışı korunacaktır.
+
+Ayrıca sürükle-bırak/PRIMARY clipboard gibi alternatif yollar gözden geçirilecek ve kullanıcı tarafından kolayca aşılabilecek bir loophole bırakılmayacaktır.
+
+## 12. Veri ve mimari sınırlar
 
 Aşama 2'de:
 - XP, seviye veya rozet hesaplanmayacaktır.
 - Profil kodlanmayacaktır.
 - Yeni çalışma metriği icat edilmeyecektir.
 - SQLite şeması gereksiz yere değiştirilmemelidir.
-- Yazma alanının davranışı değiştirilmemelidir.
+- Gerçek istatistik verisi uydurulmayacaktır.
 
-Aşama 1'de hazırlanan çalışma kayıtları İstatistikler sayfasının tek temel veri kaynağı olacaktır.
+Aşama 1'de hazırlanan çalışma kayıtları Aşama 3'ün tek temel veri kaynağı olacaktır.
 
-## 10. Erişim ve gezinme
+## 13. Responsive davranış
 
-Mevcut overlay sidebar korunacaktır. Navigasyona `İstatistikler` öğesi eklenecek ve İstatistikler ayrı bir `Gtk.Stack` sayfası olacaktır.
+- Geniş ekranda genel durum ölçümleri yatay düzenlenebilir.
+- Dar ekranda ölçümler otomatik olarak alt satırlara geçmelidir.
+- Grafik mevcut genişliği doldurmalı ve sabit pencere genişliğine bağlı olmamalıdır.
+- Geçmiş tablo dar ekranda taşma yaratmamalı; gerekirse yatay kaydırma kullanılmalıdır.
+- Sidebar overlay olarak kalmalı ve çalışma alanını sıkıştırmamalıdır.
 
-Çalışma Alanı'nın geometrisi sidebar açılıp kapandığında bozulmamalıdır.
+## 14. Aşama 2 tamamlanma kriterleri
 
-## 11. Responsive davranış
-
-- Geniş ekranda özet kartları yatay dizilebilir.
-- Dar ekranda kartlar alt alta veya iki sütun halinde düzenlenebilir.
-- Tablo dar ekranda okunabilirliğini kaybetmemelidir; gerekirse sütunlar sadeleştirilecektir.
-- Grafik yatay alanı doldurmalı, sabit piksel genişliğine bağlı olmamalıdır.
-
-## 12. Aşama 2 tamamlanma kriterleri
-
-Aşama 2 tamamlandı sayılmadan Aşama 3 koduna geçilmeyecektir.
-
-Kontrol listesi:
 - [x] Bilgi hiyerarşisi belirlendi.
+- [x] Sade ilerleme ekranı yaklaşımı onaylandı.
 - [x] Kullanıcı dili belirlendi.
-- [x] Özet kartları belirlendi.
 - [x] Günlük/haftalık/aylık yapı belirlendi.
-- [x] Gelişim grafiğinin amacı belirlendi.
+- [x] Gelişim grafiğinin amacı ve boş durumu belirlendi.
 - [x] Doğruluk analizi belirlendi.
-- [x] `Çalışmalarım` tablosu belirlendi.
-- [x] Boş durum belirlendi.
+- [x] `Son çalışmaların` tablosu belirlendi.
+- [x] Animasyon yaklaşımı belirlendi.
+- [x] Sidebar ikonları belirlendi.
+- [x] Kopyala/yapıştır güvenliği belirlendi.
 - [x] Responsive yaklaşım belirlendi.
-- [x] Sidebar entegrasyon noktası belirlendi.
-- [ ] Tasarımın uygulama içinde kodlanması.
-- [ ] Arayüzün görsel/stabilite kontrolü.
-- [ ] Aşama 3'e geçmeden önce planın yeniden değerlendirilmesi.
+- [ ] Uygulama kodu son UX kararlarına göre tamamen doğrulanmalı.
+- [ ] Arayüzün görsel/stabilite kontrolü kullanıcı tarafında yapılmalı.
+- [ ] Aşama 3'e geçmeden önce plan yeniden değerlendirilmelidir.
 
-**Durum:** Tasarım tanımlandı; uygulama kodlaması henüz başlatılmadı.
+**Durum:** Kullanıcı tarafından onaylanan tasarım uygulandı; gerçek SQLite bağlantısı Aşama 3'te yapılacaktır.

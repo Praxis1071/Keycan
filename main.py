@@ -85,7 +85,7 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         )
         settings_row = self._make_navigation_row(
             "Ayarlar",
-            "emblem-system-symbolic",
+            "preferences-system-symbolic",
             "settings",
         )
         navigation.append(workspace_row)

@@ -21,116 +21,69 @@ Ana yazma deneyimi korunacak ve yeni bölümler mevcut çalışma alanına gerek
 
 ### Aşama 1 — Çalışma oturumu veri modeli
 
-Her tamamlanan yazma çalışmasının istatistiklerde anlamlı biçimde gösterilebilmesi için hangi verilerin saklanacağı kesin olarak tanımlanacaktır.
+Her tamamlanan yazma çalışmasının istatistiklerde anlamlı biçimde gösterilebilmesi için gerekli veriler SQLite'a kaydedilecektir.
 
-Planlanan temel çalışma kaydı:
+Temel çalışma kaydı; çalışma zamanı, ders/kaynak snapshot bilgileri, süre, hedef ve yazılan kelime sayıları, doğru/yanlış kelimeler, karakter ölçümleri, dakikadaki kelime/karakter değerleri ve doğruluk yüzdesini içerir.
 
-- çalışma kimliği
-- çalışma tarihi/zamanı
-- çalışılan ders kimliği
-- çalışma sırasında kullanılan kaynak adı
-- ders/metin adı veya kullanıcıya gösterilen ders bilgisi
-- çalışma süresi
-- hedef metindeki toplam kelime
-- kullanıcının yazdığı toplam kelime
-- doğru kelime sayısı
-- yanlış kelime sayısı
-- toplam karakter
-- doğru karakter sayısı
-- yanlış karakter sayısı
-- dakikadaki kelime değeri (ham veri; kullanıcı arayüzünde teknik kısaltma olarak gösterilmeyecek)
-- dakikadaki karakter değeri (ham veri; kullanıcı arayüzünde teknik kısaltma olarak gösterilmeyecek)
-- doğruluk yüzdesi
-
-### Kullanıcıya gösterilecek dil
-
-`WPM` ve `CPM` gibi tek başına teknik kısaltmalar ana kullanıcı arayüzünde kullanılmayacaktır.
-
-Örnek:
-
-- `42 WPM` yerine **Dakikada 42 kelime**
-- `96% accuracy` yerine **%96 doğruluk**
-- `CPM` yerine gerektiğinde **Dakikada X karakter**
-
-Ham ölçüm alanları veri katmanında tutulabilir; kullanıcı arayüzü bunları anlaşılır Türkçe ifadelerle sunacaktır.
-
-### Çalışmalarım tablosu için hedef veri
-
-İstatistikler sayfasında geçmiş çalışmalar ayrı ayrı görülebilecektir. Tablonun ilk tasarımında şu bilgiler hedeflenmektedir:
-
-| Alan | Kullanıcıya gösterim |
-|---|---|
-| Tarih | 17 Eylül 2026, 18:30 |
-| Ders | Ders 12 |
-| Süre | 5 dakika |
-| Sonuç | 184 kelime |
-| Doğruluk | %96 |
-| Hız | Dakikada 37 kelime |
-
-Tablo tasarımında gereksiz teknik alanlar gösterilmeyecek; ayrıntılı veriler gerektiğinde çalışma ayrıntısında kullanılabilecektir.
-
-### Aşama 1 tasarım ilkeleri
-
-- İstatistikler sonradan hesaplanabilecek şekilde yeterli ham veri saklanmalıdır.
-- Aynı çalışma kaydında mümkün olduğunca o anki çalışmayı tanımlayan bilgiler korunmalıdır.
-- Ders veya kaynak adları ileride değişse bile geçmiş kayıtların anlamı bozulmamalıdır.
-- Gelecekte günlük, haftalık ve aylık grafikler üretilebilmelidir.
-- Profil, XP ve rozet sistemi aynı temel çalışma kayıtlarını kullanabilmelidir.
-- Veri modeli kullanıcı arayüzünden bağımsız tutulmalıdır.
+Kullanıcı arayüzünde `WPM` ve `CPM` gibi tek başına teknik kısaltmalar kullanılmayacaktır. Örnek dil: **Dakikada 42 kelime**, **%96 doğruluk**, **Dakikada 210 karakter**.
 
 ### Aşama 1 uygulama sonucu
 
-Çalışma sonuçlarının SQLite'a kaydedilmesi veri modeliyle uyumlu hale getirildi.
-
-Eklenen/aktif kullanılan çalışma alanları:
-
-- `completed_at`
-- `source_name_snapshot`
-- `lesson_title_snapshot`
-- `target_word_count`
-- `typed_word_count`
-- `total_characters`
-- `correct_characters`
-- `wrong_characters`
-- `accuracy_percent`
-- mevcut hız alanları (`words_per_minute`, `characters_per_minute`)
-
-Yeni çalışma kayıtları kaynak ve ders adlarını o anki haliyle saklayarak geçmiş kayıtların daha sonra değişen ders/kaynak adlarından etkilenmesini önleyecek şekilde tasarlanmıştır.
-
-Hız, doğruluk ve karakter ölçümleri çalışma tamamlandığı anda hesaplanır. Eski veritabanları için migration mevcut sütunları koruyarak eksik alanları ekler. SQLite migration uyumluluğu nedeniyle `completed_at` eski satırlarda boş bırakılabilir; yeni kayıtlar ekleme sırasında `CURRENT_TIMESTAMP` ile oluşturulur.
+Çalışma sonuçlarının SQLite'a kaydedilmesi veri modeliyle uyumlu hale getirildi. Yeni kayıtlar kaynak ve ders adlarını o anki haliyle snapshot olarak saklar. Eski veritabanları için migration eksik alanları ekler ve güvenilir biçimde türetilebilen alanları geriye dönük doldurur.
 
 **Durum:** Tamamlandı ve kontrol edildi.
 
-### Aşama 2 — İstatistikler sayfası UX tasarımı
+### Aşama 2 — İstatistikler sayfası
 
-İstatistikler sayfası kodlanmadan önce görünüm ve bilgi hiyerarşisi kesinleştirilecektir.
+Aşama 2'nin son kullanıcı tasarımı kullanıcı tarafından açıkça onaylandı ve kalıcı olarak `docs/STAGE2_STATISTICS_DESIGN.md` dosyasına kaydedildi.
 
-Detaylı tasarım `docs/STAGE2_STATISTICS_DESIGN.md` dosyasında kalıcı olarak tutulmaktadır.
+#### Onaylanan yaklaşım
 
-Hedef yapı:
+İstatistikler sayfası teknik ve kalabalık bir dashboard yerine sade bir **ilerleme ekranı** olacaktır:
 
-- genel çalışma özeti
-- anlaşılır istatistik kartları/tablosu
-- günlük/haftalık/aylık görünüm
-- yazma gelişimini gösteren grafik
-- doğru/yanlış ve doğruluk analizi
-- **Çalışmalarım** geçmiş tablosu
-- anlaşılır boş durum
-- responsive yerleşim
-- mevcut overlay sidebar üzerinden İstatistikler sayfasına erişim
+- İstatistikler başlığı ve kısa açıklama
+- Genel durum: çalışma, toplam süre, kelime, doğruluk
+- Günlük / Haftalık / Aylık dönem seçici
+- Yazma hızını zaman içinde gösteren grafik
+- Doğruluk: doğru/yanlış kelimeler ve doğruluk yüzdesi
+- Son çalışmaların sade geçmiş tablosu
+- Gerçek veri yokken anlaşılır boş durum
+- Responsive düzen
+- Hafif, kısa ve dikkat dağıtmayan geçiş animasyonları
 
-Kullanıcı arayüzünde teknik `WPM`/`CPM` kısaltmaları tek başına gösterilmeyecektir.
+Gerçek SQLite verisi Aşama 3'e kadar bağlanmayacak ve sahte istatistik gösterilmeyecektir.
 
-Aşama 2 tasarımında XP, profil, rozet ve yeni çalışma metriği eklenmeyecektir. Aşama 1 çalışma kayıtları temel veri kaynağı olarak korunacaktır.
+#### Sidebar ikon standardı
 
-**Durum:** Tasarım tanımlandı; uygulama kodlaması ve görsel/stabilite kontrolü bekliyor.
+Tüm ana navigasyon öğeleri ikon + metin ile gösterilecektir:
+
+- `keyboard-symbolic` — Çalışma Alanı
+- `view-statistics-symbolic` — İstatistikler
+- `preferences-system-symbolic` — Ayarlar
+
+Mevcut overlay sidebar davranışı korunacaktır; sidebar çalışma alanını sıkıştırmayacaktır.
+
+#### Yazma alanı güvenliği
+
+Yazma pratiğinde kopyala/yapıştır ile metin girme veya çalışma sonucunu undo/redo ile değiştirme yolları kapatılacaktır. GTK4 TextView'ın yerleşik clipboard eylemleri devre dışı bırakılacak; normal klavye ile yazma ve mevcut backspace davranışı korunacaktır. PRIMARY clipboard ve sürükle-bırak gibi alternatif yollar da dikkate alınacaktır.
+
+#### Aşama 2 uygulama sonucu
+
+- Sidebar navigasyonu ve ikonları güncellendi.
+- İstatistikler ekranı sade ilerleme yaklaşımına göre yeniden düzenlendi.
+- Grafik yüzeyi ve boş durum hazırlandı; gerçek veri Aşama 3'e bırakıldı.
+- Hafif bölüm açılma animasyonları eklendi.
+- Yazma alanında clipboard kopyalama/kesme/yapıştırma ve undo/redo eylemleri kapatıldı.
+- Kullanıcı arayüzündeki teknik `WPM`/`CPM` kısaltmaları korunmadı.
+
+**Durum:** Uygulama kodu güncellendi; son görsel/stabilite doğrulaması kullanıcı tarafında yapılmalıdır. Aşama 3 henüz başlatılmayacaktır.
 
 ### Aşama 3 — Gerçek SQLite verilerinin istatistiklere bağlanması
 
-- Tamamlanan çalışma kayıtları gerçek verilerle doldurulacak.
-- İstatistikler SQLite üzerinden okunacak.
-- Çalışmalarım tablosu gerçek geçmişi gösterecek.
-- Grafikler gerçek çalışma verilerinden üretilecek.
+- Tamamlanan çalışma kayıtları gerçek verilerle okunacak.
+- Genel durum gerçek SQLite verilerinden hesaplanacak.
+- Son çalışmaların tablosu gerçek geçmişi gösterecek.
+- Günlük/haftalık/aylık grafikler gerçek çalışma verilerinden üretilecek.
 - Eski kayıtlar için geriye dönük uyumluluk korunacak.
 
 **Durum:** Bekliyor.
@@ -154,8 +107,6 @@ Aşama 2 tasarımında XP, profil, rozet ve yeni çalışma metriği eklenmeyece
 
 XP sistemi, temel çalışma ve istatistik veri altyapısı güvenilir hale gelmeden uygulanmayacaktır.
 
-**Durum:** Bekliyor.
-
 ## Aşama geçiş kuralı
 
 Bir aşama tamamlan sayılmadan sonraki aşamanın koduna başlanmaz.
@@ -170,4 +121,4 @@ Her aşama sonunda:
 
 ## İlgili mevcut roadmap
 
-Bu belge, `ROADMAP.md` içindeki uzun vadeli planı daha kontrollü bir uygulama sırasına dönüştüren çalışma belgesidir. `ROADMAP.md` gelecekteki özelliklerin genel listesini, bu belge ise kabul edilmiş uygulama sırasını ve tasarım kararlarını tanımlar.
+`ROADMAP.md` uzun vadeli özellik listesini, bu belge ise kabul edilmiş uygulama sırasını ve tasarım kararlarını tanımlar.
