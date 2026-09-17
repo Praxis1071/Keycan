@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import sqlite3
 from pathlib import Path
 
@@ -154,8 +155,8 @@ class Database:
             "characters_per_minute": characters_per_minute,
             "accuracy_percent": accuracy_percent,
         }
-        if any(value < 0 for value in metrics.values()):
-            raise ValueError("Çalışma ölçümleri negatif olamaz")
+        if any(not math.isfinite(value) or value < 0 for value in metrics.values()):
+            raise ValueError("Çalışma ölçümleri geçerli ve negatif olmayan değerler olmalıdır")
         if correct + wrong != typed_word_count:
             raise ValueError("Doğru ve yanlış kelime toplamı yazılan kelime sayısıyla eşleşmiyor")
         if total_characters != correct_characters + wrong_characters:
