@@ -27,31 +27,30 @@ Temel çalışma kaydı; çalışma zamanı, ders/kaynak snapshot bilgileri, sü
 
 Kullanıcı arayüzünde `WPM` ve `CPM` gibi tek başına teknik kısaltmalar kullanılmayacaktır. Örnek dil: **Dakikada 42 kelime**, **%96 doğruluk**, **Dakikada 210 karakter**.
 
-### Aşama 1 uygulama sonucu
-
-Çalışma sonuçlarının SQLite'a kaydedilmesi veri modeliyle uyumlu hale getirildi. Yeni kayıtlar kaynak ve ders adlarını o anki haliyle snapshot olarak saklar. Eski veritabanları için migration eksik alanları ekler ve güvenilir biçimde türetilebilen alanları geriye dönük doldurur.
-
 **Durum:** Tamamlandı ve kontrol edildi.
 
-### Aşama 2 — İstatistikler sayfası
+### Aşama 2 — İstatistikler ve çalışma tercihleri
 
-Aşama 2'nin son kullanıcı tasarımı kullanıcı tarafından açıkça onaylandı ve kalıcı olarak `docs/STAGE2_STATISTICS_DESIGN.md` dosyasına kaydedildi.
+Aşama 2'nin son kullanıcı tasarımı, GNOME Human Interface Guidelines ve GTK4/libadwaita kalıpları araştırıldıktan sonra kullanıcı tarafından açıkça onaylandı.
 
-#### Onaylanan yaklaşım
+#### İstatistikler
 
-İstatistikler sayfası teknik ve kalabalık bir dashboard yerine sade bir **ilerleme ekranı** olacaktır:
+İstatistikler teknik ve kalabalık bir dashboard değil, kullanıcının yazma gelişimini takip ettiği sade bir ilerleme ekranıdır:
 
-- İstatistikler başlığı ve kısa açıklama
-- Genel durum: çalışma, toplam süre, kelime, doğruluk
-- Günlük / Haftalık / Aylık dönem seçici
-- Yazma hızını zaman içinde gösteren grafik
-- Doğruluk: doğru/yanlış kelimeler ve doğruluk yüzdesi
-- Son çalışmaların sade geçmiş tablosu
-- Gerçek veri yokken anlaşılır boş durum
-- Responsive düzen
-- Hafif, kısa ve dikkat dağıtmayan geçiş animasyonları
+- kısa `İstatistikler` başlığı ve açıklama
+- `Genel durum` içinde çalışma sayısı, toplam süre, toplam kelime ve doğruluk
+- `Günlük / Haftalık / Aylık / Yıllık / Tümü` dönem seçici
+- zaman içindeki yazma hızını gösteren gerçek grafik yüzeyi
+- doğru kelimeler, yanlış kelimeler ve doğruluk özeti
+- son çalışmalar için sade geçmiş tablosu
+- gerçek veri yokken açık ve dürüst boş durum
+- dar ve geniş pencerelere uyumlu düzen
 
-Gerçek SQLite verisi Aşama 3'e kadar bağlanmayacak ve sahte istatistik gösterilmeyecektir.
+`Tümü`, yalnızca toplam değer göstermeyecek; Aşama 3'te tüm çalışma geçmişindeki zaman serisini gösterecek şekilde veri sözleşmesine hazır tutulacaktır.
+
+GNOME HIG araştırmasında her görünümün net bir odağa sahip olması, fazla öğeyle kullanıcıyı boğmamak, kısa ve anlaşılır metin kullanmak ve listeleri/adaptif kalıpları tercih etmek temel ilkeler olarak esas alınmıştır. citeturn1search0turn1search1turn1search3turn1search4turn1search9
+
+GNOME System Monitor'ın kaynak grafiklerini hızlı genel bakış için kullanması ve GNOME Disk Usage Analyzer'ın grafik + yapılandırılmış liste yaklaşımı, Keycan'ın grafik ve geçmiş alanlarının bilgi yoğunluğunu belirlerken referans alınmıştır. citeturn0search0turn0search9
 
 #### Sidebar ikon standardı
 
@@ -63,27 +62,46 @@ Tüm ana navigasyon öğeleri ikon + metin ile gösterilecektir:
 
 Mevcut overlay sidebar davranışı korunacaktır; sidebar çalışma alanını sıkıştırmayacaktır.
 
+#### Tercihler
+
+Çalışma alanının en altındaki mevcut **Durum + Tercihler + Metin boyutu** çubuğunda `Tercihler` butonu tam ortada yer alacaktır.
+
+Tercihler, sidebar'daki uygulama ayarlarından ayrı bir çalışma-oturumu hızlı ayar yüzeyidir ve iki seçenek içerir:
+
+- `Yazım metnini karart`
+- `Geri tuşunu devre dışı bırak`
+
+Bu iki seçenek genel `Ayarlar` sayfasında tekrarlanmayacaktır. Tercihler açılırken sade bir GTK/libadwaita popover ve standart switch row kalıbı kullanılacaktır. Libadwaita'nın `AdwPreferencesGroup` ve `AdwSwitchRow`/`AdwActionRow` kalıpları kısa tercih listeleri için kullanılabilir. citeturn0search15turn1search6
+
+`AdwToolbarView` alt barı için mevcut GNOME/libadwaita yapısı korunacaktır; alt barın toolbar view içine yerleştirilmesi libadwaita'nın önerdiği kalıpla uyumludur. citeturn0search14
+
 #### Yazma alanı güvenliği
 
-Yazma pratiğinde kopyala/yapıştır ile metin girme veya çalışma sonucunu undo/redo ile değiştirme yolları kapatılacaktır. GTK4 TextView'ın yerleşik clipboard eylemleri devre dışı bırakılacak; normal klavye ile yazma ve mevcut backspace davranışı korunacaktır. PRIMARY clipboard ve sürükle-bırak gibi alternatif yollar da dikkate alınacaktır.
+Yazma pratiğinde kopyala/yapıştır ile metin girme veya çalışma sonucunu undo/redo ile değiştirme yolları kapatılacaktır. GTK4 TextView'ın yerleşik clipboard eylemleri devre dışı bırakılacak; PRIMARY clipboard, orta tuş ve sürükle-bırak gibi alternatif yollar da engellenecektir. Normal klavye yazımı korunacaktır.
+
+#### Animasyon
+
+Animasyonlar kısa ve işlevsel olacaktır. Sayfa/bölüm geçişleri veya gerçek verinin grafiğe bağlanması gerektiğinde yumuşak geçişler kullanılabilir; sürekli hareket, neon efektleri ve dikkat dağıtan animasyonlar kullanılmayacaktır. GNOME adaptif tasarım rehberindeki düzgün yeniden boyutlandırma ve standart widget kullanım ilkeleri temel alınacaktır. citeturn1search9
 
 #### Aşama 2 uygulama sonucu
 
 - Sidebar navigasyonu ve ikonları güncellendi.
 - İstatistikler ekranı sade ilerleme yaklaşımına göre yeniden düzenlendi.
-- Grafik yüzeyi ve boş durum hazırlandı; gerçek veri Aşama 3'e bırakıldı.
-- Hafif bölüm açılma animasyonları eklendi.
-- Yazma alanında clipboard kopyalama/kesme/yapıştırma ve undo/redo eylemleri kapatıldı.
-- Kullanıcı arayüzündeki teknik `WPM`/`CPM` kısaltmaları korunmadı.
+- Günlük/haftalık/aylık/yıllık/tümü dönem yapısı hazırlandı.
+- Grafik yüzeyi ve gerçek veri için açık veri kancaları hazırlandı; sahte istatistik çizilmiyor.
+- Doğruluk ve geçmiş alanları sade listeler/tablo yapısıyla hazırlandı.
+- Çalışma alanının alt çubuğuna ortalanmış `Tercihler` eklendi.
+- Ekranı karartma ve geri tuşunu devre dışı bırakma seçenekleri Tercihler'e taşındı.
+- Yazma alanında clipboard kopyalama/kesme/yapıştırma, undo/redo, PRIMARY orta tuş ve sürükle-bırak yolları kapatıldı.
 
-**Durum:** Uygulama kodu güncellendi; son görsel/stabilite doğrulaması kullanıcı tarafında yapılmalıdır. Aşama 3 henüz başlatılmayacaktır.
+**Durum:** Kod güncellendi. Repo-local statik/runtime kontrolleri ve kullanıcı tarafındaki gerçek GTK görsel testi tamamlanmadan Aşama 3 başlatılmayacaktır.
 
 ### Aşama 3 — Gerçek SQLite verilerinin istatistiklere bağlanması
 
 - Tamamlanan çalışma kayıtları gerçek verilerle okunacak.
 - Genel durum gerçek SQLite verilerinden hesaplanacak.
 - Son çalışmaların tablosu gerçek geçmişi gösterecek.
-- Günlük/haftalık/aylık grafikler gerçek çalışma verilerinden üretilecek.
+- Günlük/haftalık/aylık/yıllık/tümü grafik serileri gerçek çalışma verilerinden üretilecek.
 - Eski kayıtlar için geriye dönük uyumluluk korunacak.
 
 **Durum:** Bekliyor.
