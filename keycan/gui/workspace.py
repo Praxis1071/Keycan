@@ -12,8 +12,9 @@ from __future__ import annotations
 
 import gi
 
+gi.require_version("Gdk", "4.0")
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk
+from gi.repository import Gdk, Gtk
 
 
 class PracticeTextView(Gtk.TextView):
@@ -72,7 +73,7 @@ class PracticeTextView(Gtk.TextView):
         gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
     def _on_key_pressed(self, _controller, keyval, _keycode, _state) -> bool:
-        if not self.backspace_enabled and keyval == 65288:  # GDK_KEY_BackSpace
+        if not self.backspace_enabled and keyval == Gdk.KEY_BackSpace:
             return True
         return False
 
