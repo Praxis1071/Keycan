@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import sqlite3
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from keycan.utils.text import clean_source_name, natural_sort_key
@@ -200,6 +201,99 @@ class Database:
             ),
         )
         self.conn.commit()
+
+    @staticmethod
+    def _period_start(period: str, now_local: datetime) -> datetime | None:
+        if period == "Günlük":
+            return now_local.replace(hour=0, minute=0, second=0, microsecond=0)
+        if period == "Haftalık":
+            start = now_local - timedelta(days=now_local.weekday())
+            return start.replace(hour=0, minute=0, second=0, microsecond=0)
+        if period == "Aylık":
+            return now_local.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        if period == "Yıllık":
+            return now_local.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        if period == "Tümü":
+            return None
+        raise ValueError(f"Bilinmeyen istatistik dönemi: {period}")
+
+    @staticmethod
+    def _utc_sql_value(value: datetime) -> str:
+        return value.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+    @staticmethod
+    def _parse_completed_at(value: str) -> datetime:
+        parsed = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+        return parsed.replace(tzinfo=timezone.utc).astimezone()
+
+    def practice_statistics(self, period: str = "Haftalık") -> dict[str, object]:
+        """Return real practice aggregates for the requested local-calendar period."""
+        now_local = datetime.now().astimezone()
+        start_local = self._period_start(period, now_local)
+
+        query = """SELECT id, completed_at, source_name_snapshot, lesson_title_snapshot,
+                          duration_seconds, correct_words, wrong_words,
+                          typed_word_count, words_per_minute
+                   FROM practice_results
+                   WHERE completed_at != ''"""
+        parameters: tuple[str, ...] = ()
+        if start_local is not None:
+            query += " AND completed_at >= ?"
+            parameters = (self._utc_sql_value(start_local),)
+        query += " ORDER BY completed_at DESC, id DESC"
+
+        rows = self.conn.execute(query, parameters).fetchall()
+        practices = len(rows)
+        total_duration = sum(float(row[4]) for row in rows)
+        total_words = sum(int(row[7]) for row in rows)
+        total_correct = sum(int(row[5]) for row in rows)
+        total_wrong = sum(int(row[6]) for row in rows)
+        accuracy = total_correct / total_words * 100.0 if total_words else 0.0
+
+        speed_buckets: dict[object, list[float]] = {}
+        for row in reversed(rows):
+            completed = self._parse_completed_at(row[1])
+            if period == "Günlük":
+                bucket = completed
+                label = completed.strftime("%H:%M")
+            elif period in {"Haftalık", "Aylık"}:
+                bucket = completed.date()
+                label = completed.strftime("%d %b")
+            else:
+                bucket = (completed.year, completed.month)
+                label = completed.strftime("%b %Y")
+            speed_buckets.setdefault((bucket, label), []).append(float(row[8]))
+
+        speed_points = [
+            (label, sum(values) / len(values))
+            for (_bucket, label), values in sorted(speed_buckets.items(), key=lambda item: item[0][0])
+        ]
+
+        history = [
+            {
+                "completed_at": self._parse_completed_at(row[1]),
+                "source_name": row[2],
+                "lesson_title": row[3],
+                "duration_seconds": float(row[4]),
+                "typed_word_count": int(row[7]),
+                "accuracy_percent": (
+                    int(row[5]) / int(row[7]) * 100.0 if int(row[7]) else 0.0
+                ),
+                "words_per_minute": float(row[8]),
+            }
+            for row in rows[:50]
+        ]
+
+        return {
+            "practices": practices,
+            "duration_seconds": total_duration,
+            "total_words": total_words,
+            "correct_words": total_correct,
+            "wrong_words": total_wrong,
+            "accuracy_percent": accuracy,
+            "speed_points": speed_points,
+            "history": history,
+        }
 
     def close(self) -> None:
         self.conn.close()
