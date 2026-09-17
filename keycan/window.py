@@ -298,9 +298,39 @@ class KeycanWindow(Adw.ApplicationWindow):
         result = self.engine.match_words(self.current_text, self.typed)
         self._render_target_results(result.matched_target_indices)
         self._render_input_results(result.correctness)
-        self.db.save_result(self.current_lesson_id, elapsed, result.correct, result.wrong)
+
+        target_word_count = len(WORD_PATTERN.findall(self.current_text))
+        typed_word_count = len(WORD_PATTERN.findall(self.typed))
+        total_characters = len(self.typed)
+        correct_characters = sum(
+            1
+            for index, character in enumerate(self.typed)
+            if index < len(self.current_text) and character == self.current_text[index]
+        )
+        wrong_characters = total_characters - correct_characters
+        minutes = elapsed / 60.0 if elapsed > 0 else 0.0
+        words_per_minute = typed_word_count / minutes if minutes else 0.0
+        characters_per_minute = total_characters / minutes if minutes else 0.0
+        accuracy_percent = (
+            result.correct / typed_word_count * 100.0 if typed_word_count else 0.0
+        )
+
+        self.db.save_result(
+            self.current_lesson_id,
+            elapsed,
+            result.correct,
+            result.wrong,
+            target_word_count=target_word_count,
+            typed_word_count=typed_word_count,
+            total_characters=total_characters,
+            correct_characters=correct_characters,
+            wrong_characters=wrong_characters,
+            words_per_minute=words_per_minute,
+            characters_per_minute=characters_per_minute,
+            accuracy_percent=accuracy_percent,
+        )
         self.status.set_text(
-            f"Süre doldu. Doğru: {result.correct}  |  Yanlış: {result.wrong}  |  Toplam: {result.correct + result.wrong}"
+            f"Süre doldu. Doğru: {result.correct}  |  Yanlış: {result.wrong}  |  Toplam: {typed_word_count}"
         )
 
     def _render_target_results(self, matched: set[int]) -> None:
