@@ -7,7 +7,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gtk
 
 import keycan.app as keycan_app
-import keycan.data.database_compat2  # noqa: F401 — installs validated import support.
+import keycan.data.database_compat3  # noqa: F401 — installs custom-content compatibility.
 import keycan.window as keycan_window
 from keycan.app import main
 from keycan.gui.search import SourceSearchDropdown
