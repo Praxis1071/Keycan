@@ -89,7 +89,7 @@ class TypingWorkspace(Gtk.Box):
         self.text_size = text_size
         self.text_providers: dict[Gtk.TextView, Gtk.CssProvider] = {}
         self.preferences_button = Gtk.Button(label="Tercihler")
-        self.preferences_button.set_icon_name("preferences-system-symbolic")
+        self.preferences_button.set_icon_name("open-menu-symbolic")
         self.preferences_button.set_tooltip_text("Çalışma tercihleri")
         self.preferences_button.add_css_class("flat")
 
