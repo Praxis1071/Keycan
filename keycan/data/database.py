@@ -65,7 +65,7 @@ class Database:
             "SELECT id, title FROM lessons WHERE source_id = ? ORDER BY legacy_metin_id, id",
             (source_id,),
         ).fetchall()
-        return [(lesson_id, f"Ders {index}") for index, (_, _) in enumerate(rows, 1)]
+        return [(lesson_id, f"Ders {index}") for index, (lesson_id, _) in enumerate(rows, 1)]
 
     def lesson(self, lesson_id: int) -> tuple[int, str, str]:
         row = self.conn.execute(
