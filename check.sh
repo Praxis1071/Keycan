@@ -39,7 +39,10 @@ try:
     }
     required_result_columns = {
         "lesson_id", "duration_seconds", "correct_words", "wrong_words",
-        "words_per_minute", "characters_per_minute",
+        "words_per_minute", "characters_per_minute", "completed_at",
+        "source_name_snapshot", "lesson_title_snapshot", "target_word_count",
+        "typed_word_count", "total_characters", "correct_characters",
+        "wrong_characters", "accuracy_percent",
     }
     assert required_result_columns <= result_columns, "practice_results şeması eksik"
 
@@ -51,9 +54,19 @@ try:
     invalid_counts = connection.execute(
         """SELECT COUNT(*) FROM practice_results
            WHERE correct_words < 0 OR wrong_words < 0
-              OR words_per_minute != 0 OR characters_per_minute != 0"""
+              OR target_word_count < 0 OR typed_word_count < 0
+              OR total_characters < 0 OR correct_characters < 0
+              OR wrong_characters < 0
+              OR words_per_minute < 0 OR characters_per_minute < 0
+              OR accuracy_percent < 0 OR accuracy_percent > 100"""
     ).fetchone()[0]
-    assert invalid_counts == 0, "Sonuçlarda geçersiz kelime/hız değeri bulundu"
+    assert invalid_counts == 0, "Sonuçlarda geçersiz çalışma değeri bulundu"
+
+    inconsistent_character_counts = connection.execute(
+        """SELECT COUNT(*) FROM practice_results
+           WHERE total_characters != correct_characters + wrong_characters"""
+    ).fetchone()[0]
+    assert inconsistent_character_counts == 0, "Karakter toplamları tutarsız"
 
     print(f"Veri denetimi başarılı: {sources} kaynak, {lessons} metin, {statistics} eski istatistik.")
 finally:
