@@ -48,9 +48,9 @@ Aşama 2'nin son kullanıcı tasarımı, GNOME Human Interface Guidelines ve GTK
 
 `Tümü`, yalnızca toplam değer göstermeyecek; Aşama 3'te tüm çalışma geçmişindeki zaman serisini gösterecek şekilde veri sözleşmesine hazır tutulacaktır.
 
-GNOME HIG araştırmasında her görünümün net bir odağa sahip olması, fazla öğeyle kullanıcıyı boğmamak, kısa ve anlaşılır metin kullanmak ve listeleri/adaptif kalıpları tercih etmek temel ilkeler olarak esas alınmıştır. citeturn1search0turn1search1turn1search3turn1search4turn1search9
+GNOME HIG araştırmasında her görünümün net bir odağa sahip olması, fazla öğeyle kullanıcıyı boğmamak, kısa ve anlaşılır metin kullanmak ve listeleri/adaptif kalıpları tercih etmek temel ilkeler olarak esas alınmıştır.
 
-GNOME System Monitor'ın kaynak grafiklerini hızlı genel bakış için kullanması ve GNOME Disk Usage Analyzer'ın grafik + yapılandırılmış liste yaklaşımı, Keycan'ın grafik ve geçmiş alanlarının bilgi yoğunluğunu belirlerken referans alınmıştır. citeturn0search0turn0search9
+GNOME System Monitor'ın kaynak grafiklerini hızlı genel bakış için kullanması ve GNOME Disk Usage Analyzer'ın grafik + yapılandırılmış liste yaklaşımı, Keycan'ın grafik ve geçmiş alanlarının bilgi yoğunluğunu belirlerken referans alınmıştır.
 
 #### Sidebar ikon standardı
 
@@ -71,9 +71,9 @@ Tercihler, sidebar'daki uygulama ayarlarından ayrı bir çalışma-oturumu hız
 - `Yazım metnini karart`
 - `Geri tuşunu devre dışı bırak`
 
-Bu iki seçenek genel `Ayarlar` sayfasında tekrarlanmayacaktır. Tercihler açılırken sade bir GTK/libadwaita popover ve standart switch row kalıbı kullanılacaktır. Libadwaita'nın `AdwPreferencesGroup` ve `AdwSwitchRow`/`AdwActionRow` kalıpları kısa tercih listeleri için kullanılabilir. citeturn0search15turn1search6
+Bu iki seçenek genel `Ayarlar` sayfasında tekrarlanmayacaktır. Tercihler açılırken sade bir GTK/libadwaita popover ve standart switch row kalıbı kullanılacaktır.
 
-`AdwToolbarView` alt barı için mevcut GNOME/libadwaita yapısı korunacaktır; alt barın toolbar view içine yerleştirilmesi libadwaita'nın önerdiği kalıpla uyumludur. citeturn0search14
+`AdwToolbarView` alt barı için mevcut GNOME/libadwaita yapısı korunacaktır.
 
 #### Yazma alanı güvenliği
 
@@ -81,7 +81,7 @@ Yazma pratiğinde kopyala/yapıştır ile metin girme veya çalışma sonucunu u
 
 #### Animasyon
 
-Animasyonlar kısa ve işlevsel olacaktır. Sayfa/bölüm geçişleri veya gerçek verinin grafiğe bağlanması gerektiğinde yumuşak geçişler kullanılabilir; sürekli hareket, neon efektleri ve dikkat dağıtan animasyonlar kullanılmayacaktır. GNOME adaptif tasarım rehberindeki düzgün yeniden boyutlandırma ve standart widget kullanım ilkeleri temel alınacaktır. citeturn1search9
+Animasyonlar kısa ve işlevsel olacaktır. Sayfa/bölüm geçişleri veya gerçek verinin grafiğe bağlanması gerektiğinde yumuşak geçişler kullanılabilir; sürekli hareket, neon efektleri ve dikkat dağıtan animasyonlar kullanılmayacaktır.
 
 #### Aşama 2 uygulama sonucu
 
