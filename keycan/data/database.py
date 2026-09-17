@@ -33,6 +33,43 @@ class Database:
                 self.conn.execute(
                     f"ALTER TABLE practice_results ADD COLUMN {name} {definition}"
                 )
+
+        # Preserve useful context for legacy rows created before snapshots existed.
+        # Metrics that cannot be reconstructed reliably are intentionally left at
+        # their migration defaults instead of inventing historical values.
+        self.conn.execute(
+            """UPDATE practice_results
+               SET source_name_snapshot = COALESCE(
+                       (SELECT sources.display_name
+                        FROM lessons
+                        JOIN sources ON sources.id = lessons.source_id
+                        WHERE lessons.id = practice_results.lesson_id), '')
+               WHERE source_name_snapshot = ''"""
+        )
+        self.conn.execute(
+            """UPDATE practice_results
+               SET lesson_title_snapshot = COALESCE(
+                       (SELECT lessons.title
+                        FROM lessons
+                        WHERE lessons.id = practice_results.lesson_id), '')
+               WHERE lesson_title_snapshot = ''"""
+        )
+        self.conn.execute(
+            """UPDATE practice_results
+               SET typed_word_count = correct_words + wrong_words
+               WHERE typed_word_count = 0 AND (correct_words > 0 OR wrong_words > 0)"""
+        )
+        self.conn.execute(
+            """UPDATE practice_results
+               SET accuracy_percent =
+                   CASE
+                       WHEN correct_words + wrong_words > 0
+                       THEN correct_words * 100.0 / (correct_words + wrong_words)
+                       ELSE 0
+                   END
+               WHERE accuracy_percent = 0
+                 AND (correct_words > 0 OR wrong_words > 0)"""
+        )
         self.conn.commit()
 
     def sources(self) -> list[tuple[int, str]]:
@@ -104,6 +141,28 @@ class Database:
         characters_per_minute: float,
         accuracy_percent: float,
     ) -> None:
+        metrics = {
+            "duration": duration,
+            "correct": correct,
+            "wrong": wrong,
+            "target_word_count": target_word_count,
+            "typed_word_count": typed_word_count,
+            "total_characters": total_characters,
+            "correct_characters": correct_characters,
+            "wrong_characters": wrong_characters,
+            "words_per_minute": words_per_minute,
+            "characters_per_minute": characters_per_minute,
+            "accuracy_percent": accuracy_percent,
+        }
+        if any(value < 0 for value in metrics.values()):
+            raise ValueError("Çalışma ölçümleri negatif olamaz")
+        if correct + wrong != typed_word_count:
+            raise ValueError("Doğru ve yanlış kelime toplamı yazılan kelime sayısıyla eşleşmiyor")
+        if total_characters != correct_characters + wrong_characters:
+            raise ValueError("Karakter ölçümleri tutarsız")
+        if accuracy_percent > 100:
+            raise ValueError("Doğruluk yüzdesi 100'ü aşamaz")
+
         source_name, lesson_title = self.lesson_context(lesson_id)
         self.conn.execute(
             """INSERT INTO practice_results(
