@@ -114,3 +114,30 @@ def test_stage3_legacy_empty_timestamps_are_not_fabricated(tmp_path: Path) -> No
         assert stats["history"] == []
     finally:
         db.close()
+
+
+def test_stage3_activity_is_grouped_by_local_calendar_year(tmp_path: Path) -> None:
+    db = _make_db(tmp_path / "activity.db")
+    try:
+        now = datetime.now().astimezone()
+        this_year = now.year
+        previous_year = this_year - 1
+        current = now.replace(month=9, day=10, hour=12, minute=0, second=0, microsecond=0)
+        previous = current.replace(year=previous_year)
+        _insert_result(db, current, 9, 1, 30.0)
+        _insert_result(db, previous, 8, 2, 20.0)
+
+        years = db.practice_activity_years()
+        assert this_year in years
+        assert previous_year in years
+
+        current_days = db.practice_activity(this_year)
+        previous_days = db.practice_activity(previous_year)
+        assert len(current_days) == 1
+        assert len(previous_days) == 1
+        assert current_days[0]["sessions"] == 1
+        assert previous_days[0]["sessions"] == 1
+        assert current_days[0]["accuracy_percent"] == 90.0
+        assert previous_days[0]["accuracy_percent"] == 80.0
+    finally:
+        db.close()
