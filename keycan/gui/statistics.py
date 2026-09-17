@@ -184,16 +184,17 @@ class StatisticsPanel(Gtk.Box):
         scrolled.set_hexpand(True)
         scrolled.set_vexpand(True)
         self.append(scrolled)
-        clamp = Adw.Clamp()
-        clamp.set_maximum_size(1080)
-        clamp.set_tightening_threshold(760)
-        scrolled.set_child(clamp)
+
+        # Statistics should follow the available content width just like the
+        # workspace and settings views. Only the content margins provide the
+        # visual breathing room; there is no artificial centered max width.
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=22)
+        content.set_hexpand(True)
         content.set_margin_top(28)
         content.set_margin_bottom(40)
         content.set_margin_start(20)
         content.set_margin_end(20)
-        clamp.set_child(content)
+        scrolled.set_child(content)
 
         content.append(self._revealed(self._make_header(), 40))
         content.append(self._revealed(self._make_period_selector(), 80))
@@ -206,12 +207,18 @@ class StatisticsPanel(Gtk.Box):
         content.append(self._revealed(self._make_history_section(), 360))
 
     @staticmethod
-    def _heading(title: str, subtitle: str | None = None) -> Gtk.Box:
+    def _heading(title: str, subtitle: str | None = None, icon: str | None = None) -> Gtk.Box:
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+        title_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        if icon:
+            image = Gtk.Image.new_from_icon_name(icon)
+            image.add_css_class("dim-label")
+            title_row.append(image)
         label = Gtk.Label(label=title)
         label.set_xalign(0)
         label.add_css_class("title-2")
-        box.append(label)
+        title_row.append(label)
+        box.append(title_row)
         if subtitle:
             detail = Gtk.Label(label=subtitle)
             detail.set_xalign(0)
@@ -222,10 +229,15 @@ class StatisticsPanel(Gtk.Box):
 
     def _make_header(self) -> Gtk.Box:
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        title_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        image = Gtk.Image.new_from_icon_name("utilities-system-monitor-symbolic")
+        image.add_css_class("dim-label")
+        title_row.append(image)
         title = Gtk.Label(label="İstatistikler")
         title.set_xalign(0)
         title.add_css_class("title-1")
-        box.append(title)
+        title_row.append(title)
+        box.append(title_row)
         subtitle = Gtk.Label(label="Yazma gelişimini tek bakışta takip et.")
         subtitle.set_xalign(0)
         subtitle.set_wrap(True)
@@ -235,7 +247,7 @@ class StatisticsPanel(Gtk.Box):
 
     def _make_period_selector(self) -> Gtk.Box:
         section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
-        section.append(self._heading("Dönem"))
+        section.append(self._heading("Dönem", icon="view-calendar-symbolic"))
         controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         controls.add_css_class("linked")
         self.period_buttons: list[Gtk.ToggleButton] = []
@@ -269,7 +281,7 @@ class StatisticsPanel(Gtk.Box):
 
     def _make_speed_section(self) -> Gtk.Box:
         section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        section.append(self._heading("Yazma hızı", "Çalışmalarındaki hız değişimi"))
+        section.append(self._heading("Yazma hızı", "Çalışmalarındaki hız değişimi", "speedometer-symbolic"))
         frame = Gtk.Frame()
         frame.add_css_class("card")
         chart_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -290,7 +302,7 @@ class StatisticsPanel(Gtk.Box):
 
     def _make_accuracy_section(self) -> Gtk.Box:
         section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        section.append(self._heading("Doğruluk", "Doğru ve yanlış kelimeleri birlikte gör"))
+        section.append(self._heading("Doğruluk", "Doğru ve yanlış kelimeleri birlikte gör", "emblem-ok-symbolic"))
         frame = Gtk.Frame()
         frame.add_css_class("card")
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
@@ -307,12 +319,22 @@ class StatisticsPanel(Gtk.Box):
         self.accuracy_bar.set_hexpand(True)
         box.append(self.accuracy_bar)
         split = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=18)
+        correct = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=7)
+        correct_image = Gtk.Image.new_from_icon_name("emblem-ok-symbolic")
+        correct_image.add_css_class("dim-label")
+        correct.append(correct_image)
         self.correct_label = Gtk.Label(label="Doğru: 0")
         self.correct_label.set_xalign(0)
+        correct.append(self.correct_label)
+        wrong = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=7)
+        wrong_image = Gtk.Image.new_from_icon_name("dialog-warning-symbolic")
+        wrong_image.add_css_class("dim-label")
+        wrong.append(wrong_image)
         self.wrong_label = Gtk.Label(label="Yanlış: 0")
         self.wrong_label.set_xalign(0)
-        split.append(self.correct_label)
-        split.append(self.wrong_label)
+        wrong.append(self.wrong_label)
+        split.append(correct)
+        split.append(wrong)
         box.append(split)
         frame.set_child(box)
         section.append(frame)
@@ -320,7 +342,7 @@ class StatisticsPanel(Gtk.Box):
 
     def _make_activity_section(self) -> Gtk.Box:
         section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        section.append(self._heading("Çalışma takvimi", "Hangi günlerde pratik yaptığını gör"))
+        section.append(self._heading("Çalışma takvimi", "Hangi günlerde pratik yaptığını gör", "x-office-calendar-symbolic"))
         frame = Gtk.Frame()
         frame.add_css_class("card")
         outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
@@ -342,7 +364,7 @@ class StatisticsPanel(Gtk.Box):
 
     def _make_records_section(self) -> Gtk.Box:
         section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        section.append(self._heading("Kişisel rekorlar", "Seçili dönemdeki en yüksek değerlerin"))
+        section.append(self._heading("Kişisel rekorlar", "Seçili dönemdeki en yüksek değerlerin", "starred-symbolic"))
         grid = Gtk.Grid()
         grid.set_row_spacing(10)
         grid.set_column_spacing(10)
@@ -381,22 +403,28 @@ class StatisticsPanel(Gtk.Box):
 
     def _make_progress_section(self) -> Gtk.Box:
         section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        section.append(self._heading("Gelişim", "İlk ve son çalışmaların arasındaki değişim"))
+        section.append(self._heading("Gelişim", "İlk ve son çalışmaların arasındaki değişim", "go-next-symbolic"))
         group = Adw.PreferencesGroup()
         self.progress_speed = Adw.ActionRow()
         self.progress_speed.set_title("Yazma hızı")
         self.progress_speed.set_subtitle("Yeterli veri olduğunda gösterilir")
+        speed_icon = Gtk.Image.new_from_icon_name("speedometer-symbolic")
+        speed_icon.add_css_class("dim-label")
+        self.progress_speed.add_prefix(speed_icon)
         group.add(self.progress_speed)
         self.progress_accuracy = Adw.ActionRow()
         self.progress_accuracy.set_title("Doğruluk")
         self.progress_accuracy.set_subtitle("Yeterli veri olduğunda gösterilir")
+        accuracy_icon = Gtk.Image.new_from_icon_name("emblem-ok-symbolic")
+        accuracy_icon.add_css_class("dim-label")
+        self.progress_accuracy.add_prefix(accuracy_icon)
         group.add(self.progress_accuracy)
         section.append(group)
         return section
 
     def _make_history_section(self) -> Gtk.Box:
         section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        section.append(self._heading("Son çalışmalar", "Tamamlanan çalışmaların ayrıntıları"))
+        section.append(self._heading("Son çalışmalar", "Tamamlanan çalışmaların ayrıntıları", "view-list-symbolic"))
         frame = Gtk.Frame()
         frame.add_css_class("card")
         self.history_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
