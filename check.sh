@@ -5,7 +5,7 @@ set -euo pipefail
 project_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 cd "$project_dir"
 
-python -m py_compile main.py keycan/__init__.py keycan/app.py keycan/window.py keycan/core/__init__.py keycan/core/typing_engine.py keycan/data/__init__.py keycan/data/database.py keycan/utils/__init__.py keycan/utils/text.py tests/test_stage1_database.py
+python -m py_compile main.py keycan/__init__.py keycan/app.py keycan/window.py keycan/core/__init__.py keycan/core/typing_engine.py keycan/data/__init__.py keycan/data/database.py keycan/gui/statistics.py tests/test_stage1_database.py tests/test_stage3_database.py
 
 python - <<'PY'
 import sqlite3
@@ -73,4 +73,6 @@ finally:
     connection.close()
 PY
 
-echo "Keycan 2.0 Python sözdizimi, veritabanı ve sonuç şeması denetimleri başarılı."
+python -m pytest -q tests/test_stage1_database.py tests/test_stage3_database.py
+
+echo "Keycan 2.0 Python sözdizimi, veritabanı, sonuç şeması ve Stage 3 istatistik denetimleri başarılı."
