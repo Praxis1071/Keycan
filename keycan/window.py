@@ -10,7 +10,6 @@ from gi.repository import Adw, Gdk, GLib, Gtk
 
 from keycan.core.typing_engine import TypingEngine
 from keycan.data.database import Database
-from keycan.gui.settings import SettingsWindow
 from keycan.gui.workspace import TypingWorkspace
 from keycan.utils.text import WORD_PATTERN, format_remaining
 
@@ -44,8 +43,9 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.finish_pending = False
         self.tick_id: int | None = None
         self.privacy_enabled = False
+        self.backspace_enabled = True
         self.text_size = 16
-        self.settings_window: SettingsWindow | None = None
+        self.preferences_popover: Gtk.Popover | None = None
         self._install_css()
         self._build_ui()
         self._load_sources()
@@ -76,9 +76,6 @@ class KeycanWindow(Adw.ApplicationWindow):
         toolbar.set_content(root)
         self.set_content(toolbar)
 
-        # The controls span the complete available window width. The left
-        # group owns the flexible lesson/source controls, while the right
-        # group stays anchored to the trailing edge on every monitor size.
         controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         controls.set_hexpand(True)
         controls.set_margin_top(10)
@@ -131,15 +128,6 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.restart_button.connect("clicked", self._restart)
         right_controls.append(self.restart_button)
 
-        # Kept as a compatibility reference for the configured window, which
-        # now exposes Settings through the sidebar instead of this button.
-        self.settings_button = Gtk.Button()
-        self.settings_button.set_icon_name("emblem-system-symbolic")
-        self.settings_button.set_tooltip_text("Ayarlar")
-        self.settings_button.add_css_class("flat")
-        self.settings_button.connect("clicked", self._open_settings)
-        self.settings_button.set_visible(False)
-
         narrow_breakpoint = Adw.Breakpoint.new(
             Adw.BreakpointCondition.parse("max-width: 900sp")
         )
@@ -153,9 +141,61 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.input_view = self.workspace.input_view
         self.status = self.workspace.status
         self.size_spin = self.workspace.size_spin
+        self.workspace.preferences_button.connect("clicked", self._toggle_preferences)
         self.input_view.get_buffer().connect("changed", self._on_input_changed)
         self.size_spin.connect("value-changed", self._on_text_size_changed)
         root.append(self.workspace)
+        self._build_preferences_popover()
+
+    def _build_preferences_popover(self) -> None:
+        popover = Gtk.Popover()
+        popover.set_size_request(360, -1)
+        popover.set_has_arrow(True)
+
+        group = Adw.PreferencesGroup()
+        group.set_title("Tercihler")
+        group.set_description("Bu çalışma alanındaki yazma seçenekleri")
+        group.set_margin_top(8)
+        group.set_margin_bottom(8)
+        group.set_margin_start(8)
+        group.set_margin_end(8)
+
+        privacy = Adw.SwitchRow()
+        privacy.set_title("Yazım metnini karart")
+        privacy.set_subtitle("Yazarken girdiğin metni gizler")
+        privacy.set_active(self.privacy_enabled)
+        privacy.connect("notify::active", self._on_privacy_changed)
+        group.add(privacy)
+        self.privacy_switch = privacy
+
+        backspace = Adw.SwitchRow()
+        backspace.set_title("Geri tuşunu devre dışı bırak")
+        backspace.set_subtitle("Yazarken önceki karakteri silmeyi engeller")
+        backspace.set_active(not self.backspace_enabled)
+        backspace.connect("notify::active", self._on_backspace_changed)
+        group.add(backspace)
+        self.backspace_switch = backspace
+
+        popover.set_child(group)
+        self.preferences_popover = popover
+
+    def _toggle_preferences(self, _button: Gtk.Button) -> None:
+        if self.preferences_popover is None:
+            return
+        if self.preferences_popover.get_parent() is None:
+            self.preferences_popover.set_parent(self.workspace.preferences_button)
+        if self.preferences_popover.is_visible():
+            self.preferences_popover.popdown()
+        else:
+            self.preferences_popover.popup()
+
+    def _on_privacy_changed(self, row: Adw.SwitchRow, _param) -> None:
+        self.privacy_enabled = row.get_active()
+        self._apply_privacy_state()
+
+    def _on_backspace_changed(self, row: Adw.SwitchRow, _param) -> None:
+        self.backspace_enabled = not row.get_active()
+        self.workspace.set_backspace_enabled(self.backspace_enabled)
 
     @staticmethod
     def _label(text: str) -> Gtk.Label:
@@ -218,6 +258,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.updating_input = False
         self.workspace.set_target_text(self.current_text)
         self.input_view.set_editable(self.current_lesson_id is not None)
+        self.workspace.set_backspace_enabled(self.backspace_enabled)
         self._apply_privacy_state()
         if self.current_lesson_id:
             self.status.set_text("Yazmaya başlayınca geri sayım çalışır.")
@@ -311,9 +352,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         minutes = elapsed / 60.0 if elapsed > 0 else 0.0
         words_per_minute = typed_word_count / minutes if minutes else 0.0
         characters_per_minute = total_characters / minutes if minutes else 0.0
-        accuracy_percent = (
-            result.correct / typed_word_count * 100.0 if typed_word_count else 0.0
-        )
+        accuracy_percent = result.correct / typed_word_count * 100.0 if typed_word_count else 0.0
 
         self.db.save_result(
             self.current_lesson_id,
@@ -362,16 +401,6 @@ class KeycanWindow(Adw.ApplicationWindow):
         for match, ok in zip(WORD_PATTERN.finditer(self.typed), correctness):
             buffer.apply_tag(green if ok else red, buffer.get_iter_at_offset(match.start()), buffer.get_iter_at_offset(match.end()))
 
-    def _open_settings(self, _button: Gtk.Button) -> None:
-        if self.settings_window is None:
-            self.settings_window = SettingsWindow(self)
-            self.settings_window.connect("close-request", self._settings_closed)
-        self.settings_window.present()
-
-    def _settings_closed(self, _window: Adw.Window) -> bool:
-        self.settings_window = None
-        return False
-
     def _check_time(self) -> bool:
         if self.finished or self.started_at is None:
             return True
@@ -386,8 +415,9 @@ class KeycanWindow(Adw.ApplicationWindow):
         if self.tick_id is not None:
             GLib.source_remove(self.tick_id)
             self.tick_id = None
-        if self.settings_window is not None:
-            self.settings_window.close()
-            self.settings_window = None
+        if self.preferences_popover is not None:
+            self.preferences_popover.popdown()
+            self.preferences_popover.unparent()
+            self.preferences_popover = None
         self.db.close()
         return False
