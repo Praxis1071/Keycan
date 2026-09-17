@@ -9,7 +9,7 @@ import keycan.data.database_runtime  # noqa: F401
 
 
 def make_db(path: Path) -> Database:
-    connection = sqlite3.connect(path)
+    connection=sqlite3.connect(path)
     connection.executescript("""
         CREATE TABLE sources (id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, relative_path TEXT NOT NULL DEFAULT '');
         CREATE TABLE lessons (id INTEGER PRIMARY KEY, source_id INTEGER NOT NULL, legacy_metin_id INTEGER NOT NULL DEFAULT 0, title TEXT NOT NULL, text TEXT NOT NULL, FOREIGN KEY(source_id) REFERENCES sources(id));
@@ -20,36 +20,40 @@ def make_db(path: Path) -> Database:
     connection.commit(); connection.close(); return Database(path)
 
 
-def test_custom_group_reorder_preserves_text(tmp_path: Path) -> None:
+def test_any_group_reorder_preserves_text(tmp_path: Path) -> None:
     db=make_db(tmp_path/"custom.db")
     try:
         group=db.create_custom_group("Python 101"); first=db.create_custom_lesson(group,"AAA"); second=db.create_custom_lesson(group,"BBB"); third=db.create_custom_lesson(group,"CCC")
-        db.move_custom_lesson(third,-1); db.move_custom_lesson(third,-1); ordered=db.custom_lessons(group)
+        db.move_lesson(third,-1); db.move_lesson(third,-1); ordered=db.managed_lessons(group)
         assert [row[0] for row in ordered]==[third,first,second]; assert [row[1] for row in ordered]==["CCC","AAA","BBB"]
     finally: db.close()
 
 
-def test_custom_group_delete_keeps_history_but_hides_content(tmp_path: Path) -> None:
-    db=make_db(tmp_path/"delete.db")
+def test_default_group_can_be_edited_and_deleted_without_losing_history(tmp_path: Path) -> None:
+    db=make_db(tmp_path/"default.db")
     try:
-        group=db.create_custom_group("Silinecek"); lesson=db.create_custom_lesson(group,"metin")
+        db.rename_group(1,"Benim Hazır Grubum"); lesson=db.managed_lessons(1)[0][0]; db.update_lesson(lesson,"değiştirilmiş metin")
         db.save_result(lesson,60,1,0,target_word_count=1,typed_word_count=1,total_characters=5,correct_characters=5,wrong_characters=0,words_per_minute=1,characters_per_minute=5,accuracy_percent=100)
-        db.delete_custom_group(group); assert all(source_id!=group for source_id,_ in db.sources()); assert db.conn.execute("SELECT COUNT(*) FROM practice_results WHERE lesson_id=?",(lesson,)).fetchone()[0]==1
-    finally: db.close()
-
-
-def test_reset_custom_content_preserves_builtin_content_and_statistics(tmp_path: Path) -> None:
-    db=make_db(tmp_path/"reset.db")
-    try:
-        group=db.create_custom_group("Kendi Grup"); lesson=db.create_custom_lesson(group,"kendi metnim")
-        db.save_result(lesson,60,2,0,target_word_count=2,typed_word_count=2,total_characters=10,correct_characters=10,wrong_characters=0,words_per_minute=2,characters_per_minute=10,accuracy_percent=100)
-        groups,lessons=db.reset_custom_content(); assert (groups,lessons)==(1,1)
-        assert not db.custom_groups(); assert db.sources()==[(1,"1. Hazır Ders")]
+        db.delete_group(1)
+        assert db.sources()==[]
         assert db.conn.execute("SELECT COUNT(*) FROM practice_results").fetchone()[0]==1
     finally: db.close()
 
 
-def test_backup_round_trip_restores_custom_content_and_stats(tmp_path: Path) -> None:
+def test_reset_all_then_restore_defaults(tmp_path: Path) -> None:
+    db=make_db(tmp_path/"reset.db")
+    try:
+        group=db.create_custom_group("Kendi Grup"); db.create_custom_lesson(group,"kendi metnim")
+        db.update_lesson(1,"kullanıcının değiştirdiği içerik")
+        groups,lessons=db.reset_all_content(); assert (groups,lessons)==(2,2); assert db.sources()==[]
+        restored_groups,restored_lessons=db.restore_defaults(); assert (restored_groups,restored_lessons)==(1,1)
+        assert db.sources()==[(1,"1. Hazır Ders")]
+        assert db.lesson(1)[2]=="hazır metin"
+        assert not db.custom_groups()
+    finally: db.close()
+
+
+def test_backup_round_trip_restores_content_and_stats(tmp_path: Path) -> None:
     db=make_db(tmp_path/"source.db")
     try:
         group=db.create_custom_group("Yedek Grubu"); lesson=db.create_custom_lesson(group,"yedek metni")
@@ -57,5 +61,7 @@ def test_backup_round_trip_restores_custom_content_and_stats(tmp_path: Path) -> 
     finally: db.close()
     restored=make_db(tmp_path/"restored.db")
     try:
-        imported,skipped=restored.import_data(backup); assert imported==1 and skipped==0; groups=restored.custom_groups(); assert len(groups)==1; lessons=restored.custom_lessons(groups[0][0]); assert [row[1] for row in lessons]==["yedek metni"]; assert restored.practice_statistics("Tümü")["practices"]==1; json.loads(restored.export_data())
+        imported,skipped=restored.import_data(backup); assert imported==2 and skipped==0
+        groups=restored.custom_groups(); assert len(groups)==1; lessons=restored.custom_lessons(groups[0][0]); assert [row[1] for row in lessons]==["yedek metni"]
+        assert restored.practice_statistics("Tümü")["practices"]==1; json.loads(restored.export_data())
     finally: restored.close()
