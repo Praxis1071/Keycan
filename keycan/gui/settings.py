@@ -44,6 +44,13 @@ class SettingsPanel(Gtk.Box):
         github.set_halign(Gtk.Align.START)
         self.append(github)
 
+        youtube = Gtk.LinkButton(
+            uri="https://www.youtube.com/@Praxis1071",
+            label="YouTube kanalı: youtube.com/@Praxis1071",
+        )
+        youtube.set_halign(Gtk.Align.START)
+        self.append(youtube)
+
 
 class SettingsWindow(Adw.Window):
     """Compatibility wrapper for older callers."""
