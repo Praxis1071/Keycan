@@ -5,7 +5,7 @@ state, typing logic, privacy state, and persistence remain in the main window.
 
 The practice views deliberately disable clipboard editing and drag-and-drop
 paths so a session cannot be completed by importing or exporting text through
-the editor. Normal keyboard input and backspace remain available.
+the editor. Normal keyboard input and configurable backspace remain available.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from gi.repository import Gtk
 
 
 class PracticeTextView(Gtk.TextView):
-    """Text view with clipboard and drag-and-drop loopholes closed."""
+    """Text view with clipboard, drag-and-drop and optional backspace guards."""
 
     _BLOCKED_ACTIONS = (
         "clipboard.copy",
@@ -38,34 +38,30 @@ class PracticeTextView(Gtk.TextView):
         self.set_top_margin(8)
         self.set_bottom_margin(8)
         self.set_extra_menu(None)
+        self.backspace_enabled = True
 
-        # GTK4 TextView exposes clipboard operations as built-in widget
-        # actions. Disabling them covers keyboard shortcuts and the matching
-        # context-menu commands without affecting ordinary typing.
         for action_name in self._BLOCKED_ACTIONS:
             self.action_set_enabled(action_name, False)
 
-        # Undo/redo must not become an alternate way to alter a practice
-        # result. Backspace itself remains enabled for normal typing.
         self.action_set_enabled("text.undo", False)
         self.action_set_enabled("text.redo", False)
         self.get_buffer().set_enable_undo(False)
 
-        # GTK can use PRIMARY selection on middle-click. Capture the middle
-        # button before TextView sees it so it cannot become a paste shortcut.
         self._middle_click_guard = Gtk.GestureClick()
         self._middle_click_guard.set_button(2)
         self._middle_click_guard.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
         self._middle_click_guard.connect("pressed", self._block_middle_click)
         self.add_controller(self._middle_click_guard)
 
-        # TextView also has built-in drag source/destination behavior. A
-        # practice surface should not be able to import text by dropping it,
-        # nor export selected practice text by dragging it elsewhere.
         self._drag_guard = Gtk.GestureDrag()
         self._drag_guard.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
         self._drag_guard.connect("drag-begin", self._block_drag)
         self.add_controller(self._drag_guard)
+
+        self._key_guard = Gtk.EventControllerKey()
+        self._key_guard.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        self._key_guard.connect("key-pressed", self._on_key_pressed)
+        self.add_controller(self._key_guard)
 
     @staticmethod
     def _block_middle_click(gesture: Gtk.GestureClick, *_args) -> None:
@@ -75,6 +71,14 @@ class PracticeTextView(Gtk.TextView):
     def _block_drag(gesture: Gtk.GestureDrag, *_args) -> None:
         gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
+    def _on_key_pressed(self, _controller, keyval, _keycode, _state) -> bool:
+        if not self.backspace_enabled and keyval == 65288:  # GDK_KEY_BackSpace
+            return True
+        return False
+
+    def set_backspace_enabled(self, enabled: bool) -> None:
+        self.backspace_enabled = enabled
+
 
 class TypingWorkspace(Gtk.Box):
     """Reusable typing workspace surface."""
@@ -83,6 +87,10 @@ class TypingWorkspace(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.text_size = text_size
         self.text_providers: dict[Gtk.TextView, Gtk.CssProvider] = {}
+        self.preferences_button = Gtk.Button(label="Tercihler")
+        self.preferences_button.set_icon_name("preferences-system-symbolic")
+        self.preferences_button.set_tooltip_text("Çalışma tercihleri")
+        self.preferences_button.add_css_class("flat")
 
         editors = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
         editors.set_vexpand(True)
@@ -111,6 +119,8 @@ class TypingWorkspace(Gtk.Box):
         self.status.set_margin_start(12)
         self.status.add_css_class("keycan-status")
         bottom.set_start_widget(self.status)
+
+        bottom.set_center_widget(self.preferences_button)
 
         size_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         size_box.set_halign(Gtk.Align.END)
@@ -163,6 +173,9 @@ class TypingWorkspace(Gtk.Box):
     def set_text_size(self, size: int) -> None:
         self.text_size = size
         self._apply_text_size()
+
+    def set_backspace_enabled(self, enabled: bool) -> None:
+        self.input_view.set_backspace_enabled(enabled)
 
     def set_target_text(self, text: str) -> None:
         self.target_view.get_buffer().set_text(text)
