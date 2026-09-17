@@ -54,6 +54,12 @@ class PracticeTextView(Gtk.TextView):
         self._middle_click_guard.connect("pressed", self._block_middle_click)
         self.add_controller(self._middle_click_guard)
 
+        self._right_click_guard = Gtk.GestureClick()
+        self._right_click_guard.set_button(3)
+        self._right_click_guard.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        self._right_click_guard.connect("pressed", self._block_right_click)
+        self.add_controller(self._right_click_guard)
+
         self._drag_guard = Gtk.GestureDrag()
         self._drag_guard.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
         self._drag_guard.connect("drag-begin", self._block_drag)
@@ -64,17 +70,62 @@ class PracticeTextView(Gtk.TextView):
         self._key_guard.connect("key-pressed", self._on_key_pressed)
         self.add_controller(self._key_guard)
 
+        self.connect("notify::realized", self._on_realized)
+
+    # Gtk.TextView can dynamically re-enable its clipboard actions when the
+    # selection/clipboard state changes. Override the class handlers as the
+    # final enforcement layer so the action state cannot reopen this path.
+    def do_copy_clipboard(self) -> None:
+        return None
+
+    def do_cut_clipboard(self) -> None:
+        return None
+
+    def do_paste_clipboard(self) -> None:
+        return None
+
+    def _on_realized(self, _widget, _param_spec) -> None:
+        """Prevent the TextView from exporting its selection to PRIMARY."""
+        primary = self.get_primary_clipboard()
+        self.get_buffer().remove_selection_clipboard(primary)
+
     @staticmethod
     def _block_middle_click(gesture: Gtk.GestureClick, *_args) -> None:
+        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+
+    @staticmethod
+    def _block_right_click(gesture: Gtk.GestureClick, *_args) -> None:
         gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
     @staticmethod
     def _block_drag(gesture: Gtk.GestureDrag, *_args) -> None:
         gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
-    def _on_key_pressed(self, _controller, keyval, _keycode, _state) -> bool:
+    def _on_key_pressed(self, _controller, keyval, _keycode, state) -> bool:
         if not self.backspace_enabled and keyval == Gdk.KEY_BackSpace:
             return True
+
+        control = bool(state & Gdk.ModifierType.CONTROL_MASK)
+        shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
+
+        if control and keyval in (
+            Gdk.KEY_c,
+            Gdk.KEY_C,
+            Gdk.KEY_v,
+            Gdk.KEY_V,
+            Gdk.KEY_x,
+            Gdk.KEY_X,
+            Gdk.KEY_Insert,
+        ):
+            return True
+
+        if shift and keyval == Gdk.KEY_Delete:
+            return True
+
+        # Gtk.TextView exposes its context menu through Shift+F10 and Menu.
+        if (shift and keyval == Gdk.KEY_F10) or keyval == Gdk.KEY_Menu:
+            return True
+
         return False
 
     def set_backspace_enabled(self, enabled: bool) -> None:
