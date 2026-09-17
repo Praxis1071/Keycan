@@ -11,6 +11,7 @@ import keycan.window as keycan_window
 from keycan.app import main
 from keycan.gui.search import SourceSearchDropdown
 from keycan.gui.settings import SettingsPanel
+from keycan.gui.statistics import StatisticsPanel
 
 
 class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
@@ -77,12 +78,18 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
             "keyboard-symbolic",
             "workspace",
         )
+        statistics_row = self._make_navigation_row(
+            "İstatistikler",
+            "view-statistics-symbolic",
+            "statistics",
+        )
         settings_row = self._make_navigation_row(
             "Ayarlar",
             "emblem-system-symbolic",
             "settings",
         )
         navigation.append(workspace_row)
+        navigation.append(statistics_row)
         navigation.append(settings_row)
         navigation.select_row(workspace_row)
 
@@ -95,6 +102,11 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         content_stack.set_vexpand(True)
         content_stack.add_named(root, "workspace")
 
+        statistics_page = StatisticsPanel()
+        statistics_page.set_hexpand(True)
+        statistics_page.set_vexpand(True)
+        content_stack.add_named(statistics_page, "statistics")
+
         settings_page = SettingsPanel(self)
         settings_page.set_hexpand(True)
         settings_page.set_vexpand(True)
@@ -103,13 +115,14 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
 
         def on_navigation_activated(_list_box: Gtk.ListBox, row: Gtk.ListBoxRow) -> None:
             page_name = row.get_name()
-            if page_name not in {"workspace", "settings"}:
+            if page_name not in {"workspace", "statistics", "settings"}:
                 return
             content_stack.set_visible_child_name(page_name)
             split_view.set_show_sidebar(False)
 
         navigation.connect("row-activated", on_navigation_activated)
         workspace_row.set_name("workspace")
+        statistics_row.set_name("statistics")
         settings_row.set_name("settings")
 
         split_view.set_sidebar(navigation)
