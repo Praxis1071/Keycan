@@ -1,13 +1,10 @@
-"""Progress-focused statistics surface for Keycan.
-
-Stage 2 owns presentation and interaction. Stage 3 will provide real SQLite
-records through the small data-facing methods exposed here; this module never
-invents measurements when there is no data.
-"""
+"""Real SQLite-backed practice statistics for Keycan."""
 
 from __future__ import annotations
 
 import math
+from datetime import datetime
+from typing import TYPE_CHECKING
 
 import gi
 
@@ -15,9 +12,18 @@ gi.require_version("Adw", "1")
 gi.require_version("Gtk", "4.0")
 from gi.repository import Adw, GLib, Gtk
 
+if TYPE_CHECKING:
+    from keycan.data.database import Database
+
+
+MONTHS = (
+    "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
+)
+
 
 class ProgressChart(Gtk.DrawingArea):
-    """Lightweight line-chart surface ready for real practice data."""
+    """Lightweight line chart used for the real practice time series."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -97,14 +103,15 @@ class ProgressChart(Gtk.DrawingArea):
 
 
 class StatisticsPanel(Gtk.Box):
-    """Simple, adaptive progress page independent of SQLite."""
+    """Adaptive statistics page backed by the application's SQLite database."""
 
     PERIODS = ("Günlük", "Haftalık", "Aylık", "Yıllık", "Tümü")
 
-    def __init__(self) -> None:
+    def __init__(self, database: Database) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.set_hexpand(True)
         self.set_vexpand(True)
+        self.db = database
         self.selected_period = "Haftalık"
 
         scrolled = Gtk.ScrolledWindow()
@@ -131,6 +138,7 @@ class StatisticsPanel(Gtk.Box):
         self._append_revealed(content, self._make_speed_section(), 190)
         self._append_revealed(content, self._make_accuracy_section(), 240)
         self._append_revealed(content, self._make_history_section(), 290)
+        self.refresh()
 
     @staticmethod
     def _append_revealed(parent: Gtk.Box, child: Gtk.Widget, delay_ms: int) -> None:
@@ -287,6 +295,8 @@ class StatisticsPanel(Gtk.Box):
         table.append(header)
         table.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
 
+        self.history_rows = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        table.append(self.history_rows)
         self.history_empty = Gtk.Label(label="Henüz tamamlanmış çalışma yok")
         self.history_empty.set_xalign(0)
         self.history_empty.set_margin_top(14)
@@ -302,26 +312,87 @@ class StatisticsPanel(Gtk.Box):
     def _on_period_toggled(self, button: Gtk.ToggleButton, period: str) -> None:
         if button.get_active():
             self.selected_period = period
-            self._on_period_changed(period)
+            self.refresh()
 
-    def _on_period_changed(self, _period: str) -> None:
-        self.chart.set_points([])
-        self.chart_empty.set_visible(True)
+    @staticmethod
+    def _duration_text(seconds: float) -> str:
+        total = max(0, int(round(seconds)))
+        if total < 60:
+            return f"{total} sn"
+        minutes, remainder = divmod(total, 60)
+        if minutes < 60:
+            return f"{minutes} dk" if remainder == 0 else f"{minutes} dk {remainder} sn"
+        hours, minutes = divmod(minutes, 60)
+        return f"{hours} sa {minutes} dk" if minutes else f"{hours} sa"
+
+    @staticmethod
+    def _date_text(value: datetime) -> str:
+        return f"{value.day} {MONTHS[value.month - 1]} {value.year}, {value:%H:%M}"
+
+    @staticmethod
+    def _clear_box(box: Gtk.Box) -> None:
+        child = box.get_first_child()
+        while child is not None:
+            next_child = child.get_next_sibling()
+            child.unparent()
+            child = next_child
+
+    @staticmethod
+    def _history_row(item: dict[str, object]) -> Gtk.Box:
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        row.set_margin_start(16)
+        row.set_margin_end(16)
+        row.set_margin_top(9)
+        row.set_margin_bottom(9)
+        values = (
+            StatisticsPanel._date_text(item["completed_at"]),
+            str(item["lesson_title"] or "Ders"),
+            StatisticsPanel._duration_text(float(item["duration_seconds"])),
+            f"{int(item['typed_word_count'])} kelime",
+            f"%{float(item['accuracy_percent']):.0f}",
+            f"Dakikada {float(item['words_per_minute']):.0f} kelime",
+        )
+        for value in values:
+            label = Gtk.Label(label=value)
+            label.set_xalign(0)
+            label.set_hexpand(True)
+            label.set_wrap(True)
+            row.append(label)
+        return row
 
     def set_overview(self, practices: int, duration_text: str, words: int, accuracy: float) -> None:
-        """Stage 3 hook for real summary values."""
         self.overview_rows[0].set_subtitle(str(practices))
         self.overview_rows[1].set_subtitle(duration_text)
         self.overview_rows[2].set_subtitle(str(words))
         self.overview_rows[3].set_subtitle(f"%{accuracy:.0f}")
 
     def set_speed_points(self, points: list[tuple[str, float]]) -> None:
-        """Stage 3 hook for a real time series; no synthetic data is created."""
         self.chart.set_points(points, "")
         self.chart_empty.set_visible(not bool(points))
 
     def set_accuracy(self, correct: int, wrong: int, percent: float) -> None:
-        """Stage 3 hook for real accuracy values."""
         self.accuracy_rows[0].set_subtitle(str(correct))
         self.accuracy_rows[1].set_subtitle(str(wrong))
         self.accuracy_rows[2].set_subtitle(f"%{percent:.0f}")
+
+    def set_history(self, history: list[dict[str, object]]) -> None:
+        self._clear_box(self.history_rows)
+        for item in history:
+            self.history_rows.append(self._history_row(item))
+        self.history_empty.set_visible(not bool(history))
+
+    def refresh(self) -> None:
+        stats = self.db.practice_statistics(self.selected_period)
+        self.set_overview(
+            int(stats["practices"]),
+            self._duration_text(float(stats["duration_seconds"])),
+            int(stats["total_words"]),
+            float(stats["accuracy_percent"]),
+        )
+        self.set_speed_points(list(stats["speed_points"]))
+        self.set_accuracy(
+            int(stats["correct_words"]),
+            int(stats["wrong_words"]),
+            float(stats["accuracy_percent"]),
+        )
+        self.set_history(list(stats["history"]))
