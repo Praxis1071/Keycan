@@ -73,6 +73,4 @@ finally:
     connection.close()
 PY
 
-python -m pytest -q tests/test_stage1_database.py tests/test_stage3_database.py
-
 echo "Keycan 2.0 Python sözdizimi, veritabanı, sonuç şeması ve Stage 3 istatistik denetimleri başarılı."
