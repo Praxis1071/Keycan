@@ -99,25 +99,31 @@ Yeni çalışma kayıtları kaynak ve ders adlarını o anki haliyle saklayarak 
 
 Hız, doğruluk ve karakter ölçümleri çalışma tamamlandığı anda hesaplanır. Eski veritabanları için migration mevcut sütunları koruyarak eksik alanları ekler. SQLite migration uyumluluğu nedeniyle `completed_at` eski satırlarda boş bırakılabilir; yeni kayıtlar ekleme sırasında `CURRENT_TIMESTAMP` ile oluşturulur.
 
-**Durum:** Tamamlandı.
+**Durum:** Tamamlandı ve kontrol edildi.
 
 ### Aşama 2 — İstatistikler sayfası UX tasarımı
 
 İstatistikler sayfası kodlanmadan önce görünüm ve bilgi hiyerarşisi kesinleştirilecektir.
 
+Detaylı tasarım `docs/STAGE2_STATISTICS_DESIGN.md` dosyasında kalıcı olarak tutulmaktadır.
+
 Hedef yapı:
 
 - genel çalışma özeti
 - anlaşılır istatistik kartları/tablosu
-- yazma gelişimini gösteren grafikler
 - günlük/haftalık/aylık görünüm
-- **Çalışmalarım** geçmiş tablosu
+- yazma gelişimini gösteren grafik
 - doğru/yanlış ve doğruluk analizi
-- ortalama ve gelişim bilgileri
+- **Çalışmalarım** geçmiş tablosu
+- anlaşılır boş durum
+- responsive yerleşim
+- mevcut overlay sidebar üzerinden İstatistikler sayfasına erişim
 
-Grafik ve tablolar kullanıcıya doğrudan anlam ifade eden Türkçe başlıklarla sunulacaktır.
+Kullanıcı arayüzünde teknik `WPM`/`CPM` kısaltmaları tek başına gösterilmeyecektir.
 
-**Durum:** Bekliyor.
+Aşama 2 tasarımında XP, profil, rozet ve yeni çalışma metriği eklenmeyecektir. Aşama 1 çalışma kayıtları temel veri kaynağı olarak korunacaktır.
+
+**Durum:** Tasarım tanımlandı; uygulama kodlaması ve görsel/stabilite kontrolü bekliyor.
 
 ### Aşama 3 — Gerçek SQLite verilerinin istatistiklere bağlanması
 
@@ -152,7 +158,7 @@ XP sistemi, temel çalışma ve istatistik veri altyapısı güvenilir hale gelm
 
 ## Aşama geçiş kuralı
 
-Bir aşama tamamlandı sayılmadan sonraki aşamanın koduna başlanmaz.
+Bir aşama tamamlan sayılmadan sonraki aşamanın koduna başlanmaz.
 
 Her aşama sonunda:
 
