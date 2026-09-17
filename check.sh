@@ -9,13 +9,15 @@ connection=sqlite3.connect("typing_data.db")
 try:
     connection.execute("PRAGMA foreign_keys = ON")
     assert connection.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
-    sources=connection.execute("SELECT COUNT(*) FROM sources").fetchone()[0]; lessons=connection.execute("SELECT COUNT(*) FROM lessons").fetchone()[0]
-    assert sources > 0 and lessons > 0
-    assert connection.execute("SELECT COUNT(*) FROM lessons WHERE text = ''").fetchone()[0] == 0
+    sources=connection.execute("SELECT COUNT(*) FROM sources WHERE is_deleted = 0").fetchone()[0]
+    lessons=connection.execute("SELECT COUNT(*) FROM lessons WHERE is_deleted = 0").fetchone()[0]
+    assert connection.execute("SELECT COUNT(*) FROM lessons WHERE is_deleted = 0 AND text = ''").fetchone()[0] == 0
     assert connection.execute("SELECT COUNT(*) FROM practice_results AS r LEFT JOIN lessons AS l ON l.id=r.lesson_id WHERE l.id IS NULL").fetchone()[0] == 0
     source_columns={row[1] for row in connection.execute("PRAGMA table_info(sources)")}; lesson_columns={row[1] for row in connection.execute("PRAGMA table_info(lessons)")}
     assert {"is_custom","is_deleted","custom_key"} <= source_columns
     assert {"is_custom","is_deleted","custom_order","custom_key"} <= lesson_columns
+    assert connection.execute("SELECT COUNT(*) FROM sources WHERE relative_path IS NULL").fetchone()[0] == 0
+    assert connection.execute("SELECT COUNT(*) FROM sources GROUP BY relative_path HAVING COUNT(*) > 1").fetchone() is None
     snapshot_sources=connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='default_content_sources'").fetchone()
     snapshot_lessons=connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='default_content_lessons'").fetchone()
     assert snapshot_sources and snapshot_lessons
@@ -25,8 +27,9 @@ try:
     assert {"completed_at","target_word_count","typed_word_count","total_characters","correct_characters","wrong_characters","accuracy_percent"} <= result_columns
     assert connection.execute("SELECT COUNT(*) FROM practice_results WHERE duration_seconds<0 OR correct_words<0 OR wrong_words<0 OR target_word_count<0 OR typed_word_count<0 OR total_characters<0 OR correct_characters<0 OR wrong_characters<0 OR words_per_minute<0 OR characters_per_minute<0 OR accuracy_percent<0 OR accuracy_percent>100").fetchone()[0] == 0
     assert connection.execute("SELECT COUNT(*) FROM practice_results WHERE total_characters != correct_characters + wrong_characters").fetchone()[0] == 0
-    print(f"Veri denetimi başarılı: {sources} kaynak, {lessons} metin.")
-finally: connection.close()
+    print(f"Veri denetimi başarılı: {sources} aktif kaynak, {lessons} aktif metin.")
+finally:
+    connection.close()
 PY
 python -m pytest -q tests/test_stage1_database.py tests/test_stage3_database.py tests/test_custom_content.py
-echo "Keycan sözdizimi, veritabanı, istatistik sıfırlama, tüm içerik yönetimi, varsayılan geri yükleme ve yedekleme kontrolleri hazır."
+echo "Keycan sözdizimi, veritabanı, içerik yönetimi, varsayılan geri yükleme, istatistik sıfırlama ve yedekleme kontrolleri hazır."
