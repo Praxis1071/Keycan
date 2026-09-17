@@ -50,8 +50,6 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         if not isinstance(root, Gtk.Box):
             return
 
-        # The sidebar is always collapsed so it overlays the main content
-        # instead of changing the typing workspace geometry.
         split_view = Adw.OverlaySplitView()
         split_view.set_collapsed(True)
         split_view.set_sidebar_position(Gtk.PackType.START)
@@ -75,17 +73,17 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
 
         workspace_row = self._make_navigation_row(
             "Çalışma Alanı",
-            "keyboard-symbolic",
+            "input-keyboard-symbolic",
             "workspace",
         )
         statistics_row = self._make_navigation_row(
             "İstatistikler",
-            "view-statistics-symbolic",
+            "utilities-system-monitor-symbolic",
             "statistics",
         )
         settings_row = self._make_navigation_row(
             "Ayarlar",
-            "preferences-system-symbolic",
+            "emblem-system-symbolic",
             "settings",
         )
         navigation.append(workspace_row)
@@ -93,8 +91,6 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         navigation.append(settings_row)
         navigation.select_row(workspace_row)
 
-        # Detach the existing root from ToolbarView before giving it to
-        # Gtk.Stack. A widget may have exactly one parent in GTK4.
         toolbar.set_content(None)
 
         content_stack = Gtk.Stack()
