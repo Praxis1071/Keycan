@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING
 
 import gi
@@ -103,7 +103,7 @@ class ProgressChart(Gtk.DrawingArea):
 
 
 class MetricCard(Gtk.Box):
-    """Compact KPI card with a one-shot number animation."""
+    """KPI card with a one-shot number animation."""
 
     def __init__(self, title: str, icon: str) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=7)
@@ -133,11 +133,9 @@ class MetricCard(Gtk.Box):
         self.value.set_margin_bottom(14)
         self.append(self.value)
         self._target = 0.0
-        self._suffix = ""
 
     def set_value(self, value: float, formatter=None, suffix: str = "") -> None:
         self._target = max(0.0, value)
-        self._suffix = suffix
         if formatter is None:
             formatter = lambda number: f"{number:.0f}"
         self.value.set_text(f"{formatter(0)}{suffix}")
@@ -154,6 +152,164 @@ class MetricCard(Gtk.Box):
         GLib.timeout_add(16, tick)
 
 
+class ActivityHeatmap(Gtk.DrawingArea):
+    """GitHub-like yearly activity calendar using real daily practice data."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.set_content_width(900)
+        self.set_content_height(190)
+        self.set_hexpand(True)
+        self.set_draw_func(self._draw)
+        self.year = datetime.now().year
+        self.days: dict[date, dict[str, object]] = {}
+        self._cell_size = 12.0
+        self._gap = 4.0
+        self._left = 38.0
+        self._top = 26.0
+        motion = Gtk.EventControllerMotion()
+        motion.connect("motion", self._on_motion)
+        motion.connect("leave", self._on_leave)
+        self.add_controller(motion)
+
+    def set_data(self, year: int, days: list[dict[str, object]]) -> None:
+        self.year = year
+        self.days = {item["date"]: item for item in days}
+        self.queue_draw()
+
+    def _calendar_start(self) -> date:
+        first = date(self.year, 1, 1)
+        return first - timedelta(days=first.weekday())
+
+    def _weeks(self) -> int:
+        start = self._calendar_start()
+        last = date(self.year, 12, 31)
+        return ((last - start).days // 7) + 1
+
+    def _intensity(self, item: dict[str, object] | None, maximum: float) -> int:
+        if not item:
+            return 0
+        duration = float(item["duration_seconds"])
+        if maximum <= 0 or duration <= 0:
+            return 1
+        ratio = duration / maximum
+        if ratio <= 0.25:
+            return 1
+        if ratio <= 0.5:
+            return 2
+        if ratio <= 0.75:
+            return 3
+        return 4
+
+    @staticmethod
+    def _rounded_rect(cr, x: float, y: float, size: float, radius: float) -> None:
+        cr.new_sub_path()
+        cr.arc(x + radius, y + radius, radius, math.pi, 1.5 * math.pi)
+        cr.arc(x + size - radius, y + radius, radius, 1.5 * math.pi, 2 * math.pi)
+        cr.arc(x + size - radius, y + size - radius, radius, 0, 0.5 * math.pi)
+        cr.arc(x + radius, y + size - radius, radius, 0.5 * math.pi, math.pi)
+        cr.close_path()
+
+    def _draw(self, _area: Gtk.DrawingArea, cr, width: int, height: int, _data=None) -> None:
+        weeks = self._weeks()
+        usable = max(100.0, width - self._left - 12.0)
+        cell = min(16.0, max(8.0, (usable - (weeks - 1) * 4.0) / weeks))
+        gap = max(2.0, min(4.0, cell * 0.30))
+        self._cell_size = cell
+        self._gap = gap
+
+        max_duration = max(
+            (float(item["duration_seconds"]) for item in self.days.values()),
+            default=0.0,
+        )
+        start = self._calendar_start()
+        cr.set_font_size(10)
+        cr.set_source_rgba(0.45, 0.45, 0.45, 0.82)
+        for row, label in enumerate(WEEKDAYS):
+            if row not in (0, 2, 4, 6):
+                continue
+            y = self._top + row * (cell + gap) + cell * 0.78
+            cr.move_to(0, y)
+            cr.show_text(label)
+
+        last_month = None
+        for week in range(weeks):
+            week_start = start + timedelta(days=week * 7)
+            if week_start.month != last_month and week_start.year == self.year:
+                cr.move_to(self._left + week * (cell + gap), 12)
+                cr.show_text(MONTHS[week_start.month - 1])
+                last_month = week_start.month
+            for row in range(7):
+                day = week_start + timedelta(days=row)
+                if day.year != self.year:
+                    continue
+                item = self.days.get(day)
+                level = self._intensity(item, max_duration)
+                x = self._left + week * (cell + gap)
+                y = self._top + row * (cell + gap)
+                self._rounded_rect(cr, x, y, cell, max(2.0, cell * 0.18))
+                if level == 0:
+                    cr.set_source_rgba(0.45, 0.45, 0.45, 0.18)
+                else:
+                    alpha = (0.24, 0.42, 0.62, 0.82)[level - 1]
+                    cr.set_source_rgba(0.18, 0.52, 0.78, alpha)
+                cr.fill()
+
+        legend_y = min(height - 14.0, self._top + 7 * (cell + gap) + 18.0)
+        cr.set_source_rgba(0.45, 0.45, 0.45, 0.82)
+        cr.move_to(self._left, legend_y + cell * 0.78)
+        cr.show_text("Daha az")
+        x = self._left + 52
+        for level in range(5):
+            self._rounded_rect(cr, x, legend_y, cell, max(2.0, cell * 0.18))
+            if level == 0:
+                cr.set_source_rgba(0.45, 0.45, 0.45, 0.18)
+            else:
+                cr.set_source_rgba(0.18, 0.52, 0.78, (0.24, 0.42, 0.62, 0.82)[level - 1])
+            cr.fill()
+            x += cell + gap
+        cr.set_source_rgba(0.45, 0.45, 0.45, 0.82)
+        cr.move_to(x + 4, legend_y + cell * 0.78)
+        cr.show_text("Daha fazla")
+
+    def _on_motion(self, _controller, x: float, y: float) -> None:
+        week = int((x - self._left) / (self._cell_size + self._gap))
+        row = int((y - self._top) / (self._cell_size + self._gap))
+        if week < 0 or week >= self._weeks() or row < 0 or row >= 7:
+            self.set_tooltip_text(None)
+            return
+        start = self._calendar_start()
+        day = start + timedelta(days=week * 7 + row)
+        if day.year != self.year:
+            self.set_tooltip_text(None)
+            return
+        item = self.days.get(day)
+        if not item:
+            text = f"{day.day} {MONTHS[day.month - 1]} {day.year}\nÇalışma yok"
+        else:
+            text = (
+                f"{day.day} {MONTHS[day.month - 1]} {day.year}\n"
+                f"{int(item['sessions'])} çalışma · {self._duration_text(float(item['duration_seconds']))}\n"
+                f"Ortalama hız: Dakikada {float(item['average_speed']):.0f} kelime · "
+                f"Doğruluk: %{float(item['accuracy_percent']):.0f}"
+            )
+        self.set_tooltip_text(text)
+
+    def _on_leave(self, _controller) -> None:
+        self.set_tooltip_text(None)
+
+    @staticmethod
+    def _duration_text(seconds: float) -> str:
+        total = max(0, int(round(seconds)))
+        if total < 60:
+            return f"{total} sn"
+        minutes, remainder = divmod(total, 60)
+        if minutes < 60:
+            return f"{minutes} dk" if remainder == 0 else f"{minutes} dk {remainder} sn"
+        hours, minutes = divmod(minutes, 60)
+        return f"{hours} sa {minutes} dk" if minutes else f"{hours} sa"
+
+
 class StatisticsPanel(Gtk.Box):
     """Adaptive statistics dashboard backed entirely by real SQLite records."""
 
@@ -165,6 +321,7 @@ class StatisticsPanel(Gtk.Box):
         self.set_vexpand(True)
         self.db = database
         self.selected_period = "Haftalık"
+        self.activity_year = datetime.now().year
         self._build()
         self.refresh()
 
@@ -178,6 +335,26 @@ class StatisticsPanel(Gtk.Box):
         GLib.timeout_add(delay, lambda: (revealer.set_reveal_child(True), GLib.SOURCE_REMOVE)[1])
         return revealer
 
+    @staticmethod
+    def _icon_label(icon: str, title: str, subtitle: str | None = None) -> Gtk.Box:
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        image = Gtk.Image.new_from_icon_name(icon)
+        image.add_css_class("dim-label")
+        row.append(image)
+        label = Gtk.Label(label=title)
+        label.set_xalign(0)
+        label.add_css_class("title-2")
+        row.append(label)
+        box.append(row)
+        if subtitle:
+            detail = Gtk.Label(label=subtitle)
+            detail.set_xalign(0)
+            detail.set_wrap(True)
+            detail.add_css_class("dim-label")
+            box.append(detail)
+        return box
+
     def _build(self) -> None:
         scrolled = Gtk.ScrolledWindow()
         scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
@@ -185,9 +362,6 @@ class StatisticsPanel(Gtk.Box):
         scrolled.set_vexpand(True)
         self.append(scrolled)
 
-        # Statistics should follow the available content width just like the
-        # workspace and settings views. Only the content margins provide the
-        # visual breathing room; there is no artificial centered max width.
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=22)
         content.set_hexpand(True)
         content.set_margin_top(28)
@@ -206,38 +380,9 @@ class StatisticsPanel(Gtk.Box):
         content.append(self._revealed(self._make_progress_section(), 320))
         content.append(self._revealed(self._make_history_section(), 360))
 
-    @staticmethod
-    def _heading(title: str, subtitle: str | None = None, icon: str | None = None) -> Gtk.Box:
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
-        title_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        if icon:
-            image = Gtk.Image.new_from_icon_name(icon)
-            image.add_css_class("dim-label")
-            title_row.append(image)
-        label = Gtk.Label(label=title)
-        label.set_xalign(0)
-        label.add_css_class("title-2")
-        title_row.append(label)
-        box.append(title_row)
-        if subtitle:
-            detail = Gtk.Label(label=subtitle)
-            detail.set_xalign(0)
-            detail.set_wrap(True)
-            detail.add_css_class("dim-label")
-            box.append(detail)
-        return box
-
     def _make_header(self) -> Gtk.Box:
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
-        title_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        image = Gtk.Image.new_from_icon_name("utilities-system-monitor-symbolic")
-        image.add_css_class("dim-label")
-        title_row.append(image)
-        title = Gtk.Label(label="İstatistikler")
-        title.set_xalign(0)
-        title.add_css_class("title-1")
-        title_row.append(title)
-        box.append(title_row)
+        box.append(self._icon_label("utilities-system-monitor-symbolic", "İstatistikler"))
         subtitle = Gtk.Label(label="Yazma gelişimini tek bakışta takip et.")
         subtitle.set_xalign(0)
         subtitle.set_wrap(True)
@@ -247,7 +392,7 @@ class StatisticsPanel(Gtk.Box):
 
     def _make_period_selector(self) -> Gtk.Box:
         section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
-        section.append(self._heading("Dönem", icon="view-calendar-symbolic"))
+        section.append(self._icon_label("view-calendar-symbolic", "Dönem"))
         controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         controls.add_css_class("linked")
         self.period_buttons: list[Gtk.ToggleButton] = []
@@ -281,7 +426,7 @@ class StatisticsPanel(Gtk.Box):
 
     def _make_speed_section(self) -> Gtk.Box:
         section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        section.append(self._heading("Yazma hızı", "Çalışmalarındaki hız değişimi", "speedometer-symbolic"))
+        section.append(self._icon_label("speedometer-symbolic", "Yazma hızı", "Çalışmalarındaki hız değişimi"))
         frame = Gtk.Frame()
         frame.add_css_class("card")
         chart_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -302,7 +447,7 @@ class StatisticsPanel(Gtk.Box):
 
     def _make_accuracy_section(self) -> Gtk.Box:
         section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        section.append(self._heading("Doğruluk", "Doğru ve yanlış kelimeleri birlikte gör", "emblem-ok-symbolic"))
+        section.append(self._icon_label("emblem-ok-symbolic", "Doğruluk", "Doğru ve yanlış kelimeleri birlikte gör"))
         frame = Gtk.Frame()
         frame.add_css_class("card")
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
@@ -320,16 +465,12 @@ class StatisticsPanel(Gtk.Box):
         box.append(self.accuracy_bar)
         split = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=18)
         correct = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=7)
-        correct_image = Gtk.Image.new_from_icon_name("emblem-ok-symbolic")
-        correct_image.add_css_class("dim-label")
-        correct.append(correct_image)
+        correct.append(Gtk.Image.new_from_icon_name("emblem-ok-symbolic"))
         self.correct_label = Gtk.Label(label="Doğru: 0")
         self.correct_label.set_xalign(0)
         correct.append(self.correct_label)
         wrong = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=7)
-        wrong_image = Gtk.Image.new_from_icon_name("dialog-warning-symbolic")
-        wrong_image.add_css_class("dim-label")
-        wrong.append(wrong_image)
+        wrong.append(Gtk.Image.new_from_icon_name("dialog-warning-symbolic"))
         self.wrong_label = Gtk.Label(label="Yanlış: 0")
         self.wrong_label.set_xalign(0)
         wrong.append(self.wrong_label)
@@ -342,29 +483,49 @@ class StatisticsPanel(Gtk.Box):
 
     def _make_activity_section(self) -> Gtk.Box:
         section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        section.append(self._heading("Çalışma takvimi", "Hangi günlerde pratik yaptığını gör", "x-office-calendar-symbolic"))
+        section.append(self._icon_label(
+            "x-office-calendar-symbolic",
+            "Çalışma takvimi",
+            "Yıl boyunca yaptığın pratikleri GitHub tarzı katkı görünümünde takip et.",
+        ))
         frame = Gtk.Frame()
         frame.add_css_class("card")
-        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         outer.set_margin_top(14)
         outer.set_margin_bottom(14)
         outer.set_margin_start(14)
         outer.set_margin_end(14)
+
+        controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        year_icon = Gtk.Image.new_from_icon_name("view-calendar-symbolic")
+        year_icon.add_css_class("dim-label")
+        controls.append(year_icon)
+        year_label = Gtk.Label(label="Yıl")
+        year_label.set_xalign(0)
+        year_label.add_css_class("dim-label")
+        controls.append(year_label)
+        self.activity_year_dropdown = Gtk.DropDown()
+        self.activity_year_dropdown.set_hexpand(False)
+        self.activity_year_dropdown.connect("notify::selected", self._on_activity_year_changed)
+        controls.append(self.activity_year_dropdown)
+        spacer = Gtk.Box()
+        spacer.set_hexpand(True)
+        controls.append(spacer)
+        outer.append(controls)
+
         self.activity_summary = Gtk.Label(label="Henüz çalışma yok")
         self.activity_summary.set_xalign(0)
         self.activity_summary.add_css_class("dim-label")
         outer.append(self.activity_summary)
-        self.activity_grid = Gtk.Grid()
-        self.activity_grid.set_row_spacing(5)
-        self.activity_grid.set_column_spacing(5)
-        outer.append(self.activity_grid)
+        self.activity_heatmap = ActivityHeatmap()
+        outer.append(self.activity_heatmap)
         frame.set_child(outer)
         section.append(frame)
         return section
 
     def _make_records_section(self) -> Gtk.Box:
         section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        section.append(self._heading("Kişisel rekorlar", "Seçili dönemdeki en yüksek değerlerin", "starred-symbolic"))
+        section.append(self._icon_label("starred-symbolic", "Kişisel rekorlar", "Seçili dönemdeki en yüksek değerlerin"))
         grid = Gtk.Grid()
         grid.set_row_spacing(10)
         grid.set_column_spacing(10)
@@ -374,6 +535,7 @@ class StatisticsPanel(Gtk.Box):
         for i, (title, icon) in enumerate(zip(titles, icons)):
             card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
             card.add_css_class("card")
+            card.set_hexpand(True)
             card.set_margin_top(2)
             card.set_margin_bottom(2)
             card.set_margin_start(2)
@@ -382,16 +544,16 @@ class StatisticsPanel(Gtk.Box):
             row.set_margin_top(12)
             row.set_margin_start(12)
             row.set_margin_end(12)
-            image = Gtk.Image.new_from_icon_name(icon)
-            image.add_css_class("dim-label")
-            row.append(image)
+            row.append(Gtk.Image.new_from_icon_name(icon))
             name = Gtk.Label(label=title)
             name.set_xalign(0)
+            name.set_wrap(True)
             name.add_css_class("dim-label")
             row.append(name)
             card.append(row)
             value = Gtk.Label(label="—")
             value.set_xalign(0)
+            value.set_wrap(True)
             value.add_css_class("heading")
             value.set_margin_start(12)
             value.set_margin_bottom(12)
@@ -403,28 +565,24 @@ class StatisticsPanel(Gtk.Box):
 
     def _make_progress_section(self) -> Gtk.Box:
         section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        section.append(self._heading("Gelişim", "İlk ve son çalışmaların arasındaki değişim", "go-next-symbolic"))
+        section.append(self._icon_label("go-next-symbolic", "Gelişim", "İlk ve son çalışmaların arasındaki değişim"))
         group = Adw.PreferencesGroup()
         self.progress_speed = Adw.ActionRow()
         self.progress_speed.set_title("Yazma hızı")
         self.progress_speed.set_subtitle("Yeterli veri olduğunda gösterilir")
-        speed_icon = Gtk.Image.new_from_icon_name("speedometer-symbolic")
-        speed_icon.add_css_class("dim-label")
-        self.progress_speed.add_prefix(speed_icon)
+        self.progress_speed.add_prefix(Gtk.Image.new_from_icon_name("speedometer-symbolic"))
         group.add(self.progress_speed)
         self.progress_accuracy = Adw.ActionRow()
         self.progress_accuracy.set_title("Doğruluk")
         self.progress_accuracy.set_subtitle("Yeterli veri olduğunda gösterilir")
-        accuracy_icon = Gtk.Image.new_from_icon_name("emblem-ok-symbolic")
-        accuracy_icon.add_css_class("dim-label")
-        self.progress_accuracy.add_prefix(accuracy_icon)
+        self.progress_accuracy.add_prefix(Gtk.Image.new_from_icon_name("emblem-ok-symbolic"))
         group.add(self.progress_accuracy)
         section.append(group)
         return section
 
     def _make_history_section(self) -> Gtk.Box:
         section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        section.append(self._heading("Son çalışmalar", "Tamamlanan çalışmaların ayrıntıları", "view-list-symbolic"))
+        section.append(self._icon_label("view-list-symbolic", "Son çalışmalar", "Tamamlanan çalışmaların ayrıntıları"))
         frame = Gtk.Frame()
         frame.add_css_class("card")
         self.history_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -443,6 +601,19 @@ class StatisticsPanel(Gtk.Box):
         if button.get_active():
             self.selected_period = period
             self.refresh()
+
+    def _on_activity_year_changed(self, dropdown: Gtk.DropDown, _pspec) -> None:
+        model = dropdown.get_model()
+        if model is None or dropdown.get_selected() == Gtk.INVALID_LIST_POSITION:
+            return
+        item = model.get_item(dropdown.get_selected())
+        if item is None:
+            return
+        try:
+            self.activity_year = int(item.get_string())
+        except ValueError:
+            return
+        self._refresh_activity()
 
     @staticmethod
     def _duration_text(seconds: float) -> str:
@@ -467,34 +638,29 @@ class StatisticsPanel(Gtk.Box):
             child.unparent()
             child = next_child
 
-    def _set_activity(self, history: list[dict[str, object]]) -> None:
-        self._clear_box(self.activity_grid)
-        if not history:
-            self.activity_summary.set_text("Henüz çalışma yapılmadı.")
+    def _refresh_activity_years(self) -> None:
+        years = self.db.practice_activity_years()
+        current = datetime.now().year
+        if current not in years:
+            years.insert(0, current)
+        years = sorted(set(years), reverse=True)
+        if self.activity_year not in years:
+            self.activity_year = years[0]
+        model = Gtk.StringList.new([str(year) for year in years])
+        self.activity_year_dropdown.set_model(model)
+        self.activity_year_dropdown.set_selected(years.index(self.activity_year))
+
+    def _refresh_activity(self) -> None:
+        data = self.db.practice_activity(self.activity_year)
+        self.activity_heatmap.set_data(self.activity_year, data)
+        if not data:
+            self.activity_summary.set_text(f"{self.activity_year}: Henüz çalışma yapılmadı.")
             return
-        daily: dict[object, float] = {}
-        for item in history:
-            day = item["completed_at"].date()
-            daily[day] = daily.get(day, 0.0) + float(item["duration_seconds"])
-        end = datetime.now().astimezone().date()
-        start = end - timedelta(days=34)
-        self.activity_summary.set_text(f"Son 35 gün: {len(daily)} aktif gün")
-        for col in range(5):
-            label = Gtk.Label(label=WEEKDAYS[col])
-            label.add_css_class("dim-label")
-            self.activity_grid.attach(label, col + 1, 0, 1, 1)
-        for index in range(35):
-            day = start + timedelta(days=index)
-            value = daily.get(day, 0.0)
-            cell = Gtk.Label(label=" ")
-            cell.set_size_request(22, 22)
-            cell.set_tooltip_text(f"{day.day} {MONTHS[day.month - 1]}: {self._duration_text(value)}")
-            cell.add_css_class("card")
-            if value > 0:
-                cell.add_css_class("accent-bg")
-            row = index // 5 + 1
-            col = index % 5 + 1
-            self.activity_grid.attach(cell, col, row, 1, 1)
+        total_sessions = sum(int(item["sessions"]) for item in data)
+        total_duration = sum(float(item["duration_seconds"]) for item in data)
+        self.activity_summary.set_text(
+            f"{self.activity_year}: {len(data)} aktif gün · {total_sessions} çalışma · {self._duration_text(total_duration)} toplam süre"
+        )
 
     def _set_records(self, history: list[dict[str, object]]) -> None:
         if not history:
@@ -544,12 +710,22 @@ class StatisticsPanel(Gtk.Box):
         header.set_margin_bottom(10)
         header.set_margin_start(16)
         header.set_margin_end(16)
-        for title in ("Tarih", "Ders", "Süre", "Sonuç", "Doğruluk", "Hız"):
+        for icon, title in (
+            ("view-calendar-symbolic", "Tarih"),
+            ("folder-documents-symbolic", "Ders"),
+            ("preferences-system-time-symbolic", "Süre"),
+            ("input-keyboard-symbolic", "Sonuç"),
+            ("emblem-ok-symbolic", "Doğruluk"),
+            ("speedometer-symbolic", "Hız"),
+        ):
+            cell = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+            cell.set_hexpand(True)
+            cell.append(Gtk.Image.new_from_icon_name(icon))
             label = Gtk.Label(label=title)
             label.set_xalign(0)
-            label.set_hexpand(True)
             label.add_css_class("dim-label")
-            header.append(label)
+            cell.append(label)
+            header.append(cell)
         self.history_box.append(header)
         self.history_box.append(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
         for item in history:
@@ -578,7 +754,6 @@ class StatisticsPanel(Gtk.Box):
         stats = self.db.practice_statistics(self.selected_period)
         practices = int(stats["practices"])
         duration = float(stats["duration_seconds"])
-        words = int(stats["total_words"])
         accuracy = float(stats["accuracy_percent"])
         speed_points = list(stats["speed_points"])
         history = list(stats["history"])
@@ -594,7 +769,8 @@ class StatisticsPanel(Gtk.Box):
         self.accuracy_bar.set_fraction(max(0.0, min(1.0, accuracy / 100.0)))
         self.correct_label.set_text(f"Doğru: {int(stats['correct_words'])}")
         self.wrong_label.set_text(f"Yanlış: {int(stats['wrong_words'])}")
-        self._set_activity(history)
+        self._refresh_activity_years()
+        self._refresh_activity()
         self._set_records(history)
         self._set_progress(history)
         self._set_history(history)
