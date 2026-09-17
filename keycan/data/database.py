@@ -16,7 +16,9 @@ class Database:
             row[1] for row in self.conn.execute("PRAGMA table_info(practice_results)")
         }
         additions = {
-            "completed_at": "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP",
+            # ALTER TABLE ... ADD COLUMN requires a constant default in SQLite.
+            # New rows receive CURRENT_TIMESTAMP explicitly in save_result().
+            "completed_at": "TEXT NOT NULL DEFAULT ''",
             "source_name_snapshot": "TEXT NOT NULL DEFAULT ''",
             "lesson_title_snapshot": "TEXT NOT NULL DEFAULT ''",
             "target_word_count": "INTEGER NOT NULL DEFAULT 0",
