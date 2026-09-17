@@ -16,10 +16,15 @@ class Database:
             row[1] for row in self.conn.execute("PRAGMA table_info(practice_results)")
         }
         additions = {
-            "correct_words": "INTEGER NOT NULL DEFAULT 0",
-            "wrong_words": "INTEGER NOT NULL DEFAULT 0",
-            "words_per_minute": "REAL NOT NULL DEFAULT 0",
-            "characters_per_minute": "REAL NOT NULL DEFAULT 0",
+            "completed_at": "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP",
+            "source_name_snapshot": "TEXT NOT NULL DEFAULT ''",
+            "lesson_title_snapshot": "TEXT NOT NULL DEFAULT ''",
+            "target_word_count": "INTEGER NOT NULL DEFAULT 0",
+            "typed_word_count": "INTEGER NOT NULL DEFAULT 0",
+            "total_characters": "INTEGER NOT NULL DEFAULT 0",
+            "correct_characters": "INTEGER NOT NULL DEFAULT 0",
+            "wrong_characters": "INTEGER NOT NULL DEFAULT 0",
+            "accuracy_percent": "REAL NOT NULL DEFAULT 0",
         }
         for name, definition in additions.items():
             if name not in columns:
@@ -58,7 +63,7 @@ class Database:
             "SELECT id, title FROM lessons WHERE source_id = ? ORDER BY legacy_metin_id, id",
             (source_id,),
         ).fetchall()
-        return [(lesson_id, f"Ders {index}") for index, (lesson_id, _) in enumerate(rows, 1)]
+        return [(lesson_id, f"Ders {index}") for index, (_, _) in enumerate(rows, 1)]
 
     def lesson(self, lesson_id: int) -> tuple[int, str, str]:
         row = self.conn.execute(
@@ -68,13 +73,69 @@ class Database:
             raise ValueError("Metin bulunamadı")
         return row
 
-    def save_result(self, lesson_id: int, duration: float, correct: int, wrong: int) -> None:
+    def lesson_context(self, lesson_id: int) -> tuple[str, str]:
+        row = self.conn.execute(
+            """SELECT sources.display_name, lessons.title
+               FROM lessons
+               JOIN sources ON sources.id = lessons.source_id
+               WHERE lessons.id = ?""",
+            (lesson_id,),
+        ).fetchone()
+        if not row:
+            raise ValueError("Ders bağlamı bulunamadı")
+        source_name, lesson_title = row
+        return clean_source_name(source_name), lesson_title
+
+    def save_result(
+        self,
+        lesson_id: int,
+        duration: float,
+        correct: int,
+        wrong: int,
+        *,
+        target_word_count: int,
+        typed_word_count: int,
+        total_characters: int,
+        correct_characters: int,
+        wrong_characters: int,
+        words_per_minute: float,
+        characters_per_minute: float,
+        accuracy_percent: float,
+    ) -> None:
+        source_name, lesson_title = self.lesson_context(lesson_id)
         self.conn.execute(
             """INSERT INTO practice_results(
                 lesson_id, duration_seconds, correct_chars, wrong_chars, wpm,
-                correct_words, wrong_words, words_per_minute, characters_per_minute
-            ) VALUES (?, ?, 0, 0, 0, ?, ?, 0, 0)""",
-            (lesson_id, duration, correct, wrong),
+                correct_words, wrong_words, words_per_minute, characters_per_minute,
+                completed_at, source_name_snapshot, lesson_title_snapshot,
+                target_word_count, typed_word_count, total_characters,
+                correct_characters, wrong_characters, accuracy_percent
+            ) VALUES (
+                ?, ?, ?, ?, ?,
+                ?, ?, ?, ?,
+                CURRENT_TIMESTAMP, ?, ?,
+                ?, ?, ?,
+                ?, ?, ?
+            )""",
+            (
+                lesson_id,
+                duration,
+                correct_characters,
+                wrong_characters,
+                words_per_minute,
+                correct,
+                wrong,
+                words_per_minute,
+                characters_per_minute,
+                source_name,
+                lesson_title,
+                target_word_count,
+                typed_word_count,
+                total_characters,
+                correct_characters,
+                wrong_characters,
+                accuracy_percent,
+            ),
         )
         self.conn.commit()
 
