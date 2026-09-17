@@ -23,58 +23,46 @@ def _ensure_default_snapshot(self: Database) -> None:
 
 def _init(self: Database,path): _ORIGINAL_INIT(self,path); _ensure_default_snapshot(self)
 
-
 def _sources(self: Database):
     rows=self.conn.execute("SELECT id,display_name,is_custom FROM sources WHERE is_deleted=0 ORDER BY display_name COLLATE NOCASE,id").fetchall(); visible=[]
     for source_id,name,is_custom in rows:
         if self.conn.execute("SELECT 1 FROM lessons WHERE source_id=? AND is_deleted=0 LIMIT 1",(source_id,)).fetchone() or is_custom: visible.append((source_id,clean_source_name(name),bool(is_custom)))
     visible.sort(key=lambda row:natural_sort_key(row[1])); return [(source_id,self._display_source_name(name,index)) for index,(source_id,name,_is_custom) in enumerate(visible,1)]
 
-
 def _lessons(self: Database,source_id: int):
     rows=self.conn.execute("SELECT id FROM lessons WHERE source_id=? AND is_deleted=0 ORDER BY custom_order,legacy_metin_id,id",(source_id,)).fetchall(); return [(lesson_id,f"Ders {index}") for index,(lesson_id,) in enumerate(rows,1)]
-
 
 def _custom_lesson_position(self: Database,lesson_id: int)->int:
     row=self.conn.execute("SELECT source_id,custom_order FROM lessons WHERE id=?",(lesson_id,)).fetchone()
     if not row: raise ValueError("Metin bulunamadı")
-    source_id,order=row
-    return int(self.conn.execute("SELECT COUNT(*) FROM lessons WHERE source_id=? AND is_deleted=0 AND (custom_order<? OR (custom_order=? AND id<=?))",(source_id,order,order,lesson_id)).fetchone()[0])
-
+    source_id,order=row; return int(self.conn.execute("SELECT COUNT(*) FROM lessons WHERE source_id=? AND is_deleted=0 AND (custom_order<? OR (custom_order=? AND id<=?))",(source_id,order,order,lesson_id)).fetchone()[0])
 
 def _managed_groups(self: Database): return self.conn.execute("SELECT id,display_name,custom_key,is_custom FROM sources WHERE is_deleted=0 ORDER BY display_name COLLATE NOCASE,id").fetchall()
 def _managed_lessons(self: Database,source_id: int): return self.conn.execute("SELECT id,text,custom_key,custom_order,is_custom FROM lessons WHERE source_id=? AND is_deleted=0 ORDER BY custom_order,legacy_metin_id,id",(source_id,)).fetchall()
-
 
 def _rename_group(self: Database,source_id: int,name: str)->None:
     name=self._validate_group_name(name)
     if self.conn.execute("UPDATE sources SET display_name=? WHERE id=? AND is_deleted=0",(name,source_id)).rowcount!=1: raise ValueError("Ders grubu bulunamadı")
     self.conn.commit()
 
-
 def _delete_group(self: Database,source_id: int)->None:
     if self.conn.execute("UPDATE sources SET is_deleted=1 WHERE id=? AND is_deleted=0",(source_id,)).rowcount!=1: raise ValueError("Ders grubu bulunamadı")
     self.conn.execute("UPDATE lessons SET is_deleted=1 WHERE source_id=?",(source_id,)); self.conn.commit()
 
-
 def _create_lesson(self: Database,source_id: int,text: str)->int:
     text=self._validate_text(text)
     if not self.conn.execute("SELECT 1 FROM sources WHERE id=? AND is_deleted=0",(source_id,)).fetchone(): raise ValueError("Ders grubu bulunamadı")
-    order=self.conn.execute("SELECT COALESCE(MAX(custom_order),-1)+1 FROM lessons WHERE source_id=? AND is_deleted=0",(source_id,)).fetchone()[0]
-    key=uuid.uuid4().hex; lesson_id=int(self.conn.execute("INSERT INTO lessons(source_id,legacy_metin_id,title,text,is_custom,is_deleted,custom_order,custom_key) VALUES(?,0,'Ders',?,1,0,?,?)",(source_id,text,order,key)).lastrowid); self.conn.commit(); return lesson_id
-
+    order=self.conn.execute("SELECT COALESCE(MAX(custom_order),-1)+1 FROM lessons WHERE source_id=? AND is_deleted=0",(source_id,)).fetchone()[0]; key=uuid.uuid4().hex; lesson_id=int(self.conn.execute("INSERT INTO lessons(source_id,legacy_metin_id,title,text,is_custom,is_deleted,custom_order,custom_key) VALUES(?,0,'Ders',?,1,0,?,?)",(source_id,text,order,key)).lastrowid); self.conn.commit(); return lesson_id
 
 def _update_lesson(self: Database,lesson_id: int,text: str)->None:
     text=self._validate_text(text)
     if self.conn.execute("UPDATE lessons SET text=? WHERE id=? AND is_deleted=0",(text,lesson_id)).rowcount!=1: raise ValueError("Metin bulunamadı")
     self.conn.commit()
 
-
 def _delete_lesson(self: Database,lesson_id: int)->None:
     row=self.conn.execute("SELECT source_id FROM lessons WHERE id=? AND is_deleted=0",(lesson_id,)).fetchone()
     if not row: raise ValueError("Metin bulunamadı")
     self.conn.execute("UPDATE lessons SET is_deleted=1 WHERE id=?",(lesson_id,)); self.conn.commit(); _normalize_order(self,int(row[0]))
-
 
 def _move_lesson(self: Database,lesson_id: int,direction: int)->None:
     if direction not in (-1,1): raise ValueError("Geçersiz sıralama yönü")
@@ -88,15 +76,12 @@ def _move_lesson(self: Database,lesson_id: int,direction: int)->None:
         self.conn.commit()
     except Exception: self.conn.rollback(); raise
 
-
 def _normalize_order(self: Database,source_id: int)->None:
     for order,(lesson_id,) in enumerate(self.conn.execute("SELECT id FROM lessons WHERE source_id=? AND is_deleted=0 ORDER BY custom_order,legacy_metin_id,id",(source_id,)).fetchall()): self.conn.execute("UPDATE lessons SET custom_order=? WHERE id=?",(order,lesson_id))
     self.conn.commit()
 
-
 def _reset_all_content(self: Database):
     _ensure_default_snapshot(self); groups=int(self.conn.execute("SELECT COUNT(*) FROM sources WHERE is_deleted=0").fetchone()[0]); lessons=int(self.conn.execute("SELECT COUNT(*) FROM lessons WHERE is_deleted=0").fetchone()[0]); self.conn.execute("UPDATE lessons SET is_deleted=1 WHERE is_deleted=0"); self.conn.execute("UPDATE sources SET is_deleted=1 WHERE is_deleted=0"); self.conn.commit(); return groups,lessons
-
 
 def _restore_defaults(self: Database):
     _ensure_default_snapshot(self); source_rows=self.conn.execute("SELECT source_id,display_name,relative_path,custom_key FROM default_content_sources ORDER BY source_id").fetchall(); lesson_rows=self.conn.execute("SELECT lesson_id,source_id,legacy_metin_id,title,text,custom_order FROM default_content_lessons ORDER BY source_id,custom_order,lesson_id").fetchall(); self.conn.execute("BEGIN")
@@ -109,16 +94,14 @@ def _restore_defaults(self: Database):
     except Exception: self.conn.rollback(); raise
     return len(source_rows),len(lesson_rows)
 
-
 def _export_data(self: Database)->str:
     groups=[]
     for source_id,name,key,is_custom in self._managed_groups():
         group_key=key or f"default:{source_id}"; lessons=[]
         for lesson_id,text,lesson_key,order,lesson_custom in self._managed_lessons(source_id): lessons.append({"key":lesson_key or f"default:{lesson_id}","text":text,"order":order,"default_lesson_id":None if lesson_custom else lesson_id})
         groups.append({"key":group_key,"name":name,"lessons":lessons,"is_custom":bool(is_custom),"default_source_id":None if is_custom else source_id})
-    rows=self.conn.execute("SELECT completed_at,duration_seconds,correct_words,wrong_words,words_per_minute,characters_per_minute,target_word_count,typed_word_count,total_characters,correct_characters,wrong_characters,accuracy_percent,source_name_snapshot,lesson_title_snapshot FROM practice_results WHERE completed_at!='' ORDER BY completed_at,rowid").fetchall(); fields=("completed_at","duration_seconds","correct_words","wrong_words","words_per_minute","characters_per_minute","target_word_count","typed_word_count","total_characters","correct_characters","wrong_characters","accuracy_percent","source_name","lesson_title")
+    rows=self.conn.execute("""SELECT r.completed_at,r.duration_seconds,r.correct_words,r.wrong_words,r.words_per_minute,r.characters_per_minute,r.target_word_count,r.typed_word_count,r.total_characters,r.correct_characters,r.wrong_characters,r.accuracy_percent,r.source_name_snapshot,r.lesson_title_snapshot,s.custom_key,l.custom_key,l.id,s.id FROM practice_results r LEFT JOIN lessons l ON l.id=r.lesson_id LEFT JOIN sources s ON s.id=l.source_id WHERE r.completed_at!='' ORDER BY r.completed_at,r.rowid""").fetchall(); fields=("completed_at","duration_seconds","correct_words","wrong_words","words_per_minute","characters_per_minute","target_word_count","typed_word_count","total_characters","correct_characters","wrong_characters","accuracy_percent","source_name","lesson_title","source_key","lesson_key","lesson_id","source_id")
     return json.dumps({"format":"keycan-backup","version":2,"exported_at":datetime.now().astimezone().isoformat(),"groups":groups,"practice_results":[dict(zip(fields,row)) for row in rows]},ensure_ascii=False,indent=2)
-
 
 def _import_data(self: Database,raw: str):
     payload=json.loads(raw)
@@ -143,7 +126,10 @@ def _import_data(self: Database,raw: str):
                 lesson_map[lesson_key]=lesson_id
         for result in results:
             try:
-                completed=str(result.get("completed_at","")); datetime.strptime(completed,"%Y-%m-%d %H:%M:%S"); source_name=str(result.get("source_name",result.get("source_name_snapshot",""))); lesson_title=str(result.get("lesson_title",result.get("lesson_title_snapshot",""))); lesson_id=lesson_map.get(str(result.get("lesson_key",""))) if result.get("lesson_key") else None
+                completed=str(result.get("completed_at","")); datetime.strptime(completed,"%Y-%m-%d %H:%M:%S"); source_name=str(result.get("source_name",result.get("source_name_snapshot",""))); lesson_title=str(result.get("lesson_title",result.get("lesson_title_snapshot",""))); lesson_id=None
+                if result.get("lesson_key"): lesson_id=lesson_map.get(str(result["lesson_key"]))
+                if lesson_id is None and isinstance(result.get("lesson_id"),int):
+                    found=self.conn.execute("SELECT id FROM lessons WHERE id=? AND is_deleted=0",(int(result["lesson_id"]),)).fetchone(); lesson_id=int(found[0]) if found else None
                 if lesson_id is None:
                     row=self.conn.execute("SELECT l.id FROM lessons l JOIN sources s ON s.id=l.source_id WHERE l.is_deleted=0 AND s.is_deleted=0 AND s.display_name=? AND l.title=? LIMIT 1",(source_name,lesson_title)).fetchone(); lesson_id=int(row[0]) if row else None
                 if lesson_id is None: skipped+=1; continue
@@ -152,7 +138,6 @@ def _import_data(self: Database,raw: str):
             except (TypeError,ValueError): skipped+=1
         self.conn.commit(); return imported,skipped
     except Exception: self.conn.rollback(); raise
-
 
 def _patch():
     Database.__init__=_init; Database.sources=_sources; Database.lessons=_lessons; Database._custom_lesson_position=_custom_lesson_position; Database.managed_groups=_managed_groups; Database.managed_lessons=_managed_lessons; Database.rename_group=_rename_group; Database.delete_group=_delete_group; Database.create_lesson=_create_lesson; Database.update_lesson=_update_lesson; Database.delete_lesson=_delete_lesson; Database.move_lesson=_move_lesson; Database.reset_all_content=_reset_all_content; Database.restore_defaults=_restore_defaults; Database.export_data=_export_data; Database.import_data=_import_data
