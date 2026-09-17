@@ -98,7 +98,7 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         content_stack.set_vexpand(True)
         content_stack.add_named(root, "workspace")
 
-        statistics_page = StatisticsPanel()
+        statistics_page = StatisticsPanel(self.db)
         statistics_page.set_hexpand(True)
         statistics_page.set_vexpand(True)
         content_stack.add_named(statistics_page, "statistics")
@@ -114,6 +114,8 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
             if page_name not in {"workspace", "statistics", "settings"}:
                 return
             content_stack.set_visible_child_name(page_name)
+            if page_name == "statistics":
+                statistics_page.refresh()
             split_view.set_show_sidebar(False)
 
         navigation.connect("row-activated", on_navigation_activated)
@@ -127,6 +129,7 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         self.sidebar_view = split_view
         self.navigation_list = navigation
         self.content_stack = content_stack
+        self.statistics_page = statistics_page
 
         show_sidebar_button = Gtk.ToggleButton()
         show_sidebar_button.set_icon_name("sidebar-show-symbolic")
