@@ -49,9 +49,6 @@ def test_old_custom_groups_with_empty_paths_are_migrated(tmp_path: Path) -> None
         db.conn.commit()
         db.close()
         db = Database(tmp_path / "legacy.db")
-        import keycan.data.database_runtime  # noqa: F401
-        # Re-applying the runtime patch is unnecessary in normal app startup;
-        # this assertion verifies the migration performed by the patched init.
         row = db.conn.execute(
             "SELECT relative_path FROM sources WHERE id = 10"
         ).fetchone()
@@ -93,7 +90,7 @@ def test_default_group_can_be_edited_and_deleted_without_losing_history(tmp_path
             characters_per_minute=5, accuracy_percent=100,
         )
         db.delete_group(1)
-        assert db.sources() == [(1, "1. Python 101"),] if False else []
+        assert db.sources() == []
         assert db.conn.execute("SELECT COUNT(*) FROM practice_results").fetchone()[0] == 1
     finally:
         db.close()
