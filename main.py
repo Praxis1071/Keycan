@@ -132,8 +132,6 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         self.navigation_list = navigation
         self.content_stack = content_stack
 
-        self.settings_button.set_visible(False)
-
         show_sidebar_button = Gtk.ToggleButton()
         show_sidebar_button.set_icon_name("sidebar-show-symbolic")
         show_sidebar_button.set_tooltip_text("Yan paneli aç/kapat")
