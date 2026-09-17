@@ -50,8 +50,12 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
     def _make_navigation_row(title,icon_name,page_name):
         row=Gtk.ListBoxRow();row.set_name(page_name);row.set_activatable(True);row.set_selectable(True);box=Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,spacing=10);icon=Gtk.Image.new_from_icon_name(icon_name);icon.set_pixel_size(18);box.append(icon);label=Gtk.Label(label=title);label.set_xalign(0);label.set_hexpand(True);box.append(label);row.set_child(box);return row
     def _load_sources(self):
-        sources=self.db.sources();self.source_ids=[i for i,_ in sources];self.source_dropdown.set_model(Gtk.StringList.new([n for _,n in sources]));
+        sources=self.db.sources();self.source_ids=[i for i,_ in sources];self.source_dropdown.set_model(Gtk.StringList.new([n for _,n in sources]))
         if sources:self.source_dropdown.set_selected(0)
+        else:
+            self.lesson_ids=[]
+            self.lesson_dropdown.set_model(Gtk.StringList.new([]))
+            self.current_lesson_id=None; self.current_text=""; self._restart()
     def _on_source_changed(self,_dropdown,_param):
         index=self.source_dropdown.get_selected()
         if 0<=index<len(self.source_ids):self._load_lessons(self.source_ids[index])
