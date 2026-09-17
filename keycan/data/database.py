@@ -222,38 +222,31 @@ class Database:
         return parsed.replace(tzinfo=timezone.utc).astimezone()
 
     def practice_activity_years(self) -> list[int]:
-        """Return calendar years that contain real, timestamped practice records."""
+        """Return calendar years with timestamped records in local time."""
         rows = self.conn.execute(
-            """SELECT DISTINCT substr(completed_at, 1, 4) AS year
-               FROM practice_results
-               WHERE completed_at != ''
-               ORDER BY year DESC"""
+            "SELECT completed_at FROM practice_results WHERE completed_at != ''"
         ).fetchall()
-        years: list[int] = []
-        for (value,) in rows:
-            try:
-                year = int(value)
-            except (TypeError, ValueError):
-                continue
-            if year >= 1:
-                years.append(year)
-        return years
+        return sorted(
+            {self._parse_completed_at(value).year for (value,) in rows},
+            reverse=True,
+        )
 
     def practice_activity(self, year: int) -> list[dict[str, object]]:
         """Return daily activity aggregates for one local calendar year."""
         if year < 1:
             raise ValueError("Yıl geçerli olmalıdır")
-        start = datetime(year, 1, 1, tzinfo=datetime.now().astimezone().tzinfo)
-        end = datetime(year + 1, 1, 1, tzinfo=start.tzinfo)
+        local_tz = datetime.now().astimezone().tzinfo
+        start = datetime(year, 1, 1, tzinfo=local_tz)
+        end = datetime(year + 1, 1, 1, tzinfo=local_tz)
         rows = self.conn.execute(
             """SELECT completed_at, duration_seconds, typed_word_count,
-                      correct_words, wrong_words, words_per_minute
+                      correct_words, words_per_minute
                FROM practice_results
-               WHERE completed_at != ?
+               WHERE completed_at != ''
                  AND completed_at >= ?
                  AND completed_at < ?
                ORDER BY completed_at ASC""",
-            ("", self._utc_sql_value(start), self._utc_sql_value(end)),
+            (self._utc_sql_value(start), self._utc_sql_value(end)),
         ).fetchall()
 
         daily: dict[object, dict[str, float]] = {}
@@ -262,13 +255,19 @@ class Database:
             day = completed.date()
             bucket = daily.setdefault(
                 day,
-                {"sessions": 0.0, "duration_seconds": 0.0, "words": 0.0, "correct_words": 0.0, "speed_total": 0.0},
+                {
+                    "sessions": 0.0,
+                    "duration_seconds": 0.0,
+                    "words": 0.0,
+                    "correct_words": 0.0,
+                    "speed_total": 0.0,
+                },
             )
             bucket["sessions"] += 1
             bucket["duration_seconds"] += float(row[1])
             bucket["words"] += int(row[2])
             bucket["correct_words"] += int(row[3])
-            bucket["speed_total"] += float(row[5])
+            bucket["speed_total"] += float(row[4])
 
         return [
             {
@@ -276,8 +275,16 @@ class Database:
                 "sessions": int(values["sessions"]),
                 "duration_seconds": values["duration_seconds"],
                 "words": int(values["words"]),
-                "accuracy_percent": values["correct_words"] / values["words"] * 100.0 if values["words"] else 0.0,
-                "average_speed": values["speed_total"] / values["sessions"] if values["sessions"] else 0.0,
+                "accuracy_percent": (
+                    values["correct_words"] / values["words"] * 100.0
+                    if values["words"]
+                    else 0.0
+                ),
+                "average_speed": (
+                    values["speed_total"] / values["sessions"]
+                    if values["sessions"]
+                    else 0.0
+                ),
             }
             for day, values in sorted(daily.items())
         ]
@@ -322,7 +329,9 @@ class Database:
 
         speed_points = [
             (label, sum(values) / len(values))
-            for (_bucket, label), values in sorted(speed_buckets.items(), key=lambda item: item[0][0])
+            for (_bucket, label), values in sorted(
+                speed_buckets.items(), key=lambda item: item[0][0]
+            )
         ]
 
         history = [
