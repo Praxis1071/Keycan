@@ -13,7 +13,7 @@ import gi
 
 gi.require_version("Adw", "1")
 gi.require_version("Gtk", "4.0")
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, GLib, Gtk
 
 
 class ProgressChart(Gtk.DrawingArea):
@@ -64,6 +64,14 @@ class ProgressChart(Gtk.DrawingArea):
             minimum -= padding
             maximum += padding
 
+        cr.set_font_size(10)
+        cr.set_source_rgba(0.45, 0.45, 0.45, 0.8)
+        for fraction in (0.0, 0.5, 1.0):
+            value = minimum + (maximum - minimum) * fraction
+            y = bottom - chart_height * fraction
+            cr.move_to(4, y + 4)
+            cr.show_text(f"{value:.0f}{self.value_suffix}")
+
         cr.set_source_rgba(0.2, 0.55, 0.75, 0.95)
         cr.set_line_width(2.5)
         for index, (_label, value) in enumerate(self.points):
@@ -75,11 +83,17 @@ class ProgressChart(Gtk.DrawingArea):
                 cr.line_to(x, y)
         cr.stroke()
 
-        for index, (_label, value) in enumerate(self.points):
+        for index, (label, value) in enumerate(self.points):
             x = left if len(self.points) == 1 else left + chart_width * index / (len(self.points) - 1)
             y = bottom - chart_height * ((value - minimum) / (maximum - minimum))
             cr.arc(x, y, 3.5, 0, math.tau)
             cr.fill()
+            if len(self.points) <= 10 or index in (0, len(self.points) - 1):
+                cr.set_source_rgba(0.45, 0.45, 0.45, 0.8)
+                cr.set_font_size(10)
+                cr.move_to(max(left, x - 20), height - 12)
+                cr.show_text(label)
+                cr.set_source_rgba(0.2, 0.55, 0.75, 0.95)
 
 
 class StatisticsPanel(Gtk.Box):
@@ -111,12 +125,27 @@ class StatisticsPanel(Gtk.Box):
         content.set_margin_end(20)
         clamp.set_child(content)
 
-        content.append(self._make_header())
-        content.append(self._make_overview())
-        content.append(self._make_period_selector())
-        content.append(self._make_speed_section())
-        content.append(self._make_accuracy_section())
-        content.append(self._make_history_section())
+        self._append_revealed(content, self._make_header(), 40)
+        self._append_revealed(content, self._make_overview(), 90)
+        self._append_revealed(content, self._make_period_selector(), 140)
+        self._append_revealed(content, self._make_speed_section(), 190)
+        self._append_revealed(content, self._make_accuracy_section(), 240)
+        self._append_revealed(content, self._make_history_section(), 290)
+
+    @staticmethod
+    def _append_revealed(parent: Gtk.Box, child: Gtk.Widget, delay_ms: int) -> None:
+        revealer = Gtk.Revealer()
+        revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_DOWN)
+        revealer.set_transition_duration(180)
+        revealer.set_reveal_child(False)
+        revealer.set_child(child)
+        parent.append(revealer)
+
+        def reveal() -> bool:
+            revealer.set_reveal_child(True)
+            return GLib.SOURCE_REMOVE
+
+        GLib.timeout_add(delay_ms, reveal)
 
     @staticmethod
     def _heading(title: str, subtitle: str | None = None) -> Gtk.Box:
@@ -276,7 +305,6 @@ class StatisticsPanel(Gtk.Box):
             self._on_period_changed(period)
 
     def _on_period_changed(self, _period: str) -> None:
-        # Stage 3 will supply the corresponding SQLite series here.
         self.chart.set_points([])
         self.chart_empty.set_visible(True)
 
