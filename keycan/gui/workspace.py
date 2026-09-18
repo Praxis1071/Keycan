@@ -12,9 +12,10 @@ from __future__ import annotations
 
 import gi
 
+gi.require_version("Adw", "1")
 gi.require_version("Gdk", "4.0")
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gdk, Gtk
+from gi.repository import Adw, Gdk, Gtk
 
 
 class PracticeTextView(Gtk.TextView):
@@ -157,12 +158,26 @@ class TypingWorkspace(Gtk.Box):
 
         self.input_view = self._make_text_view(True, True)
         editors.set_end_child(self._wrap_editor(self.input_view))
-        editors.set_position(470)
+        editors.set_position(360)
+        editors.set_shrink_start_child(True)
+        editors.set_shrink_end_child(True)
+
+        compact_height = Adw.Breakpoint.new(
+            Adw.BreakpointCondition.parse("max-height: 650sp")
+        )
+        compact_height.add_setter(editors, "position", 280)
+        self.add_breakpoint(compact_height)
+
+        short_height = Adw.Breakpoint.new(
+            Adw.BreakpointCondition.parse("max-height: 520sp")
+        )
+        short_height.add_setter(editors, "position", 210)
+        self.add_breakpoint(short_height)
 
         bottom = Gtk.CenterBox()
         bottom.set_margin_start(0)
         bottom.set_margin_end(0)
-        bottom.set_size_request(-1, 34)
+        bottom.set_height_request(34)
         bottom.add_css_class("keycan-bottom")
         self.append(bottom)
 
