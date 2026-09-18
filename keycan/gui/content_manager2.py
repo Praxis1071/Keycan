@@ -13,7 +13,7 @@ class ContentManagerWindow(Adw.Window):
     def __init__(self, parent: Gtk.Widget, database, on_changed=None) -> None:
         super().__init__(transient_for=parent, modal=True, title="Ders Gruplarını Yönet")
         self.db=database; self.on_changed=on_changed; self.selected_group_id=None; self.selected_lesson_id=None
-        self.set_default_size(900,620); self.set_size_request(640,460); self._build(); self._refresh_groups()
+        self.set_default_size(900,620); self.set_size_request(480,360); self._build(); self._refresh_groups()
     @staticmethod
     def _rows(list_box):
         row=list_box.get_first_child()
@@ -34,7 +34,26 @@ class ContentManagerWindow(Adw.Window):
         order=Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,spacing=6); self.up_button=Gtk.Button(label="Yukarı taşı"); self.down_button=Gtk.Button(label="Aşağı taşı"); self.up_button.connect("clicked",lambda _b:self._move(-1)); self.down_button.connect("clicked",lambda _b:self._move(1)); order.append(self.up_button); order.append(self.down_button); right.append(order)
         editor=Adw.PreferencesGroup(); editor.set_title("Seçili metin"); editor.set_description("Metinlerin numarası sırasına göre otomatik belirlenir."); right.append(editor); self.text_view=Gtk.TextView(); self.text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR); self.text_view.set_vexpand(True); es=Gtk.ScrolledWindow(); es.set_min_content_height(140); es.set_vexpand(True); es.set_child(self.text_view); editor.add(es)
         buttons=Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,spacing=6); self.add_button=Gtk.Button(label="Yeni metin ekle"); self.save_button=Gtk.Button(label="Metni kaydet"); self.save_button.add_css_class("suggested-action"); self.delete_text_button=Gtk.Button(label="Metni sil"); self.delete_text_button.add_css_class("destructive-action"); self.add_button.connect("clicked",self._add); self.save_button.connect("clicked",self._save); self.delete_text_button.connect("clicked",self._delete); buttons.append(self.add_button); buttons.append(self.save_button); buttons.append(self.delete_text_button); right.append(buttons)
-        self.status=Gtk.Label(label=""); self.status.set_xalign(0); self.status.set_wrap(True); self.status.add_css_class("dim-label"); root.append(self.status); self._set_group_controls(False); self._set_lesson_controls(False)
+        self.status=Gtk.Label(label=""); self.status.set_xalign(0); self.status.set_wrap(True); self.status.add_css_class("dim-label"); root.append(self.status)
+        compact = Adw.Breakpoint.new(
+            Adw.BreakpointCondition.parse("max-width: 760sp")
+        )
+        compact.add_setter(panes, "orientation", Gtk.Orientation.VERTICAL)
+        compact.add_setter(panes, "position", 200)
+        compact.add_setter(root, "margin-start", 12)
+        compact.add_setter(root, "margin-end", 12)
+        self.add_breakpoint(compact)
+
+        short = Adw.Breakpoint.new(
+            Adw.BreakpointCondition.parse("max-height: 520sp")
+        )
+        short.add_setter(root, "margin-top", 10)
+        short.add_setter(root, "margin-bottom", 10)
+        short.add_setter(self.editor_scroll, "min-content-height", 90)
+        short.add_setter(panes, "position", 180)
+        self.add_breakpoint(short)
+
+        self._set_group_controls(False); self._set_lesson_controls(False)
     def _refresh_groups(self):
         selected=self.selected_group_id; self._clear(self.group_list)
         for number,(group_id,name,_key,_is_custom) in enumerate(self.db.managed_groups(),1):
