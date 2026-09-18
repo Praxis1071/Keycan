@@ -96,4 +96,6 @@ class SettingsPanel(Gtk.Box):
 
 class SettingsWindow(Adw.Window):
     def __init__(self,parent:Gtk.Widget)->None:
-        super().__init__(transient_for=parent,modal=True,title="Ayarlar");self.set_default_size(520,500);self.set_size_request(420,360);toolbar=Adw.ToolbarView();toolbar.add_top_bar(Adw.HeaderBar());toolbar.set_content(SettingsPanel(parent));self.set_content(toolbar)
+        super().__init__(transient_for=parent,modal=True,title="Ayarlar");self.set_default_size(520,500)
+        toolbar=Adw.ToolbarView();toolbar.add_top_bar(Adw.HeaderBar())
+        scroll=Gtk.ScrolledWindow();scroll.set_policy(Gtk.PolicyType.NEVER,Gtk.PolicyType.AUTOMATIC);scroll.set_child(SettingsPanel(parent));toolbar.set_content(scroll);self.set_content(toolbar)
