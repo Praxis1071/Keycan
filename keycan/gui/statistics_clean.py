@@ -137,7 +137,7 @@ class ActivityHeatmap(Gtk.DrawingArea):
     def _rounded_rect(cr, x, y, size, radius) -> None:
         cr.new_sub_path(); cr.arc(x+radius,y+radius,radius,math.pi,1.5*math.pi); cr.arc(x+size-radius,y+radius,radius,1.5*math.pi,2*math.pi); cr.arc(x+size-radius,y+size-radius,radius,0,.5*math.pi); cr.arc(x+radius,y+size-radius,radius,.5*math.pi,math.pi); cr.close_path()
     def _draw(self, _area, cr, width, height, _data=None) -> None:
-        weeks = self._weeks(); usable = max(100.0, width-self._left-12); cell = min(16.0,max(8.0,(usable-(weeks-1)*4)/weeks)); gap=max(2.0,min(4.0,cell*.30)); self._cell_size=cell; self._gap=gap
+        weeks = self._weeks(); usable = max(80.0, width-self._left-8); cell = min(16.0,max(4.0,(usable-(weeks-1)*1.5)/weeks)); gap=max(1.0,min(3.0,cell*.25)); self._cell_size=cell; self._gap=gap
         maximum=max((float(x["duration_seconds"]) for x in self.days.values()),default=0); start=self._calendar_start(); cr.set_font_size(10); cr.set_source_rgba(.45,.45,.45,.82)
         for row,label in enumerate(WEEKDAYS):
             if row not in (0,2,4,6): continue
