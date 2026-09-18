@@ -168,6 +168,7 @@ class TypingWorkspace(Gtk.Box):
         bottom.set_margin_end(0)
         bottom.set_height_request(34)
         bottom.add_css_class("keycan-bottom")
+        self.bottom = bottom
         self.append(bottom)
 
         self.status = Gtk.Label(label="Bir ders ve metin seçin.")
