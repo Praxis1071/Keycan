@@ -25,6 +25,17 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         if parent is not None:
             old.unparent(); self.source_dropdown.insert_after(parent,previous) if previous is not None else parent.append(self.source_dropdown)
         self._install_sidebar_navigation()
+        compact_height = Adw.Breakpoint.new(
+            Adw.BreakpointCondition.parse("max-height: 650sp")
+        )
+        compact_height.add_setter(self.workspace.editors, "position", 280)
+        self.add_breakpoint(compact_height)
+        short_height = Adw.Breakpoint.new(
+            Adw.BreakpointCondition.parse("max-height: 520sp")
+        )
+        short_height.add_setter(self.workspace.editors, "position", 210)
+        short_height.add_setter(self.workspace.bottom, "height-request", 30)
+        self.add_breakpoint(short_height)
     def _install_sidebar_navigation(self):
         toolbar=self.get_content()
         if not isinstance(toolbar,Adw.ToolbarView):return
