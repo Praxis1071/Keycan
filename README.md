@@ -61,4 +61,44 @@ Ayrıntılar için [LICENSE](LICENSE) dosyasına bakın.
 
 ## 🗺️ Geliştirme Yol Haritası
 
-Güncel geliştirme planı için [ROADMAP.md](ROADMAP.md) dosyasına bakın.
+Keycan'ın güncel geliştirme planı:
+
+| Aşama | Konu | Durum |
+|---|---|---|
+| 0 | 🏗️ Temel Mimari | ✅ Tamamlandı |
+| 1 | ⌨️ Temel Yazma Deneyimi | ✅ Tamamlandı |
+| 2 | 📊 İstatistik ve Veri Altyapısı | ✅ Tamamlandı |
+| 3 | 📚 İçerik ve Veri Yönetimi | ✅ Tamamlandı |
+| 4 | 🔧 2.2.x Bakım ve Hata Düzeltmeleri | 🔧 Devam ediyor |
+| 5 | 📈 Gelişmiş İstatistikler | ⏳ Planlandı |
+| 6 | 🎨 Kullanıcı Deneyimi | ⏳ Planlandı |
+| 7 | 👤 Profil, XP, Seviye ve Rozet Sistemi | ⏳ Planlandı |
+| 8 | 🧑 Gelişmiş Yerel Profil | ⏳ Planlandı |
+
+### Aşama 5 — Gelişmiş İstatistikler
+
+- Günlük / haftalık / aylık istatistikler
+- Uzun dönemli WPM ve doğruluk gelişimi
+- Toplam çalışma süresi ve toplam kelime / karakter
+- Ders bazlı performans
+- Ayrıntılı dönem filtreleri ve dönem karşılaştırmaları
+- Rekor geçmişi
+- Ayrıntılı performans analizi
+- En çok hata yapılan harfleri belirleme
+
+### Aşama 6 — Kullanıcı Deneyimi
+
+- Tema seçenekleri
+- Türkçe / İngilizce dil sistemi
+
+### Aşama 7 — Profil, XP, Seviye ve Rozet Sistemi
+
+Sidebar'da İstatistikler'den bağımsız ayrı bir Profil bölümü oluşturulacak. Profil; XP, seviye, seviye ilerlemesi, rozetler ve çalışma serisini gösterecek ve bu veriler mevcut istatistiklerden beslenecek.
+
+### Aşama 8 — Gelişmiş Yerel Profil
+
+Profilin kişiselleştirilmesi ve genişletilmesi planlanıyor. Kullanıcı kendi ismini ve profil fotoğrafını belirleyebilecek; profil yerel olarak saklanacak ve genel çalışma özeti ile ilerleme geçmişini gösterecek.
+
+Ayrıntılı roadmap için [ROADMAP.md](ROADMAP.md) dosyasına bakın.
+
+> Not: Katiplik modu, online özellikler, bulut senkronizasyonu, Odak/Pomodoro ve akıllı/adaptif eğitim sistemi mevcut yol haritasında yer almamaktadır.
