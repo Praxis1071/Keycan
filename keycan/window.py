@@ -31,7 +31,6 @@ class KeycanWindow(Adw.ApplicationWindow):
     def __init__(self, app: Adw.Application, database_path: Path) -> None:
         super().__init__(application=app, title="Keycan — On Parmak")
         self.set_default_size(1200, 760)
-        self.set_size_request(820, 600)
         self.db = Database(database_path)
         self.engine = TypingEngine()
         self.current_lesson_id: int | None = None
@@ -106,7 +105,8 @@ class KeycanWindow(Adw.ApplicationWindow):
 
         left_controls.append(self._label("Metin:"))
         self.lesson_dropdown = Gtk.DropDown()
-        self.lesson_dropdown.set_size_request(150, -1)
+        self.lesson_dropdown.set_hexpand(True)
+        self.lesson_dropdown.set_halign(Gtk.Align.FILL)
         self.lesson_dropdown.connect("notify::selected", self._on_lesson_changed)
         left_controls.append(self.lesson_dropdown)
 
@@ -131,10 +131,30 @@ class KeycanWindow(Adw.ApplicationWindow):
         narrow_breakpoint = Adw.Breakpoint.new(
             Adw.BreakpointCondition.parse("max-width: 900sp")
         )
+        narrow_breakpoint.add_setter(controls, "orientation", Gtk.Orientation.VERTICAL)
+        narrow_breakpoint.add_setter(controls, "spacing", 6)
         narrow_breakpoint.add_setter(left_controls, "spacing", 4)
         narrow_breakpoint.add_setter(right_controls, "spacing", 4)
-        narrow_breakpoint.add_setter(self.lesson_dropdown, "width-request", 120)
+        narrow_breakpoint.add_setter(left_controls, "margin-end", 12)
+        narrow_breakpoint.add_setter(right_controls, "margin-start", 12)
+        narrow_breakpoint.add_setter(right_controls, "halign", Gtk.Align.FILL)
         self.add_breakpoint(narrow_breakpoint)
+
+        compact_breakpoint = Adw.Breakpoint.new(
+            Adw.BreakpointCondition.parse("max-width: 620sp")
+        )
+        compact_breakpoint.add_setter(left_controls, "orientation", Gtk.Orientation.VERTICAL)
+        compact_breakpoint.add_setter(left_controls, "halign", Gtk.Align.FILL)
+        compact_breakpoint.add_setter(self.source_dropdown, "hexpand", True)
+        compact_breakpoint.add_setter(self.lesson_dropdown, "hexpand", True)
+        self.add_breakpoint(compact_breakpoint)
+
+        short_breakpoint = Adw.Breakpoint.new(
+            Adw.BreakpointCondition.parse("max-height: 650sp")
+        )
+        short_breakpoint.add_setter(controls, "margin-top", 6)
+        short_breakpoint.add_setter(controls, "margin-bottom", 4)
+        self.add_breakpoint(short_breakpoint)
 
         self.workspace = TypingWorkspace(self.text_size)
         self.target_view = self.workspace.target_view
