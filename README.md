@@ -2,81 +2,42 @@
 
 Keycan, Linux masaüstü sistemleri için geliştirilmiş modern ve kullanıcı dostu bir **on parmak klavye pratik uygulamasıdır**.
 
-Keycan ile farklı ders gruplarındaki metinleri seçebilir, çalışma süresini belirleyebilir ve yazma pratiği yapabilirsiniz. Uygulama temel kullanımda çevrimdışı çalışır ve verileri yerel olarak saklar.
+Farklı ders gruplarındaki metinlerle yazma pratiği yapabilir, çalışma süresini belirleyebilir ve sonuçlarını yerel olarak takip edebilirsiniz. Keycan temel kullanımda çevrimdışı çalışır ve verileri yerel SQLite veritabanında saklar.
 
-## 🚀 Geliştirme Yol Haritası
+## 🚀 Keycan 2.2.0
 
-### ✅ Keycan 2.1.0
+Keycan 2.2.0 ile istatistikler, içerik yönetimi ve veri yönetimi önemli ölçüde geliştirildi.
 
-- GTK4 + libadwaita modern arayüz
-- Flatpak desteği
-- Ders ve kaynak sistemi
-- Ders grubu arama
-- Ayarlar sistemi
-- Offline çalışma
+### ✨ Öne Çıkanlar
 
-### ⏳ GUI Yenileme ve Responsive Mimari
-
-Keycan'ın sade çalışma deneyimi korunarak daha güçlü bir arayüz altyapısı oluşturulacak.
-
-- Tüm monitörlerde uyumlu responsive tasarım
-- Modern GTK4/libadwaita düzeni
-- Yandan açılır navigasyon paneli
-- Çalışma, Dashboard, Kaynaklar, Başarılar ve Ayarlar bölümleri
-- Gelecek özelliklere hazır sayfa mimarisi
-
-### ⏳ Çalışma Alanı Geliştirmeleri
-
-Mevcut kullanıcı dostu çalışma ekranı korunacaktır.
-
-- Yazma hızı hesaplama
-- Sonuç ekranında hız bilgisi
-- Doğru, yanlış, toplam kelime ve hız verilerinin ileride Dashboard için kullanılması
-
-### ⏳ Keycan 2.2.x — Kullanıcı Özelleştirme
-
-- Opsiyonel geri tuşu devre dışı bırakma seçeneği
-- Kullanıcı veritabanı desteği
-- Hazır veritabanı yükleme
-- Uygulama içinden veritabanı oluşturma
-- Kullanıcının kendi metinlerini oluşturabilmesi
-
-### ⏳ Dashboard ve İlerleme Sistemi
-
-- Çalışma geçmişi
-- Grafikler
-- İstatistikler
-- Ortalama hız takibi
-- Doğru/yanlış/toplam kelime analizleri
-
-### ⏳ XP, Seviye ve Rozet Sistemi
-
-- Performansa göre XP
-- Seviye sistemi
-- Başarı rozetleri
-
-### 🔮 Keycan 3.0 — Katiplik Sistemi
-
-- Katiplik sınavına yönelik özel çalışma modu
-- Sınav deneyimine uygun değerlendirme sistemi
-
-Detaylı roadmap: [ROADMAP.md](ROADMAP.md)
+- 📊 Yenilenen istatistikler ve GitHub tarzı yıllık aktivite grafiği
+- 📚 Yerleşik ve özel ders gruplarını yönetme
+- ✏️ Metin ekleme, düzenleme, silme ve sıralama
+- 🔄 Varsayılan Keycan içeriklerini geri yükleme
+- 🗑️ Tüm ders ve metinleri sıfırlama
+- 💾 İstatistik ve içerik verilerini içe/dışa aktarma
+- ⌨️ Geliştirilmiş yazma ve çalışma deneyimi
+- 📦 GTK4 + libadwaita tabanlı Flatpak paketi
 
 ## ✨ Özellikler
 
 - On Parmak Klavye Pratiği
 - Ders ve Metin Seçimi
 - Ders Grubu Arama
-- Ayarlanabilir Süre
+- Ayarlanabilir Çalışma Süresi
 - Doğru / Yanlış Sonuçları
+- Çalışma Geçmişi ve İstatistikler
+- GitHub tarzı aktivite takvimi
+- Ders ve metin yönetimi
+- Veri yedekleme, içe/dışa aktarma
 - Büyük/Küçük Harf Bağımsızlığı
 - Noktalama İşaretlerini Yok Sayma
 - Karışık Sırada Yazma
 - Metin Boyutu Ayarı
-- Yerel veri yönetimi
-- Çevrimdışı kullanım
+- Kopyala/yapıştır kullanımının engellenmesi
+- Yerel ve çevrimdışı veri yönetimi
 - GTK4 + libadwaita
-- Flatpak desteği
+- Flatpak
 
 ## 🛠️ Teknolojiler
 
@@ -86,8 +47,18 @@ Detaylı roadmap: [ROADMAP.md](ROADMAP.md)
 - PyGObject
 - SQLite
 - Flatpak
-- GNOME Platform
+- GNOME Platform 50
+
+## 📦 İndirme
+
+En güncel sürüm için GitHub Releases sayfasındaki Flatpak paketini kullanabilirsiniz.
 
 ## 📄 Lisans
 
-Keycan, **GNU General Public License v3 veya sonrası (GPL-3.0-or-later)** altında dağıtılan özgür ve açık kaynaklı bir yazılımdır. Ayrıntılar için [LICENSE](LICENSE) dosyasına bakın.
+Keycan, **GNU General Public License v3 veya sonrası (GPL-3.0-or-later)** altında dağıtılan özgür ve açık kaynaklı bir yazılımdır.
+
+Ayrıntılar için [LICENSE](LICENSE) dosyasına bakın.
+
+## 🗺️ Geliştirme Yol Haritası
+
+Güncel geliştirme planı için [ROADMAP.md](ROADMAP.md) dosyasına bakın.
