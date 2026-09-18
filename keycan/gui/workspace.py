@@ -166,7 +166,7 @@ class TypingWorkspace(Gtk.Box):
         bottom = Gtk.CenterBox()
         bottom.set_margin_start(0)
         bottom.set_margin_end(0)
-        bottom.set_height_request(34)
+        bottom.set_size_request(-1, 34)
         bottom.add_css_class("keycan-bottom")
         self.bottom = bottom
         self.append(bottom)
