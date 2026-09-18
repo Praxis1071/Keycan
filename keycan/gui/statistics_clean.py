@@ -22,7 +22,7 @@ WEEKDAYS = ("Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz")
 class ProgressChart(Gtk.DrawingArea):
     def __init__(self) -> None:
         super().__init__()
-        self.set_content_width(760)
+        self.set_content_width(1)
         self.set_content_height(290)
         self.set_hexpand(True)
         self.set_draw_func(self._draw)
@@ -117,7 +117,7 @@ class MetricCard(Gtk.Box):
 
 class ActivityHeatmap(Gtk.DrawingArea):
     def __init__(self) -> None:
-        super().__init__(); self.set_content_width(900); self.set_content_height(190); self.set_hexpand(True); self.set_draw_func(self._draw)
+        super().__init__(); self.set_content_width(1); self.set_content_height(190); self.set_hexpand(True); self.set_draw_func(self._draw)
         self.year = datetime.now().year; self.days: dict[date, dict[str, object]] = {}; self._cell_size = 12.0; self._gap = 4.0; self._left = 38.0; self._top = 26.0
         motion = Gtk.EventControllerMotion(); motion.connect("motion", self._on_motion); motion.connect("leave", self._on_leave); self.add_controller(motion)
 
@@ -194,13 +194,14 @@ class StatisticsPanel(Gtk.Box):
         content.append(self._revealed(self._header(),40)); content.append(self._revealed(self._period(),80)); content.append(self._revealed(self._metrics(),120)); content.append(self._revealed(self._speed(),160)); content.append(self._revealed(self._accuracy(),200)); content.append(self._revealed(self._activity(),240)); content.append(self._revealed(self._records(),280)); content.append(self._revealed(self._progress(),320)); content.append(self._revealed(self._history(),360))
     def _header(self): return self._section("İstatistikler","Yazma gelişimini tek bakışta takip et.")
     def _period(self):
-        s=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=8); s.append(self._section("Dönem")); c=Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,spacing=0); c.add_css_class("linked"); self.period_buttons=[]; prev=None
+        s=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=8); s.append(self._section("Dönem"))
+        c=Gtk.FlowBox(); c.set_selection_mode(Gtk.SelectionMode.NONE); c.set_homogeneous(True); c.set_min_children_per_line(1); c.set_max_children_per_line(len(self.PERIODS)); c.set_column_spacing(4); c.set_row_spacing(4); c.add_css_class("linked"); self.period_buttons=[]; prev=None
         for p in self.PERIODS:
             b=Gtk.ToggleButton(label=p); b.set_hexpand(True); b.set_active(p==self.selected_period); b.set_group(prev) if prev else None; b.connect("toggled",self._on_period_toggled,p); c.append(b); self.period_buttons.append(b); prev=b
         s.append(c); return s
     def _metrics(self):
-        g=Gtk.Grid(); g.set_row_spacing(10); g.set_column_spacing(10); self.metric_cards=tuple(MetricCard(x) for x in ("Ortalama hız","Doğruluk","Çalışma süresi","Çalışma sayısı"))
-        for i,card in enumerate(self.metric_cards): g.attach(card,i,0,1,1)
+        g=Gtk.FlowBox(); g.set_selection_mode(Gtk.SelectionMode.NONE); g.set_homogeneous(True); g.set_min_children_per_line(1); g.set_max_children_per_line(4); g.set_column_spacing(10); g.set_row_spacing(10); self.metric_cards=tuple(MetricCard(x) for x in ("Ortalama hız","Doğruluk","Çalışma süresi","Çalışma sayısı"))
+        for card in self.metric_cards: g.append(card)
         return g
     def _speed(self):
         s=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=10); s.append(self._section("Yazma hızı","Çalışmalarındaki hız değişimi")); f=Gtk.Frame(); f.add_css_class("card"); b=Gtk.Box(orientation=Gtk.Orientation.VERTICAL); b.set_margin_top(12); b.set_margin_bottom(12); b.set_margin_start(12); b.set_margin_end(12); self.chart=ProgressChart(); b.append(self.chart); self.chart_empty=Gtk.Label(label="Tamamlanmış çalışmalar burada grafik olarak görünecek."); self.chart_empty.add_css_class("dim-label"); b.append(self.chart_empty); f.set_child(b); s.append(f); return s
@@ -209,9 +210,9 @@ class StatisticsPanel(Gtk.Box):
     def _activity(self):
         s=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=10); s.append(self._section("Çalışma takvimi","Yıl boyunca yaptığın pratikleri GitHub tarzı katkı görünümünde takip et.")); f=Gtk.Frame(); f.add_css_class("card"); o=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=12); o.set_margin_top(14); o.set_margin_bottom(14); o.set_margin_start(14); o.set_margin_end(14); c=Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,spacing=8); c.append(Gtk.Label(label="Yıl")); self.activity_year_dropdown=Gtk.DropDown(); self.activity_year_dropdown.connect("notify::selected",self._on_activity_year_changed); c.append(self.activity_year_dropdown); o.append(c); self.activity_summary=Gtk.Label(label="Henüz çalışma yok"); self.activity_summary.set_xalign(0); self.activity_summary.add_css_class("dim-label"); o.append(self.activity_summary); self.activity_heatmap=ActivityHeatmap(); o.append(self.activity_heatmap); f.set_child(o); s.append(f); return s
     def _records(self):
-        s=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=10); s.append(self._section("Kişisel rekorlar","Seçili dönemdeki en yüksek değerlerin")); g=Gtk.Grid(); g.set_row_spacing(10); g.set_column_spacing(10); self.record_values=[]
-        for i,title in enumerate(("En yüksek hız","En yüksek doğruluk","En uzun çalışma","En yoğun gün")):
-            card=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=6); card.add_css_class("card"); card.set_hexpand(True); name=Gtk.Label(label=title); name.set_xalign(0); name.set_margin_top(12); name.set_margin_start(12); name.set_margin_end(12); name.add_css_class("dim-label"); card.append(name); value=Gtk.Label(label="—"); value.set_xalign(0); value.set_wrap(True); value.add_css_class("heading"); value.set_margin_start(12); value.set_margin_bottom(12); card.append(value); self.record_values.append(value); g.attach(card,i,0,1,1)
+        s=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=10); s.append(self._section("Kişisel rekorlar","Seçili dönemdeki en yüksek değerlerin")); g=Gtk.FlowBox(); g.set_selection_mode(Gtk.SelectionMode.NONE); g.set_homogeneous(True); g.set_min_children_per_line(1); g.set_max_children_per_line(4); g.set_column_spacing(10); g.set_row_spacing(10); self.record_values=[]
+        for title in ("En yüksek hız","En yüksek doğruluk","En uzun çalışma","En yoğun gün"):
+            card=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=6); card.add_css_class("card"); card.set_hexpand(True); name=Gtk.Label(label=title); name.set_xalign(0); name.set_margin_top(12); name.set_margin_start(12); name.set_margin_end(12); name.add_css_class("dim-label"); card.append(name); value=Gtk.Label(label="—"); value.set_xalign(0); value.set_wrap(True); value.add_css_class("heading"); value.set_margin_start(12); value.set_margin_bottom(12); card.append(value); self.record_values.append(value); g.append(card)
         s.append(g); return s
     def _progress(self):
         s=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=10); s.append(self._section("Gelişim","İlk ve son çalışmaların arasındaki değişim")); g=Adw.PreferencesGroup(); self.progress_speed=Adw.ActionRow(); self.progress_speed.set_title("Yazma hızı"); self.progress_speed.set_subtitle("Yeterli veri olduğunda gösterilir"); g.add(self.progress_speed); self.progress_accuracy=Adw.ActionRow(); self.progress_accuracy.set_title("Doğruluk"); self.progress_accuracy.set_subtitle("Yeterli veri olduğunda gösterilir"); g.add(self.progress_accuracy); s.append(g); return s
