@@ -1,118 +1,117 @@
-# Keycan Development Roadmap
+# Keycan Geliştirme Yol Haritası
 
 Keycan'ın mevcut durumu ve gelecekteki geliştirme planı.
 
 ## 🧭 Aşama Durumu
 
-### ✅ Aşama 3 — İstatistikler ve Veri Yönetimi
-- SQLite tabanlı çalışma sonuçları ve istatistikler
-- Yenilenen istatistik ekranı ve yıllık aktivite görünümü
-- Ders/metin yönetimi
-- Varsayılan içerikleri geri yükleme
-- İçerik ve istatistik yedekleme / içe aktarma
-- Kopyala/yapıştır ve metin aktarımı açıklarının engellenmesi
+### ✅ Aşama 0 — Temel Mimari
+- GTK4 + libadwaita tabanlı uygulama yapısı
+- SQLite tabanlı yerel veri altyapısı
+- Temel uygulama ve pencere mimarisi
 
-### 🔧 Aşama 4 — Stabilizasyon ve Kalite
-**Durum: Devam ediyor**
+### ✅ Aşama 1 — Temel Yazma Deneyimi
+- On parmak klavye pratiği
+- Ders ve metin seçimi
+- Ayarlanabilir çalışma süresi
+- Doğru / yanlış sonuçları
+- Yazma deneyiminin temel ayarları
 
-- Responsive GTK4/libadwaita arayüz
-- Küçük ve kısa ekranlarda taşma/sıkışma sorunlarının giderilmesi
-- Farklı pencere boyutlarında GUI doğrulaması
-- Flatpak kurulum/güncelleme akışının sağlamlaştırılması
-- Veri yedekleme ve geri yükleme akışlarının sağlamlaştırılması
-- Kullanıcı geri bildirimlerinden çıkan hataların giderilmesi
+### ✅ Aşama 2 — İstatistik ve Veri Altyapısı
+- SQLite tabanlı çalışma sonuçlarının kaydedilmesi
+- Çalışma geçmişi
+- Temel istatistikler
+- Aktivite verilerinin tutulması
 
-### ⏳ Aşama 5 — Kullanıcı Deneyimi ve İlerleme
-**Durum: Planlandı**
-
-- Daha ayrıntılı günlük/haftalık/aylık istatistikler
-- Uzun dönemli hız ve doğruluk gelişimi
-- Ek istatistik filtreleri ve dönem karşılaştırmaları
-- Tema seçenekleri
-- Türkçe / İngilizce dil sistemi
-- Daha kapsamlı klavye ve çalışma ayarları
-- Odak/Pomodoro modu
-
----
-
-## ✅ Keycan 2.2.0 — Tamamlandı
-
-- GTK4 + libadwaita arayüz
-- Responsive navigasyon yapısı
-- Çalışma Alanı, İstatistikler ve Ayarlar bölümleri
-- SQLite tabanlı çalışma sonuçları ve istatistikler
-- GitHub tarzı yıllık aktivite takvimi
-- Kişisel rekorlar, gelişim ve son oturumlar
-- Yerleşik ve özel ders grubu yönetimi
+### ✅ Aşama 3 — İçerik ve Veri Yönetimi
+- Yerleşik ve özel ders grupları
 - Metin ekleme, düzenleme, silme ve sıralama
-- Varsayılan Keycan içeriklerini geri yükleme
+- Varsayılan içerikleri geri yükleme
 - Tüm ders ve metinleri sıfırlama
-- İçerik sıfırlamada çalışma geçmişinin korunması
 - İstatistik ve içerik verilerini içe/dışa aktarma
 - Kopyala/yapıştır ve metin aktarımı açıklarının engellenmesi
-- Flatpak paketleme ve GitHub Release
-- GPL-3.0-or-later lisansı
+
+### 🔧 Aşama 4 — 2.2.x Bakım ve Hata Düzeltmeleri
+Bu aşama yeni bir özellik geliştirme aşaması değildir. Mevcut sürümün kullanımında ortaya çıkan sorunlar gerektiğinde ele alınır.
+
+- Kullanıcı tarafından bildirilen hataların giderilmesi
+- Runtime ve kararlılık sorunlarının düzeltilmesi
+- Veri kaybına yol açabilecek sorunların giderilmesi
+- Gerektiğinde Flatpak ile ilgili sorunların düzeltilmesi
+- Mevcut özelliklerin bozulmasını önleyen bakım çalışmaları
+
+Responsive arayüz ve temel stabilizasyon çalışmaları bu aşama kapsamında zaten tamamlanmıştır; ayrı bir gelecek hedefi değildir.
 
 ---
 
-## 🔧 2.2.x — Stabilizasyon ve Kalite
+## ⏳ Aşama 5 — Gelişmiş İstatistikler
 
-**Aşama 4 kapsamı.**
+Keycan'ın mevcut istatistik altyapısını daha ayrıntılı bir performans analiz sistemine dönüştürmek.
 
-Öncelik yeni özelliklerden önce mevcut sürümün sağlamlaştırılmasıdır.
-
-- Hata düzeltmeleri ve kararlılık iyileştirmeleri
-- Farklı ekran boyutlarında GUI testi
-- Flatpak kurulum/güncelleme deneyiminin iyileştirilmesi
-- Veri yedekleme ve geri yükleme akışlarının sağlamlaştırılması
-- Kullanıcı geri bildirimlerinin değerlendirilmesi
-
----
-
-## ⏳ Keycan 2.3.x — İlerleme ve İstatistik Geliştirmeleri
-
-**Aşama 5 kapsamı.**
-
-- Daha ayrıntılı günlük/haftalık/aylık istatistikler
-- Uzun dönemli hız ve doğruluk gelişimi
-- Daha ayrıntılı çalışma analizleri
-- İstatistik ekranında ek filtreleme ve dönem karşılaştırmaları
+- Günlük / haftalık / aylık istatistikler
+- Uzun dönemli WPM gelişimi
+- Uzun dönemli doğruluk gelişimi
+- Toplam çalışma süresi
+- Toplam kelime / karakter
+- Ders bazlı performans
+- Ayrıntılı dönem filtreleri
+- Dönem karşılaştırmaları
+- Rekor geçmişi
+- Ayrıntılı performans analizi
+- En çok hata yapılan harfleri belirleme
 
 ---
 
-## ⏳ Kullanıcı Deneyimi
+## ⏳ Aşama 6 — Kullanıcı Deneyimi
 
 - Tema seçenekleri
-- Dil sistemi (Türkçe / İngilizce)
-- Daha kapsamlı klavye ve çalışma ayarları
-- Odak/Pomodoro modu
+- Türkçe / İngilizce dil sistemi
 
 ---
 
-## ⏳ XP, Seviye ve Rozet Sistemi
+## ⏳ Aşama 7 — Profil, XP, Seviye ve Rozet Sistemi
 
-- Çalışma performansına göre XP
+Sidebar'da İstatistikler'den bağımsız, ayrı bir **Profil** bölümü oluşturulacak.
+
+- XP sistemi
 - Seviye sistemi
+- Seviye ilerlemesi
 - Başarı rozetleri
-- İstatistiklerle entegrasyon
+- Çalışma serisi (streak)
+- Profil üzerinde XP, seviye, rozet ve streak bilgilerinin gösterilmesi
+- Profil sisteminin Aşama 5'teki çalışma ve istatistik verilerinden beslenmesi
+- XP, seviye, rozet ve streak bilgilerinin İstatistikler ekranına karıştırılmaması
 
 ---
 
-## ⏳ Profil Sistemi
+## ⏳ Aşama 8 — Gelişmiş Yerel Profil
 
-- Yerel kullanıcı profili
-- Çalışma özeti
-- Seviye, XP ve rozet bilgileri
-- İlerleme verilerinin profille ilişkilendirilmesi
+Aşama 7'de oluşturulan temel Profil sisteminin daha kapsamlı ve kişiselleştirilebilir hale getirilmesi.
+
+- Kullanıcının kendi ismini girebilmesi
+- Profil fotoğrafı seçebilme ve değiştirebilme
+- Profil bilgilerinin yerel olarak saklanması
+- Profil fotoğrafının yerel olarak saklanması
+- Profil özeti
+  - Toplam çalışma sayısı
+  - Toplam çalışma süresi
+  - Genel yazma hızı
+  - Genel doğruluk
+  - Tamamlanan dersler
+  - Genel ilerleme
+- Profil üzerinden ilerleme geçmişinin görüntülenmesi
+- Profilin mevcut çalışma ve istatistik altyapısıyla bağlantısının genişletilmesi
+- Online hesap veya bulut senkronizasyonu olmadan yerel profil yapısının geliştirilmesi
 
 ---
 
-## 🔮 Keycan 3.0 — Katiplik Sistemi
+## 📌 Yol Haritasının Sınırları
 
-- Katiplik sınavına yönelik özel çalışma modu
-- Sınav mantığına uygun değerlendirme
-- Profesyonel sınav deneyimi
+Bu roadmap, Keycan'ın mevcut hedeflerini ve onaylanan gelecek geliştirmelerini tanımlar. Aşağıdaki fikirler mevcut roadmap'e dahil değildir:
 
----
+- Katiplik modu
+- Online hesap ve online özellikler
+- Bulut senkronizasyonu
+- Odak / Pomodoro modu
+- Akıllı eğitim / adaptif ders sistemi
 
-Roadmap, geliştirme sırasında teknik gereksinimler ve kullanıcı geri bildirimlerine göre güncellenebilir. Yeni özelliklerden önce mevcut mimarinin ve stabilitenin korunması önceliklidir.
+Yeni özellikler eklenmeden önce mevcut mimarinin korunması ve kullanıcı geri bildirimlerinin değerlendirilmesi önceliklidir.
