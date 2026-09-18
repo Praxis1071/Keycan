@@ -47,7 +47,16 @@ class ConfiguredKeycanWindow(keycan_window.KeycanWindow):
         nav.append(workspace_row);nav.append(statistics_row);nav.append(settings_row);nav.select_row(workspace_row);toolbar.set_content(None)
         stack=Gtk.Stack();stack.set_hexpand(True);stack.set_vexpand(True);stack.add_named(root,"workspace")
         stats=StatisticsPanel(self.db);stats.set_hexpand(True);stats.set_vexpand(True);stack.add_named(stats,"statistics")
-        settings=SettingsPanel(self,on_content_changed=self._load_sources,on_statistics_changed=stats.refresh);settings.set_hexpand(True);settings.set_vexpand(True);stack.add_named(settings,"settings");stack.set_visible_child_name("workspace")
+        settings=SettingsPanel(self,on_content_changed=self._load_sources,on_statistics_changed=stats.refresh)
+        settings.set_hexpand(True)
+        settings.set_vexpand(True)
+        settings_scroll=Gtk.ScrolledWindow()
+        settings_scroll.set_policy(Gtk.PolicyType.NEVER,Gtk.PolicyType.AUTOMATIC)
+        settings_scroll.set_hexpand(True)
+        settings_scroll.set_vexpand(True)
+        settings_scroll.set_child(settings)
+        stack.add_named(settings_scroll,"settings")
+        stack.set_visible_child_name("workspace")
         def activated(_list,row):
             name=row.get_name()
             if name not in {"workspace","statistics","settings"}:return
