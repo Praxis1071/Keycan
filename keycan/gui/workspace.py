@@ -15,7 +15,7 @@ import gi
 gi.require_version("Adw", "1")
 gi.require_version("Gdk", "4.0")
 gi.require_version("Gtk", "4.0")
-from gi.repository import Adw, Gdk, Gtk
+from gi.repository import Gdk, Gtk
 
 
 class PracticeTextView(Gtk.TextView):
@@ -161,18 +161,7 @@ class TypingWorkspace(Gtk.Box):
         editors.set_position(360)
         editors.set_shrink_start_child(True)
         editors.set_shrink_end_child(True)
-
-        compact_height = Adw.Breakpoint.new(
-            Adw.BreakpointCondition.parse("max-height: 650sp")
-        )
-        compact_height.add_setter(editors, "position", 280)
-        self.add_breakpoint(compact_height)
-
-        short_height = Adw.Breakpoint.new(
-            Adw.BreakpointCondition.parse("max-height: 520sp")
-        )
-        short_height.add_setter(editors, "position", 210)
-        self.add_breakpoint(short_height)
+        self.editors = editors
 
         bottom = Gtk.CenterBox()
         bottom.set_margin_start(0)
