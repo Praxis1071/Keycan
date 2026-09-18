@@ -2,6 +2,39 @@
 
 Keycan'ın mevcut durumu ve gelecekteki geliştirme planı.
 
+## 🧭 Aşama Durumu
+
+### ✅ Aşama 3 — İstatistikler ve Veri Yönetimi
+- SQLite tabanlı çalışma sonuçları ve istatistikler
+- Yenilenen istatistik ekranı ve yıllık aktivite görünümü
+- Ders/metin yönetimi
+- Varsayılan içerikleri geri yükleme
+- İçerik ve istatistik yedekleme / içe aktarma
+- Kopyala/yapıştır ve metin aktarımı açıklarının engellenmesi
+
+### 🔧 Aşama 4 — Stabilizasyon ve Kalite
+**Durum: Devam ediyor**
+
+- Responsive GTK4/libadwaita arayüz
+- Küçük ve kısa ekranlarda taşma/sıkışma sorunlarının giderilmesi
+- Farklı pencere boyutlarında GUI doğrulaması
+- Flatpak kurulum/güncelleme akışının sağlamlaştırılması
+- Veri yedekleme ve geri yükleme akışlarının sağlamlaştırılması
+- Kullanıcı geri bildirimlerinden çıkan hataların giderilmesi
+
+### ⏳ Aşama 5 — Kullanıcı Deneyimi ve İlerleme
+**Durum: Planlandı**
+
+- Daha ayrıntılı günlük/haftalık/aylık istatistikler
+- Uzun dönemli hız ve doğruluk gelişimi
+- Ek istatistik filtreleri ve dönem karşılaştırmaları
+- Tema seçenekleri
+- Türkçe / İngilizce dil sistemi
+- Daha kapsamlı klavye ve çalışma ayarları
+- Odak/Pomodoro modu
+
+---
+
 ## ✅ Keycan 2.2.0 — Tamamlandı
 
 - GTK4 + libadwaita arayüz
@@ -24,6 +57,8 @@ Keycan'ın mevcut durumu ve gelecekteki geliştirme planı.
 
 ## 🔧 2.2.x — Stabilizasyon ve Kalite
 
+**Aşama 4 kapsamı.**
+
 Öncelik yeni özelliklerden önce mevcut sürümün sağlamlaştırılmasıdır.
 
 - Hata düzeltmeleri ve kararlılık iyileştirmeleri
@@ -35,6 +70,8 @@ Keycan'ın mevcut durumu ve gelecekteki geliştirme planı.
 ---
 
 ## ⏳ Keycan 2.3.x — İlerleme ve İstatistik Geliştirmeleri
+
+**Aşama 5 kapsamı.**
 
 - Daha ayrıntılı günlük/haftalık/aylık istatistikler
 - Uzun dönemli hız ve doğruluk gelişimi
