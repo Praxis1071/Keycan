@@ -84,9 +84,9 @@ def test_stage5_period_comparison_uses_previous_equivalent_window(tmp_path: Path
                     completed_at, source_name_snapshot, lesson_title_snapshot,
                     target_word_count, typed_word_count, total_characters,
                     correct_characters, wrong_characters, accuracy_percent, wrong_letter_counts
-                ) VALUES (1,60,1,0,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
-                    1, 0, wpm, 5, 0, wpm, 0,
+                    1, 60, 1, 0, wpm, 5, 0, wpm, 0,
                     completed_at, "Test Kaynak", "Test Ders",
                     5, 5, 5, 5, 0, 100, "{}",
                 ),
