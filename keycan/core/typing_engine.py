@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from keycan.utils.text import WORD_PATTERN, normalize_word
+from keycan.utils.text import WORD_PATTERN, normalize_character, normalize_word
 
 
 @dataclass(frozen=True)
@@ -44,6 +44,6 @@ class TypingEngine:
     def character_correctness(self, target_text: str, typed_text: str) -> list[bool]:
         """Return case-insensitive correctness for each typed character."""
         return [
-            index < len(target_text) and character.casefold() == target_text[index].casefold()
+            index < len(target_text) and normalize_character(character) == normalize_character(target_text[index])
             for index, character in enumerate(typed_text)
         ]
