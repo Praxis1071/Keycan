@@ -49,6 +49,7 @@ TRANSLATIONS = {
     "English": "English",
     "Değişiklik": "Change",
     "Dil değişikliği uygulamayı yeniden başlattığında uygulanır.": "The language change will take effect after restarting Keycan.",
+    "Dil değişikliği hemen uygulandı.": "Language change applied immediately.",
     "Tema değişikliği hemen uygulanır.": "The theme change is applied immediately.",
     "Çalışma Alanı": "Workspace",
     "İstatistikler": "Statistics",
@@ -125,9 +126,11 @@ TRANSLATIONS = {
 
 
 def translate(text: str, language: str) -> str:
+    """Translate application-owned UI text in either direction."""
     if language == "en":
         return TRANSLATIONS.get(text, text)
-    return text
+    reverse = {translated: source for source, translated in TRANSLATIONS.items()}
+    return reverse.get(text, text)
 
 
 def apply_to_widget_tree(root: Gtk.Widget, language: str) -> None:
