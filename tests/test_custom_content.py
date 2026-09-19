@@ -163,6 +163,6 @@ def test_backup_round_trip_restores_content_and_stats(tmp_path: Path) -> None:
         assert restored.practice_statistics("Tümü")["practices"] == 1
         assert restored.wrong_letter_statistics("Tümü") == [("a", 2), ("e", 1)]
         exported = json.loads(restored.export_data())
-        assert exported["practice_results"][0]["wrong_letter_counts"] == {"a": 2, "E": 1}
+        assert exported["practice_results"][0]["wrong_letter_counts"] == {"a": 2, "e": 1}
     finally:
         restored.close()
