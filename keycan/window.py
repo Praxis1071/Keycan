@@ -12,19 +12,20 @@ from gi.repository import Adw, Gdk, GLib, Gtk
 from keycan.core.typing_engine import TypingEngine
 from keycan.data.database import Database
 from keycan.gui.workspace import TypingWorkspace
+from keycan.services.i18n import apply_to_widget_tree
+from keycan.services.preferences import Preferences
 from keycan.utils.text import WORD_PATTERN, format_remaining
 
 
 CSS = """
-headerbar.keycan-header { background: #202124; color: #f2f2f2; }
-headerbar.keycan-header windowhandle, headerbar.keycan-header button, headerbar.keycan-header label { color: #f2f2f2; }
-.keycan-content, .keycan-controls, .keycan-bottom { background: #202124; }
-.keycan-controls label, .keycan-status { color: #eeeeee; }
-.keycan-editor { background: #ffffff; color: #111111; border: 1px solid #b8b8b8; }
-.keycan-editor textview, .keycan-editor textview text { background: #ffffff; color: #111111; }
+headerbar.keycan-header { background: var(--headerbar-bg-color); color: var(--headerbar-fg-color); }
+.keycan-content, .keycan-controls, .keycan-bottom { background: var(--window-bg-color); color: var(--window-fg-color); }
+.keycan-controls label, .keycan-status { color: var(--window-fg-color); }
+.keycan-editor { background: var(--view-bg-color); color: var(--view-fg-color); border: 1px solid var(--borders); }
+.keycan-editor textview, .keycan-editor textview text { background: var(--view-bg-color); color: var(--view-fg-color); }
 .keycan-editor textview { padding: 10px; }
 .keycan-status { padding: 2px 2px 4px; }
-.keycan-countdown { color: #eeeeee; font-weight: 700; font-size: 16px; }
+.keycan-countdown { color: var(--window-fg-color); font-weight: 700; font-size: 16px; }
 """
 
 
@@ -34,6 +35,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.set_default_size(1200, 760)
         self.db = Database(database_path)
         self.engine = TypingEngine()
+        self.preferences = Preferences()
         self.current_lesson_id: int | None = None
         self.current_text = ""
         self.typed = ""
@@ -47,9 +49,23 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.text_size = 16
         self.preferences_popover: Gtk.Popover | None = None
         self._install_css()
+        self.apply_theme()
         self._build_ui()
         self._load_sources()
+        self.apply_language()
         self.connect("close-request", self._on_close_request)
+
+    def apply_theme(self) -> None:
+        manager = Adw.StyleManager.get_default()
+        schemes = {
+            "system": Adw.ColorScheme.PREFER_LIGHT,
+            "light": Adw.ColorScheme.FORCE_LIGHT,
+            "dark": Adw.ColorScheme.FORCE_DARK,
+        }
+        manager.set_color_scheme(schemes[self.preferences.get("theme")])
+
+    def apply_language(self) -> None:
+        apply_to_widget_tree(self, self.preferences.get("language"))
 
     def _install_css(self) -> None:
         provider = Gtk.CssProvider()
@@ -301,6 +317,9 @@ class KeycanWindow(Adw.ApplicationWindow):
     def _set_target_text(self, text: str) -> None:
         self.workspace.set_target_text(text)
 
+    def _editor_foreground(self) -> str:
+        return "#f2f2f2" if Adw.StyleManager.get_default().get_dark() else "#111111"
+
     @staticmethod
     def _get_tag(buffer: Gtk.TextBuffer, name: str, foreground: str) -> Gtk.TextTag:
         table = buffer.get_tag_table()
@@ -312,7 +331,7 @@ class KeycanWindow(Adw.ApplicationWindow):
     def _apply_privacy_state(self) -> None:
         active = self.privacy_enabled and self.started_at is not None and not self.finished
         buffer = self.input_view.get_buffer()
-        hidden = self._get_tag(buffer, "privacy-hidden", "#ffffff")
+        hidden = self._get_tag(buffer, "privacy-hidden", self._editor_foreground())
         hidden.set_priority(max(0, buffer.get_tag_table().get_size() - 1))
         self.input_view.remove_css_class("keycan-hidden")
         start, end = buffer.get_start_iter(), buffer.get_end_iter()
@@ -439,7 +458,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         buffer.set_text(self.current_text)
         start, end = buffer.get_start_iter(), buffer.get_end_iter()
         buffer.remove_all_tags(start, end)
-        base = self._get_tag(buffer, "editor-default", "#111111")
+        base = self._get_tag(buffer, "editor-default", self._editor_foreground())
         green = self._get_tag(buffer, "correct-target", "#16803c")
         base.set_priority(0)
         green.set_priority(buffer.get_tag_table().get_size() - 1)
