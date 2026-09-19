@@ -62,7 +62,7 @@ class ContentManagerWindow(Adw.Window):
     def _group_selected(self,_list,row):
         self.selected_group_id=getattr(row,"group_id",None) if row else None; self.selected_lesson_id=None
         if self.selected_group_id is None:self._clear_lessons();return
-        group=next((g for g in self.db.managed_groups() if g[0]==self.selected_group_id),None); self.group_header.set_text(group[1] if group else "Ders grubu"); self._refresh_lessons(); self._set_group_controls(True)
+        group=next((g for g in self.db.managed_groups() if g[0]==self.selected_group_id),None); self.group_header.set_text(group[1] if group else "Ders grubu"); self.group_entry.set_text(group[1] if group else ""); self._refresh_lessons(); self._set_group_controls(True)
     def _refresh_lessons(self):
         self._clear(self.lesson_list); self.selected_lesson_id=None
         if self.selected_group_id is None:self._set_lesson_controls(False);return
