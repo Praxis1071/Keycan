@@ -29,12 +29,7 @@ def format_remaining(seconds: float) -> str:
 
 
 def normalize_character(character: str) -> str:
-    value = character.casefold().replace("ı", "i")
-    return "".join(
-        char
-        for char in unicodedata.normalize("NFKD", value)
-        if not unicodedata.combining(char)
-    )
+    return character.casefold().replace("ı", "i").replace("\u0307", "")
 
 
 def normalize_word(word: str) -> str:
