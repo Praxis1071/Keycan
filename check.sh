@@ -2,7 +2,7 @@
 set -euo pipefail
 project_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 cd "$project_dir"
-python -m py_compile main.py keycan/__init__.py keycan/app.py keycan/window.py keycan/core/__init__.py keycan/core/typing_engine.py keycan/data/__init__.py keycan/data/database.py keycan/data/database_runtime.py keycan/gui/content_manager2.py keycan/gui/settings2.py keycan/gui/statistics_clean.py keycan/gui/statistics_runtime.py keycan/gui/search.py keycan/gui/workspace.py keycan/services/preferences.py keycan/services/i18n.py tests/test_stage1_database.py tests/test_stage3_database.py tests/test_custom_content.py
+python -m py_compile main.py keycan/__init__.py keycan/app.py keycan/window.py keycan/core/__init__.py keycan/core/typing_engine.py keycan/data/__init__.py keycan/data/database.py keycan/data/database_runtime.py keycan/gui/content_manager2.py keycan/gui/settings2.py keycan/gui/statistics_clean.py keycan/gui/statistics_runtime.py keycan/gui/search.py keycan/gui/workspace.py keycan/services/preferences.py keycan/services/translations.py keycan/services/i18n.py tests/test_stage1_database.py tests/test_stage3_database.py tests/test_custom_content.py
 python - <<'PY'
 import sqlite3
 connection=sqlite3.connect("typing_data.db")
@@ -31,5 +31,5 @@ try:
 finally:
     connection.close()
 PY
-python -m pytest -q tests/test_stage1_database.py tests/test_stage3_database.py tests/test_custom_content.py tests/test_stage6_preferences.py
+python -m pytest -q tests/test_stage1_database.py tests/test_stage3_database.py tests/test_custom_content.py tests/test_stage6_preferences.py tests/test_stage6_i18n.py
 echo "Keycan sözdizimi, veritabanı, içerik yönetimi, varsayılan geri yükleme, istatistik sıfırlama ve yedekleme kontrolleri hazır."
