@@ -30,6 +30,7 @@ class Database:
             "correct_characters": "INTEGER NOT NULL DEFAULT 0",
             "wrong_characters": "INTEGER NOT NULL DEFAULT 0",
             "accuracy_percent": "REAL NOT NULL DEFAULT 0",
+            "wrong_letter_counts": "TEXT NOT NULL DEFAULT '{}'",
         }
         for name, definition in additions.items():
             if name not in columns:
@@ -343,7 +344,7 @@ class Database:
             """SELECT r.completed_at, r.duration_seconds, r.correct_words, r.wrong_words,
                       r.words_per_minute, r.characters_per_minute, r.target_word_count,
                       r.typed_word_count, r.total_characters, r.correct_characters,
-                      r.wrong_characters, r.accuracy_percent, r.source_name_snapshot,
+                      r.wrong_characters, r.accuracy_percent, r.wrong_letter_counts, r.source_name_snapshot,
                       r.lesson_title_snapshot, s.custom_key, l.custom_key
                FROM practice_results r
                LEFT JOIN lessons l ON l.id = r.lesson_id
@@ -355,7 +356,7 @@ class Database:
             "completed_at", "duration_seconds", "correct_words", "wrong_words",
             "words_per_minute", "characters_per_minute", "target_word_count",
             "typed_word_count", "total_characters", "correct_characters",
-            "wrong_characters", "accuracy_percent", "source_name", "lesson_title",
+            "wrong_characters", "accuracy_percent", "wrong_letter_counts", "source_name", "lesson_title",
             "source_key", "lesson_key",
         )
         return [dict(zip(fields, row)) for row in rows]
@@ -510,6 +511,7 @@ class Database:
         words_per_minute: float,
         characters_per_minute: float,
         accuracy_percent: float,
+        wrong_letter_counts: dict[str, int] | None = None,
     ) -> None:
         metrics = {
             "duration": duration,
@@ -523,6 +525,7 @@ class Database:
             "words_per_minute": words_per_minute,
             "characters_per_minute": characters_per_minute,
             "accuracy_percent": accuracy_percent,
+            "wrong_letter_counts": wrong_letter_counts or {},
         }
         if any(not math.isfinite(value) or value < 0 for value in metrics.values()):
             raise ValueError("Çalışma ölçümleri geçerli ve negatif olmayan değerler olmalıdır")
@@ -540,7 +543,7 @@ class Database:
                 correct_words, wrong_words, words_per_minute, characters_per_minute,
                 completed_at, source_name_snapshot, lesson_title_snapshot,
                 target_word_count, typed_word_count, total_characters,
-                correct_characters, wrong_characters, accuracy_percent
+                correct_characters, wrong_characters, accuracy_percent, wrong_letter_counts
             ) VALUES (
                 ?, ?, ?, ?, ?,
                 ?, ?, ?, ?,
@@ -553,6 +556,7 @@ class Database:
                 correct, wrong, words_per_minute, characters_per_minute,
                 source_name, lesson_title, target_word_count, typed_word_count,
                 total_characters, correct_characters, wrong_characters, accuracy_percent,
+                json.dumps(wrong_letter_counts or {}, ensure_ascii=False),
             ),
         )
         self.conn.commit()
@@ -681,6 +685,67 @@ class Database:
             "speed_points": speed_points,
             "history": history,
         }
+
+    def wrong_letter_statistics(self, period: str = "Tümü", limit: int = 10) -> list[tuple[str, int]]:
+        stats: dict[str, int] = {}
+        start_local = self._period_start(period, datetime.now().astimezone())
+        query = "SELECT wrong_letter_counts FROM practice_results WHERE completed_at != ''"
+        params: tuple[str, ...] = ()
+        if start_local is not None:
+            query += " AND completed_at >= ?"
+            params = (self._utc_sql_value(start_local),)
+        for (raw,) in self.conn.execute(query, params).fetchall():
+            try:
+                values = json.loads(raw or "{}")
+            except json.JSONDecodeError:
+                continue
+            for letter, count in values.items():
+                if isinstance(letter, str) and isinstance(count, int):
+                    stats[letter] = stats.get(letter, 0) + count
+        return sorted(stats.items(), key=lambda item: (-item[1], item[0]))[:max(1, limit)]
+
+    def lesson_performance(self, period: str = "Tümü") -> list[dict[str, object]]:
+        start_local = self._period_start(period, datetime.now().astimezone())
+        query = """SELECT lesson_title_snapshot, source_name_snapshot, COUNT(*),
+                          SUM(duration_seconds), SUM(typed_word_count),
+                          SUM(correct_words), AVG(words_per_minute)
+                   FROM practice_results WHERE completed_at != ''"""
+        params: tuple[str, ...] = ()
+        if start_local is not None:
+            query += " AND completed_at >= ?"
+            params = (self._utc_sql_value(start_local),)
+        query += " GROUP BY source_name_snapshot, lesson_title_snapshot ORDER BY COUNT(*) DESC, lesson_title_snapshot COLLATE NOCASE"
+        rows = self.conn.execute(query, params).fetchall()
+        return [{"source_name": r[1], "lesson_title": r[0], "sessions": int(r[2]),
+                 "duration_seconds": float(r[3] or 0), "typed_words": int(r[4] or 0),
+                 "accuracy_percent": int(r[5] or 0) / int(r[4] or 1) * 100.0,
+                 "average_wpm": float(r[6] or 0)} for r in rows]
+
+    def period_comparison(self, period: str) -> dict[str, object]:
+        now = datetime.now().astimezone()
+        if period not in {"Günlük", "Haftalık", "Aylık", "Yıllık"}:
+            raise ValueError("Karşılaştırma için geçerli bir dönem seçilmelidir")
+        current_start = self._period_start(period, now)
+        if period == "Günlük":
+            previous_start = current_start - timedelta(days=1)
+        elif period == "Haftalık":
+            previous_start = current_start - timedelta(days=7)
+        elif period == "Aylık":
+            previous_start = (current_start.replace(day=1) - timedelta(days=1)).replace(day=1)
+        else:
+            previous_start = current_start.replace(year=current_start.year - 1)
+        def aggregate(start: datetime, end: datetime) -> dict[str, float]:
+            rows = self.conn.execute(
+                "SELECT duration_seconds, typed_word_count, correct_words, words_per_minute FROM practice_results WHERE completed_at >= ? AND completed_at < ?",
+                (self._utc_sql_value(start), self._utc_sql_value(end)),
+            ).fetchall()
+            sessions = len(rows)
+            words = sum(int(r[1]) for r in rows)
+            correct = sum(int(r[2]) for r in rows)
+            return {"sessions": sessions, "duration_seconds": sum(float(r[0]) for r in rows),
+                    "wpm": sum(float(r[3]) for r in rows) / sessions if sessions else 0.0,
+                    "accuracy": correct / words * 100.0 if words else 0.0}
+        return {"current": aggregate(current_start, now), "previous": aggregate(previous_start, current_start)}
 
     def close(self) -> None:
         self.conn.close()
