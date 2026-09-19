@@ -209,11 +209,17 @@ class StatisticsPanel(Gtk.Box):
         self.append(scroll)
 
         advanced=self._advanced()
+        # _advanced() owns these widgets initially. Detach them before placing
+        # each section into its own ViewStack page; GTK4 widgets may have only
+        # one parent at a time.
         advanced_children=[]
         child=advanced.get_first_child()
         while child:
+            nxt=child.get_next_sibling()
             advanced_children.append(child)
-            child=child.get_next_sibling()
+            if child.get_parent() is advanced:
+                child.unparent()
+            child=nxt
 
         def page():
             box=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=22)
@@ -322,7 +328,9 @@ class StatisticsPanel(Gtk.Box):
     def _clear_children(box):
         child=box.get_first_child()
         while child:
-            nxt=child.get_next_sibling(); child.unparent(); child=nxt
+            nxt=child.get_next_sibling()
+            box.remove(child)
+            child=nxt
 
     def _refresh_advanced(self, history):
         self._clear_children(self.lesson_box); lessons=self.db.lesson_performance(self.selected_period)
