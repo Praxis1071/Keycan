@@ -8,7 +8,8 @@ WORD_PATTERN = re.compile(r"\S+")
 
 
 def clean_source_name(name: str) -> str:
-    return SOURCE_PREFIX.sub("", name, count=1)
+    value = SOURCE_PREFIX.sub("", name, count=1)
+    return re.sub(r"^\s*\d+\.\s*", "", value)
 
 
 def natural_sort_key(value: str) -> list[object]:
