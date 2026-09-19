@@ -18,17 +18,22 @@ def _custom_relative_path(source_id: int, custom_key: str = "") -> str:
 
 
 def _migrate_custom_relative_paths(self: Database) -> None:
+    columns = {row[1] for row in self.conn.execute("PRAGMA table_info(sources)")}
+    if "relative_path" not in columns:
+        self.conn.execute("ALTER TABLE sources ADD COLUMN relative_path TEXT NOT NULL DEFAULT ''")
     rows = self.conn.execute(
-        """SELECT id, custom_key FROM sources
-           WHERE is_custom = 1 AND (relative_path = '' OR relative_path IS NULL)
+        """SELECT id, display_name, custom_key, is_custom, relative_path
+           FROM sources
+           WHERE relative_path = '' OR relative_path IS NULL
            ORDER BY id"""
     ).fetchall()
     changed = False
-    for source_id, custom_key in rows:
+    for source_id, _display_name, custom_key, is_custom, _relative_path in rows:
         key = str(custom_key or "").strip() or uuid.uuid4().hex
+        path = _custom_relative_path(source_id, key) if is_custom else f"default://{source_id}"
         self.conn.execute(
             "UPDATE sources SET custom_key = ?, relative_path = ? WHERE id = ?",
-            (key, _custom_relative_path(source_id, key), source_id),
+            (key if is_custom else str(custom_key or ""), path, source_id),
         )
         changed = True
     if changed:
@@ -257,10 +262,10 @@ def _restore_defaults(self: Database):
 
 def _export_data(self: Database) -> str:
     groups = []
-    for source_id, name, key, is_custom in self._managed_groups():
+    for source_id, name, key, is_custom in self.managed_groups():
         group_key = key or f"default:{source_id}"
         lessons = []
-        for lesson_id, text, lesson_key, order, lesson_custom in self._managed_lessons(source_id):
+        for lesson_id, text, lesson_key, order, lesson_custom in self.managed_lessons(source_id):
             lessons.append({"key": lesson_key or f"default:{lesson_id}", "text": text, "order": order, "default_lesson_id": None if lesson_custom else lesson_id})
         groups.append({"key": group_key, "name": name, "lessons": lessons, "is_custom": bool(is_custom), "default_source_id": None if is_custom else source_id})
     rows = self.conn.execute(
