@@ -30,8 +30,8 @@ Keycan'ın mevcut durumu ve gelecekteki geliştirme planı.
 - İstatistik ve içerik verilerini içe/dışa aktarma
 - Kopyala/yapıştır ve metin aktarımı açıklarının engellenmesi
 
-### 🔧 Aşama 4 — 2.2.x Bakım ve Hata Düzeltmeleri
-Bu aşama yeni bir özellik geliştirme aşaması değildir. Mevcut sürümün kullanımında ortaya çıkan sorunlar gerektiğinde ele alınır.
+### ✅ Aşama 4 — 2.2.x Bakım ve Hata Düzeltmeleri
+Bu aşama yeni bir özellik geliştirme aşaması değildir. Mevcut sürümün kullanımında ortaya çıkan sorunlar ele alınmış ve mevcut 2.2.x sürümü için planlanan bakım çalışmaları tamamlanmıştır.
 
 - Kullanıcı tarafından bildirilen hataların giderilmesi
 - Runtime ve kararlılık sorunlarının düzeltilmesi
@@ -39,7 +39,7 @@ Bu aşama yeni bir özellik geliştirme aşaması değildir. Mevcut sürümün k
 - Gerektiğinde Flatpak ile ilgili sorunların düzeltilmesi
 - Mevcut özelliklerin bozulmasını önleyen bakım çalışmaları
 
-Responsive arayüz ve temel stabilizasyon çalışmaları bu aşama kapsamında zaten tamamlanmıştır; ayrı bir gelecek hedefi değildir.
+Responsive arayüz ve temel stabilizasyon çalışmaları da tamamlanmıştır; ayrı bir gelecek hedefi değildir.
 
 ---
 
@@ -101,6 +101,28 @@ Aşama 7'de oluşturulan temel Profil sisteminin daha kapsamlı ve kişiselleşt
 - Profil üzerinden ilerleme geçmişinin görüntülenmesi
 - Profilin mevcut çalışma ve istatistik altyapısıyla bağlantısının genişletilmesi
 - Online hesap veya bulut senkronizasyonu olmadan yerel profil yapısının geliştirilmesi
+
+---
+
+## ⏳ Aşama 9 — Klavye Rehberi
+
+Sidebar'da İstatistikler ve Profil'den bağımsız, ayrı bir **Klavye Rehberi** bölümü oluşturulacak.
+
+Kullanıcının 10 parmak yazmayı öğrenmesine yardımcı olan, açıklayıcı ve uygulamaya dönük bir rehber alanı olacak.
+
+- 10 parmak yazma nedir?
+- Doğru oturuş ve el pozisyonu
+- Başlangıç / home row
+- F ve J tuşlarındaki yön bulma çıkıntıları
+- Sol el parmaklarının görevleri
+- Sağ el parmaklarının görevleri
+- Hangi parmağın hangi tuşa bastığı
+- Üst sıra, ana sıra ve alt sıra tuşları
+- Boşluk tuşu ve başparmak kullanımı
+- Klavyeye bakmadan yazma
+- Doğruluk ve hız ilişkisi
+- Yeni başlayanların sık yaptığı hatalar
+- Rehberden öğrenilenleri Çalışma Alanında pratiğe taşıma
 
 ---
 
