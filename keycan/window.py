@@ -124,10 +124,10 @@ class KeycanWindow(Adw.ApplicationWindow):
         controls.append(right_controls)
 
         left_controls.append(self._label("Ders grubu:"))
-        self.source_dropdown = Gtk.DropDown()
+        self.source_dropdown = SourceSearchDropdown()
+        self.source_dropdown.on_selected_changed = self._on_source_changed
         self.source_dropdown.set_hexpand(True)
         self.source_dropdown.set_halign(Gtk.Align.FILL)
-        self.source_dropdown.connect("notify::selected", self._on_source_changed)
         left_controls.append(self.source_dropdown)
 
         left_controls.append(self._label("Metin:"))
@@ -526,16 +526,6 @@ class ConfiguredKeycanWindow(KeycanWindow):
 
     def _build_ui(self) -> None:
         super()._build_ui()
-        old = self.source_dropdown
-        parent = old.get_parent()
-        lesson_dropdown = self.lesson_dropdown
-        self.source_dropdown = SourceSearchDropdown()
-        self.source_dropdown.on_selected_changed = self._on_source_changed
-        self.source_dropdown.set_hexpand(True)
-        self.source_dropdown.set_halign(Gtk.Align.FILL)
-        if parent is not None:
-            old.unparent()
-            parent.insert_before(self.source_dropdown, lesson_dropdown)
         self._install_sidebar_navigation()
         compact_height = Adw.Breakpoint.new(Adw.BreakpointCondition.parse("max-height: 650sp"))
         compact_height.add_setter(self.workspace.editors, "position", 280)
