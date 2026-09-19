@@ -34,6 +34,8 @@ Keycan 2.2.0 ile istatistikler, içerik yönetimi ve veri yönetimi önemli öl�
 - Noktalama İşaretlerini Yok Sayma
 - Karışık Sırada Yazma
 - Metin Boyutu Ayarı
+- Sistem / Açık / Koyu tema seçimi
+- Türkçe / English dil seçimi
 - Kopyala/yapıştır kullanımının engellenmesi
 - Yerel ve çevrimdışı veri yönetimi
 - GTK4 + libadwaita
@@ -71,7 +73,7 @@ Keycan'ın güncel geliştirme planı:
 | 3 | 📚 İçerik ve Veri Yönetimi | ✅ Tamamlandı |
 | 4 | 🔧 2.2.x Bakım ve Hata Düzeltmeleri | ✅ Tamamlandı |
 | 5 | 📈 Gelişmiş İstatistikler | ✅ Tamamlandı |
-| 6 | 🎨 Kullanıcı Deneyimi | ⏳ Planlandı |
+| 6 | 🎨 Kullanıcı Deneyimi | 🚧 Devam Ediyor |
 | 7 | 👤 Profil, XP, Seviye ve Rozet Sistemi | ⏳ Planlandı |
 | 8 | 🧑 Gelişmiş Yerel Profil | ⏳ Planlandı |
 | 9 | 📖 Klavye Rehberi | ⏳ Planlandı |
@@ -91,8 +93,9 @@ Keycan'ın güncel geliştirme planı:
 
 ### Aşama 6 — Kullanıcı Deneyimi
 
-- Tema seçenekleri
-- Türkçe / İngilizce dil sistemi
+- Sistem / Açık / Koyu tema seçenekleri (hemen uygulanır)
+- Türkçe / English dil sistemi (ayar kalıcıdır; dil değişikliği yeniden başlatmada uygulanır)
+- Tema ve dil tercihlerini ana uygulama mantığından ayrı tutan merkezi ayar altyapısı
 
 ### Aşama 7 — Profil, XP, Seviye ve Rozet Sistemi
 
