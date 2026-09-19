@@ -9,7 +9,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gio, Gtk
 
 from keycan.gui.content_manager2 import ContentManagerWindow
-from keycan.services.preferences import Preferences import ContentManagerWindow
+from keycan.services.preferences import Preferences
 
 
 class SettingsPanel(Gtk.Box):
