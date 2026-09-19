@@ -47,13 +47,15 @@ Responsive arayüz ve temel stabilizasyon çalışmaları da tamamlanmıştır; 
 
 Keycan'ın mevcut istatistik altyapısını daha ayrıntılı bir performans analiz sistemine dönüştürmek.
 
-- Günlük / haftalık / aylık istatistikler
+- Günlük / haftalık / aylık / yıllık / tüm zamanlar istatistikleri
 - Uzun dönemli WPM gelişimi
 - Uzun dönemli doğruluk gelişimi
 - Toplam çalışma süresi
 - Toplam kelime / karakter
 - Ders bazlı performans
 - Ayrıntılı dönem filtreleri
+- İstatistik ekranının Genel, Gelişim, Dersler, Hatalar ve Rekorlar olarak ayrıştırılması
+- Hata yapılan harflerin kompakt ve taranabilir görünümü
 - Dönem karşılaştırmaları
 - Rekor geçmişi
 - Ayrıntılı performans analizi
