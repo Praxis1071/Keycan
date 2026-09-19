@@ -527,7 +527,8 @@ class Database:
             "accuracy_percent": accuracy_percent,
             "wrong_letter_counts": wrong_letter_counts or {},
         }
-        if any(not math.isfinite(value) or value < 0 for value in metrics.values()):
+        numeric_metrics = {key: value for key, value in metrics.items() if key != "wrong_letter_counts"}
+        if any(not math.isfinite(value) or value < 0 for value in numeric_metrics.values()):
             raise ValueError("Çalışma ölçümleri geçerli ve negatif olmayan değerler olmalıdır")
         if correct + wrong != typed_word_count:
             raise ValueError("Doğru ve yanlış kelime toplamı yazılan kelime sayısıyla eşleşmiyor")
