@@ -20,8 +20,7 @@ class ContentManagerWindow(Adw.Window):
         while row: yield row; row=row.get_next_sibling()
     @staticmethod
     def _clear(list_box):
-        row=list_box.get_first_child()
-        while row: nxt=row.get_next_sibling(); row.unparent(); row=nxt
+        list_box.remove_all()
     def _build(self):
         toolbar=Adw.ToolbarView(); toolbar.add_top_bar(Adw.HeaderBar()); root=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=12); root.set_margin_top(18); root.set_margin_bottom(18); root.set_margin_start(18); root.set_margin_end(18); toolbar.set_content(root); self.set_content(toolbar)
         panes=Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL); panes.set_wide_handle(True); panes.set_position(300); panes.set_vexpand(True); root.append(panes)
