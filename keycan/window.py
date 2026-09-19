@@ -158,6 +158,10 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.add_breakpoint(short_breakpoint)
 
         self.workspace = TypingWorkspace(self.text_size)
+        workspace_key_controller = Gtk.EventControllerKey()
+        workspace_key_controller.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        workspace_key_controller.connect("key-pressed", self._on_workspace_key_pressed)
+        self.workspace.add_controller(workspace_key_controller)
         self.target_view = self.workspace.target_view
         self.input_view = self.workspace.input_view
         self.status = self.workspace.status
@@ -320,15 +324,41 @@ class KeycanWindow(Adw.ApplicationWindow):
             buffer.remove_tag(hidden, start, end)
             self.input_view.set_cursor_visible(not self.finished and self.current_lesson_id is not None)
 
+    def _start_session(self) -> None:
+        if self.started_at is not None or self.finished or self.current_lesson_id is None:
+            return
+        self.started_at = time.monotonic()
+        self.duration_spin.set_sensitive(False)
+        self.status.set_text("Ders başladı. Yazmaya devam et.")
+        self._apply_privacy_state()
+
+    def _on_workspace_key_pressed(self, _controller, keyval, _keycode, state) -> bool:
+        if self.current_lesson_id is None or self.finished or self.started_at is not None:
+            return False
+        if state & (Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.ALT_MASK | Gdk.ModifierType.META_MASK):
+            return False
+        unicode_value = Gdk.keyval_to_unicode(keyval)
+        if not unicode_value:
+            return False
+        character = chr(unicode_value)
+        if not character.isalpha():
+            return False
+
+        self._start_session()
+        if self.input_view.has_focus():
+            return False
+
+        self.input_view.grab_focus()
+        buffer = self.input_view.get_buffer()
+        buffer.insert_at_cursor(character)
+        return True
+
     def _on_input_changed(self, buffer: Gtk.TextBuffer) -> None:
         if self.updating_input or self.finished or self.current_lesson_id is None:
             return
         self.typed = buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter(), False)
         if self.started_at is None and self.typed:
-            self.started_at = time.monotonic()
-            self.duration_spin.set_sensitive(False)
-            self.status.set_text("Ders başladı. Yazmaya devam et.")
-            self._apply_privacy_state()
+            self._start_session()
         if self.started_at is not None and time.monotonic() - self.started_at >= self._duration_seconds():
             self._finish()
         elif self.started_at is not None and self.privacy_enabled:
