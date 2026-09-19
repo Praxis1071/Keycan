@@ -327,6 +327,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         if self.started_at is None and self.typed:
             self.started_at = time.monotonic()
             self.duration_spin.set_sensitive(False)
+            self.status.set_text("Ders başladı. Yazmaya devam et.")
             self._apply_privacy_state()
         if self.started_at is not None and time.monotonic() - self.started_at >= self._duration_seconds():
             self._finish()
