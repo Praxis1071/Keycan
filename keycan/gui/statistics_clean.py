@@ -176,7 +176,7 @@ class ActivityHeatmap(Gtk.DrawingArea):
 
 
 class StatisticsPanel(Gtk.Box):
-    PERIODS=("Günlük","Haftalık","Aylık","Yıllık","Son 7 Gün","Son 30 Gün","Son 90 Gün","Tümü")
+    PERIODS=("Günlük","Haftalık","Aylık","Yıllık","Tümü")
     def __init__(self,database: Database)->None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL,spacing=0); self.set_hexpand(True); self.set_vexpand(True); self.db=database; self.selected_period="Haftalık"; self.activity_year=datetime.now().year; self._build(); self.refresh()
     @staticmethod
@@ -189,9 +189,75 @@ class StatisticsPanel(Gtk.Box):
             d=Gtk.Label(label=subtitle); d.set_xalign(0); d.set_wrap(True); d.add_css_class("dim-label"); box.append(d)
         return box
     def _build(self):
-        scroll=Gtk.ScrolledWindow(); scroll.set_policy(Gtk.PolicyType.NEVER,Gtk.PolicyType.AUTOMATIC); scroll.set_hexpand(True); scroll.set_vexpand(True); self.append(scroll)
-        content=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=22); content.set_hexpand(True); content.set_margin_top(28); content.set_margin_bottom(40); content.set_margin_start(20); content.set_margin_end(20); scroll.set_child(content)
-        content.append(self._revealed(self._header(),40)); content.append(self._revealed(self._period(),80)); content.append(self._revealed(self._metrics(),120)); content.append(self._revealed(self._speed(),160)); content.append(self._revealed(self._accuracy(),200)); content.append(self._revealed(self._activity(),240)); content.append(self._revealed(self._records(),280)); content.append(self._revealed(self._progress(),320)); content.append(self._revealed(self._history(),360)); content.append(self._revealed(self._advanced(),400))
+        # Keep the section navigation fixed while the selected statistics page scrolls.
+        self.statistics_stack=Adw.ViewStack()
+        self.statistics_stack.set_hhomogeneous(True)
+        self.statistics_stack.set_vhomogeneous(False)
+        self.statistics_stack.set_enable_transitions(True)
+
+        switcher=Adw.InlineViewSwitcher()
+        switcher.set_stack(self.statistics_stack)
+        switcher.set_homogeneous(True)
+        switcher.set_can_shrink(True)
+        switcher.set_margin_start(12); switcher.set_margin_end(12)
+        switcher.set_margin_top(8); switcher.set_margin_bottom(8)
+        self.append(switcher)
+
+        scroll=Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER,Gtk.PolicyType.AUTOMATIC)
+        scroll.set_hexpand(True); scroll.set_vexpand(True)
+        self.append(scroll)
+
+        advanced=self._advanced()
+        advanced_children=[]
+        child=advanced.get_first_child()
+        while child:
+            advanced_children.append(child)
+            child=child.get_next_sibling()
+
+        def page():
+            box=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=22)
+            box.set_hexpand(True)
+            box.set_margin_top(24); box.set_margin_bottom(40)
+            box.set_margin_start(20); box.set_margin_end(20)
+            return box
+
+        general=page()
+        general.append(self._section("Genel","Seçili dönemin temel yazma sonuçları."))
+        general.append(self._revealed(self._header(),40))
+        general.append(self._revealed(self._period(),80))
+        general.append(self._revealed(self._metrics(),120))
+        general.append(self._revealed(self._accuracy(),160))
+        self.statistics_stack.add_titled(general,"general","Genel")
+
+        development=page()
+        development.append(self._section("Gelişim","Hız, doğruluk ve çalışma düzenindeki değişimi takip et."))
+        development.append(self._revealed(self._speed(),40))
+        development.append(self._revealed(self._activity(),80))
+        development.append(self._revealed(self._progress(),120))
+        development.append(self._revealed(advanced_children[2],160))
+        self.statistics_stack.add_titled(development,"development","Gelişim")
+
+        lessons=page()
+        lessons.append(self._section("Dersler","Ders bazlı performans ve tamamlanan çalışmalar."))
+        lessons.append(self._revealed(advanced_children[3],40))
+        lessons.append(self._revealed(self._history(),80))
+        self.statistics_stack.add_titled(lessons,"lessons","Dersler")
+
+        errors=page()
+        errors.append(self._section("Hatalar","En sık yapılan hataları ve hata örüntülerini daha kompakt gör."))
+        errors.append(self._revealed(advanced_children[4],40))
+        self.statistics_stack.add_titled(errors,"errors","Hatalar")
+
+        records=page()
+        records.append(self._section("Rekorlar","Kişisel rekorlarını ve dönem karşılaştırmalarını takip et."))
+        records.append(self._revealed(self._records(),40))
+        records.append(self._revealed(advanced_children[1],80))
+        records.append(self._revealed(advanced_children[5],120))
+        self.statistics_stack.add_titled(records,"records","Rekorlar")
+
+        self.statistics_stack.set_visible_child_name("general")
+        scroll.set_child(self.statistics_stack)
     def _header(self): return self._section("İstatistikler","Yazma gelişimini tek bakışta takip et.")
     def _period(self):
         s=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=8); s.append(self._section("Dönem"))
@@ -238,8 +304,15 @@ class StatisticsPanel(Gtk.Box):
         lesson_group=Adw.PreferencesGroup(); lesson_group.set_title("Ders bazlı performans"); lesson_group.set_description("Hangi derslerde ne kadar çalıştığını ve performansını gör.")
         self.lesson_box=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=4); lesson_group.add(self.lesson_box); box.append(lesson_group)
 
-        error_group=Adw.PreferencesGroup(); error_group.set_title("En çok hata yapılan harfler"); error_group.set_description("Çalışmalarında en sık hata yapılan harfleri gösterir.")
-        self.error_box=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=4); error_group.add(self.error_box); box.append(error_group)
+        error_group=Adw.PreferencesGroup(); error_group.set_title("En çok hata yapılan harfler"); error_group.set_description("Çalışmalarında en sık hata yapılan harfleri kompakt olarak gösterir.")
+        self.error_box=Gtk.FlowBox()
+        self.error_box.set_selection_mode(Gtk.SelectionMode.NONE)
+        self.error_box.set_homogeneous(True)
+        self.error_box.set_min_children_per_line(2)
+        self.error_box.set_max_children_per_line(5)
+        self.error_box.set_column_spacing(8)
+        self.error_box.set_row_spacing(8)
+        error_group.add(self.error_box); box.append(error_group)
 
         record_group=Adw.PreferencesGroup(); record_group.set_title("Rekor geçmişi"); record_group.set_description("Yeni hız ve doğruluk rekorlarının oluştuğu çalışmalar.")
         self.record_history=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=4); record_group.add(self.record_history); box.append(record_group)
@@ -264,10 +337,25 @@ class StatisticsPanel(Gtk.Box):
 
         self._clear_children(self.error_box); errors=self.db.wrong_letter_statistics(self.selected_period,10)
         if not errors:
-            self.error_box.append(Gtk.Label(label="Henüz harf hata verisi yok."))
+            empty=Gtk.Label(label="Henüz harf hata verisi yok.")
+            empty.add_css_class("dim-label")
+            empty.set_margin_top(10); empty.set_margin_bottom(10)
+            self.error_box.append(empty)
         else:
             for letter,count in errors:
-                row=Adw.ActionRow(); row.set_title(letter.upper()); row.set_subtitle(f"{count} hata"); self.error_box.append(row)
+                chip=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=3)
+                chip.set_halign(Gtk.Align.FILL)
+                chip.set_margin_top(8); chip.set_margin_bottom(8)
+                chip.set_margin_start(8); chip.set_margin_end(8)
+                chip.add_css_class("card")
+                key_label=Gtk.Label(label=letter.upper())
+                key_label.add_css_class("title-2")
+                key_label.set_xalign(0.5)
+                count_label=Gtk.Label(label=f"{count} hata")
+                count_label.add_css_class("dim-label")
+                count_label.set_xalign(0.5)
+                chip.append(key_label); chip.append(count_label)
+                self.error_box.append(chip)
 
         self._clear_children(self.record_history)
         if not history:
