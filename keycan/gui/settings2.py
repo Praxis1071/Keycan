@@ -9,12 +9,14 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gio, Gtk
 
 from keycan.gui.content_manager2 import ContentManagerWindow
+from keycan.services.preferences import Preferences import ContentManagerWindow
 
 
 class SettingsPanel(Gtk.Box):
     def __init__(self, parent: Gtk.Widget, on_content_changed=None, on_statistics_changed=None) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=18)
         self.parent_window=parent; self.on_content_changed=on_content_changed; self.on_statistics_changed=on_statistics_changed
+        self.preferences=getattr(parent,"preferences",Preferences())
         self.set_margin_top(20); self.set_margin_bottom(20); self.set_margin_start(20); self.set_margin_end(20)
         title=Gtk.Label(label="Ayarlar"); title.set_xalign(0); title.add_css_class("title-2"); self.append(title)
         data=Adw.PreferencesGroup(); data.set_title("Veri ve içerik"); data.set_description("Çalışma geçmişini ve tüm ders içeriklerini yönet."); self.append(data)
@@ -24,11 +26,25 @@ class SettingsPanel(Gtk.Box):
         self._destructive(data,"İstatistikleri sıfırla","Tamamlanan tüm çalışma geçmişini kalıcı olarak sil.","Sıfırla",self._reset)
         self._destructive(data,"Tüm ders gruplarını ve metinleri sıfırla","Keycan'ın hazır içerikleri dahil tüm ders gruplarını ve metinlerini kaldır.","Tümünü sıfırla",self._reset_content)
         self._action(data,"Varsayılan ders gruplarını ve metinleri ekle","Keycan'ın ilk kurulumdaki hazır ders gruplarını ve metinlerini geri yükle.","Varsayılanları ekle",self._restore_defaults)
+        appearance=Adw.PreferencesGroup(); appearance.set_title("Görünüm ve dil"); appearance.set_description("Keycan arayüzünün görünümünü ve dilini belirle."); self.append(appearance)
+        theme=Adw.ComboRow(); theme.set_title("Tema"); theme.set_subtitle("Sistem, açık veya koyu görünüm kullan."); theme.set_model(Gtk.StringList.new(["Sistem","Açık","Koyu"])); theme.set_selected({"system":0,"light":1,"dark":2}[self.preferences.get("theme")]); theme.connect("notify::selected",self._on_theme_changed); appearance.add(theme); self.theme_row=theme
+        language=Adw.ComboRow(); language.set_title("Dil"); language.set_subtitle("Türkçe veya English kullan."); language.set_model(Gtk.StringList.new(["Türkçe","English"])); language.set_selected(0 if self.preferences.get("language")=="tr" else 1); language.connect("notify::selected",self._on_language_changed); appearance.add(language); self.language_row=language
         self.status=Gtk.Label(label=""); self.status.set_xalign(0); self.status.set_wrap(True); self.status.add_css_class("dim-label"); self.append(self.status)
         about_title=Gtk.Label(label="Hakkında"); about_title.set_xalign(0); about_title.add_css_class("title-3"); self.append(about_title)
         about=Gtk.Label(label="Keycan, Linux üzerinde on parmak yazma pratiği yapmayı kolaylaştırmak için geliştirilmiş, sade ve açık kaynaklı bir projedir.\n\nGeliştirici: Praxis1071"); about.set_xalign(0); about.set_wrap(True); self.append(about)
         for uri,label in (("https://github.com/Praxis1071","GitHub profili: github.com/Praxis1071"),("https://www.youtube.com/@Praxis1071","YouTube kanalı: youtube.com/@Praxis1071")):
             link=Gtk.LinkButton(uri=uri,label=label); link.set_halign(Gtk.Align.START); self.append(link)
+
+    def _on_theme_changed(self,row: Adw.ComboRow,_param) -> None:
+        value=("system","light","dark")[row.get_selected()]
+        self.preferences.set("theme",value)
+        if hasattr(self.parent_window,"apply_theme"): self.parent_window.apply_theme()
+        self.status.set_text("Tema değişikliği hemen uygulanır.")
+
+    def _on_language_changed(self,row: Adw.ComboRow,_param) -> None:
+        value=("tr","en")[row.get_selected()]
+        self.preferences.set("language",value)
+        self.status.set_text("Dil değişikliği uygulamayı yeniden başlattığında uygulanır.")
 
     @staticmethod
     def _action(group,title,subtitle,text,callback):
