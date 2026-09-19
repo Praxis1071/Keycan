@@ -4,12 +4,17 @@ import re
 import unicodedata
 
 SOURCE_PREFIX = re.compile(r"^REVERSE ENGINEERING[/\\]+", re.IGNORECASE)
+REDUNDANT_SOURCE_PREFIX = re.compile(r"^\s*DİĞER\s+ÇALIŞMALAR\s+VE\s+", re.IGNORECASE)
+SOURCE_TAG = re.compile(r"\s*\[[^\]]+\]\s*", re.IGNORECASE)
 WORD_PATTERN = re.compile(r"\S+")
 
 
 def clean_source_name(name: str) -> str:
     value = SOURCE_PREFIX.sub("", name, count=1)
-    return re.sub(r"^\s*\d+\.\s*", "", value)
+    value = REDUNDANT_SOURCE_PREFIX.sub("", value, count=1)
+    value = SOURCE_TAG.sub(" ", value)
+    value = re.sub(r"^\s*\d+\.\s*", "", value)
+    return re.sub(r"\s+", " ", value).strip()
 
 
 def natural_sort_key(value: str) -> list[object]:
