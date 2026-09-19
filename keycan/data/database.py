@@ -574,6 +574,12 @@ class Database:
             return now_local.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         if period == "Yıllık":
             return now_local.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        if period == "Son 7 Gün":
+            return now_local - timedelta(days=7)
+        if period == "Son 30 Gün":
+            return now_local - timedelta(days=30)
+        if period == "Son 90 Gün":
+            return now_local - timedelta(days=90)
         if period == "Tümü":
             return None
         raise ValueError(f"Bilinmeyen istatistik dönemi: {period}")
@@ -637,7 +643,7 @@ class Database:
         start_local = self._period_start(period, now_local)
         query = """SELECT id, completed_at, source_name_snapshot, lesson_title_snapshot,
                           duration_seconds, correct_words, wrong_words,
-                          typed_word_count, words_per_minute
+                          typed_word_count, words_per_minute, total_characters
                    FROM practice_results WHERE completed_at != ''"""
         parameters: tuple[str, ...] = ()
         if start_local is not None:
@@ -648,6 +654,7 @@ class Database:
         practices = len(rows)
         total_duration = sum(float(row[4]) for row in rows)
         total_words = sum(int(row[7]) for row in rows)
+        total_characters = sum(int(row[9]) if len(row) > 9 else 0 for row in rows)
         total_correct = sum(int(row[5]) for row in rows)
         total_wrong = sum(int(row[6]) for row in rows)
         accuracy = total_correct / total_words * 100.0 if total_words else 0.0
@@ -656,7 +663,7 @@ class Database:
             completed = self._parse_completed_at(row[1])
             if period == "Günlük":
                 bucket, label = completed, completed.strftime("%H:%M")
-            elif period in {"Haftalık", "Aylık"}:
+            elif period in {"Haftalık", "Aylık", "Son 7 Gün", "Son 30 Gün", "Son 90 Gün"}:
                 bucket, label = completed.date(), completed.strftime("%d %b")
             else:
                 bucket, label = (completed.year, completed.month), completed.strftime("%b %Y")
@@ -670,7 +677,7 @@ class Database:
             completed = self._parse_completed_at(row[1])
             if period == "Günlük":
                 bucket, label = completed, completed.strftime("%H:%M")
-            elif period in {"Haftalık", "Aylık"}:
+            elif period in {"Haftalık", "Aylık", "Son 7 Gün", "Son 30 Gün", "Son 90 Gün"}:
                 bucket, label = completed.date(), completed.strftime("%d %b")
             else:
                 bucket, label = (completed.year, completed.month), completed.strftime("%b %Y")
@@ -700,6 +707,7 @@ class Database:
             "total_words": total_words,
             "correct_words": total_correct,
             "wrong_words": total_wrong,
+            "total_characters": total_characters,
             "accuracy_percent": accuracy,
             "speed_points": speed_points,
             "accuracy_points": accuracy_points,
@@ -743,17 +751,25 @@ class Database:
 
     def period_comparison(self, period: str) -> dict[str, object]:
         now = datetime.now().astimezone()
-        if period not in {"Günlük", "Haftalık", "Aylık", "Yıllık"}:
+        if period not in {"Günlük", "Haftalık", "Aylık", "Yıllık", "Son 7 Gün", "Son 30 Gün", "Son 90 Gün"}:
             raise ValueError("Karşılaştırma için geçerli bir dönem seçilmelidir")
         current_start = self._period_start(period, now)
         if period == "Günlük":
             previous_start = current_start - timedelta(days=1)
+        elif period == "Son 7 Gün":
+            previous_start = current_start - timedelta(days=7)
+        elif period == "Son 30 Gün":
+            previous_start = current_start - timedelta(days=30)
+        elif period == "Son 90 Gün":
+            previous_start = current_start - timedelta(days=90)
         elif period == "Haftalık":
             previous_start = current_start - timedelta(days=7)
         elif period == "Aylık":
             previous_start = (current_start.replace(day=1) - timedelta(days=1)).replace(day=1)
-        else:
+        elif period == "Yıllık":
             previous_start = current_start.replace(year=current_start.year - 1)
+        else:
+            previous_start = current_start - timedelta(days=int(period.split()[1]))
         def aggregate(start: datetime, end: datetime) -> dict[str, float]:
             rows = self.conn.execute(
                 "SELECT duration_seconds, typed_word_count, correct_words, words_per_minute FROM practice_results WHERE completed_at >= ? AND completed_at < ?",
