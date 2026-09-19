@@ -9,6 +9,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gio, Gtk
 
 from keycan.gui.content_manager2 import ContentManagerWindow
+from keycan.services.i18n import translate
 from keycan.services.preferences import Preferences
 
 
@@ -39,12 +40,16 @@ class SettingsPanel(Gtk.Box):
         value=("system","light","dark")[row.get_selected()]
         self.preferences.set("theme",value)
         if hasattr(self.parent_window,"apply_theme"): self.parent_window.apply_theme()
-        self.status.set_text("Tema değişikliği hemen uygulanır.")
+        self.status.set_text(translate("Tema değişikliği hemen uygulanır.", self.preferences.get("language")))
 
     def _on_language_changed(self,row: Adw.ComboRow,_param) -> None:
         value=("tr","en")[row.get_selected()]
-        self.preferences.set("language",value)
-        self.status.set_text("Dil değişikliği uygulamayı yeniden başlattığında uygulanır.")
+        self.preferences.set("language", value)
+        if hasattr(self.parent_window, "apply_language"):
+            self.parent_window.apply_language()
+        self.status.set_text(
+            translate("Dil değişikliği hemen uygulandı.", self.preferences.get("language"))
+        )
 
     @staticmethod
     def _action(group,title,subtitle,text,callback):
