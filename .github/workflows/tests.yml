@@ -20,6 +20,19 @@ jobs:
       - name: Run Stage 5 tests
         run: pytest -q tests/test_stage5_statistics.py
 
+
+  stage6:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pip pytest
+      - name: Run Stage 6 preference tests
+        run: pytest -q tests/test_stage6_preferences.py
+
   regression:
     runs-on: ubuntu-latest
     steps:
