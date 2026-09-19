@@ -551,7 +551,7 @@ class Database:
                 ?, ?, ?, ?,
                 CURRENT_TIMESTAMP, ?, ?,
                 ?, ?, ?,
-                ?, ?, ?
+                ?, ?, ?, ?
             )""",
             (
                 lesson_id, duration, correct_characters, wrong_characters, words_per_minute,
