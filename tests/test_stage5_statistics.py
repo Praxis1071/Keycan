@@ -2,27 +2,28 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import sqlite3
 
 from keycan.data.database import Database
 
 
 def _seed_database(path: Path) -> Database:
-    db = Database(path)
-    db.conn.executescript(
+    connection = sqlite3.connect(path)
+    connection.executescript(
         """
-        CREATE TABLE IF NOT EXISTS sources (
+        CREATE TABLE sources (
             id INTEGER PRIMARY KEY,
             display_name TEXT NOT NULL,
             relative_path TEXT NOT NULL DEFAULT ''
         );
-        CREATE TABLE IF NOT EXISTS lessons (
+        CREATE TABLE lessons (
             id INTEGER PRIMARY KEY,
             source_id INTEGER NOT NULL,
             legacy_metin_id INTEGER NOT NULL DEFAULT 0,
             title TEXT NOT NULL,
             text TEXT NOT NULL
         );
-        CREATE TABLE IF NOT EXISTS practice_results (
+        CREATE TABLE practice_results (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             lesson_id INTEGER NOT NULL,
             duration_seconds REAL NOT NULL,
@@ -34,16 +35,14 @@ def _seed_database(path: Path) -> Database:
             words_per_minute REAL NOT NULL DEFAULT 0,
             characters_per_minute REAL NOT NULL DEFAULT 0
         );
+        INSERT INTO sources(id, display_name) VALUES (1, '1. Test Kaynak');
+        INSERT INTO lessons(id, source_id, legacy_metin_id, title, text)
+            VALUES (1, 1, 1, 'Test Ders', 'bir iki üç');
         """
     )
-    db.conn.execute(
-        "INSERT INTO sources(id, display_name) VALUES (1, '1. Test Kaynak')"
-    )
-    db.conn.execute(
-        "INSERT INTO lessons(id, source_id, legacy_metin_id, title, text) VALUES (1, 1, 1, 'Test Ders', 'bir iki üç')"
-    )
-    db.conn.commit()
-    return db
+    connection.commit()
+    connection.close()
+    return Database(path)
 
 
 def test_stage5_statistics_totals_and_error_analysis(tmp_path: Path) -> None:
