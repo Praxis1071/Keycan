@@ -63,10 +63,18 @@ Keycan'ın mevcut istatistik altyapısını daha ayrıntılı bir performans ana
 
 ---
 
-## ⏳ Aşama 6 — Kullanıcı Deneyimi
+## ✅ Aşama 6 — Kullanıcı Deneyimi
 
-- Tema seçenekleri
+- Sistem / açık / koyu tema seçenekleri
+- Tema değişikliğinin anında uygulanması
+- Tema tercihinin kalıcı olarak saklanması
 - Türkçe / İngilizce dil sistemi
+- Dil değişikliğinin uygulama yeniden başlatılmadan anında uygulanması
+- Dil tercihinin kalıcı olarak saklanması
+- Merkezi ve GTK arayüzünden bağımsız çeviri kataloğu
+- Preferences ve translation servislerinin `main.py` dışında tutulması
+- Stage 6 otomatik testleri ve CI Python modül doğrulaması
+- Atomik preference dosyası yazımı
 
 ---
 
