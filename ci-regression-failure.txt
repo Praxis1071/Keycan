@@ -1,0 +1,231 @@
+.F....FFF.....                                                           [100%]
+=================================== FAILURES ===================================
+_____________ test_old_custom_groups_with_empty_paths_are_migrated _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-runner/pytest-0/test_old_custom_groups_with_em0')
+
+    def test_old_custom_groups_with_empty_paths_are_migrated(tmp_path: Path) -> None:
+        db = make_db(tmp_path / "legacy.db")
+        try:
+            key = "legacy-custom-key"
+>           db.conn.execute(
+                "INSERT INTO sources(id, display_name, relative_path, is_custom, is_deleted, custom_key) VALUES (?, ?, '', 1, 0, ?)",
+                (10, "Eski Grup", key),
+            )
+E           sqlite3.IntegrityError: UNIQUE constraint failed: sources.relative_path
+
+tests/test_custom_content.py:45: IntegrityError
+______________ test_backup_round_trip_restores_content_and_stats _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-runner/pytest-0/test_backup_round_trip_restore0')
+
+    def test_backup_round_trip_restores_content_and_stats(tmp_path: Path) -> None:
+        db = make_db(tmp_path / "source.db")
+        try:
+            group = db.create_custom_group("Yedek Grubu")
+            lesson = db.create_custom_lesson(group, "yedek metni")
+            db.save_result(
+                lesson, 60, 4, 0,
+                target_word_count=4, typed_word_count=4, total_characters=12,
+                correct_characters=12, wrong_characters=0, words_per_minute=4,
+                characters_per_minute=12, accuracy_percent=100,
+            )
+>           backup = db.export_data()
+                     ^^^^^^^^^^^^^^^^
+
+tests/test_custom_content.py:151: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <keycan.data.database.Database object at 0x7fad915e63f0>
+
+    def _export_data(self: Database) -> str:
+        groups = []
+>       for source_id, name, key, is_custom in self._managed_groups():
+                                               ^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'Database' object has no attribute '_managed_groups'. Did you mean: 'managed_groups'?
+
+keycan/data/database_runtime.py:260: AttributeError
+____________________ test_stage1_save_result_and_migration _____________________
+
+    def test_stage1_save_result_and_migration() -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "test.db"
+            connection = sqlite3.connect(path)
+            connection.executescript(
+                """
+                CREATE TABLE sources (
+                    id INTEGER PRIMARY KEY,
+                    display_name TEXT NOT NULL,
+                    relative_path TEXT NOT NULL DEFAULT ''
+                );
+                CREATE TABLE lessons (
+                    id INTEGER PRIMARY KEY,
+                    source_id INTEGER NOT NULL,
+                    legacy_metin_id INTEGER NOT NULL DEFAULT 0,
+                    title TEXT NOT NULL,
+                    text TEXT NOT NULL,
+                    FOREIGN KEY(source_id) REFERENCES sources(id)
+                );
+                CREATE TABLE practice_results (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    lesson_id INTEGER NOT NULL,
+                    duration_seconds REAL NOT NULL,
+                    correct_chars INTEGER NOT NULL DEFAULT 0,
+                    wrong_chars INTEGER NOT NULL DEFAULT 0,
+                    wpm REAL NOT NULL DEFAULT 0,
+                    correct_words INTEGER NOT NULL DEFAULT 0,
+                    wrong_words INTEGER NOT NULL DEFAULT 0,
+                    words_per_minute REAL NOT NULL DEFAULT 0,
+                    characters_per_minute REAL NOT NULL DEFAULT 0,
+                    FOREIGN KEY(lesson_id) REFERENCES lessons(id)
+                );
+                INSERT INTO sources(id, display_name) VALUES (1, '1. Test Kaynak');
+                INSERT INTO lessons(id, source_id, legacy_metin_id, title, text)
+                    VALUES (10, 1, 1, 'Test Ders', 'Bir iki üç dört');
+                """
+            )
+            connection.commit()
+            connection.close()
+    
+            db = Database(path)
+            columns = {row[1] for row in db.conn.execute("PRAGMA table_info(practice_results)")}
+            required = {
+                "completed_at",
+                "source_name_snapshot",
+                "lesson_title_snapshot",
+                "target_word_count",
+                "typed_word_count",
+                "total_characters",
+                "correct_characters",
+                "wrong_characters",
+                "accuracy_percent",
+            }
+            assert required <= columns
+            assert db.lessons(1) == [(10, "Ders 1")]
+    
+            db.save_result(
+                10,
+                60.0,
+                3,
+                1,
+                target_word_count=4,
+                typed_word_count=4,
+                total_characters=16,
+                correct_characters=15,
+                wrong_characters=1,
+                words_per_minute=4.0,
+                characters_per_minute=16.0,
+                accuracy_percent=75.0,
+            )
+    
+            row = db.conn.execute(
+                """SELECT lesson_id, duration_seconds, correct_words, wrong_words,
+                          words_per_minute, characters_per_minute, completed_at,
+                          source_name_snapshot, lesson_title_snapshot,
+                          target_word_count, typed_word_count, total_characters,
+                          correct_characters, wrong_characters, accuracy_percent
+                   FROM practice_results ORDER BY id DESC LIMIT 1"""
+            ).fetchone()
+            assert row is not None
+            assert row[0:6] == (10, 60.0, 3, 1, 4.0, 16.0)
+            assert row[6] != ""
+>           assert row[7:] == ("Test Kaynak", "Test Ders", 4, 4, 16, 15, 1, 75.0)
+E           AssertionError: assert ('1. Test Kay..., 16, 15, ...) == ('Test Kaynak..., 16, 15, ...)
+E             
+E             At index 0 diff: '1. Test Kaynak' != 'Test Kaynak'
+E             
+E             Full diff:
+E               (
+E             -     'Test Kaynak',
+E             +     '1. Test Kaynak',
+E             ?      +++
+E                   'Test Ders',
+E                   4,
+E                   4,
+E                   16,
+E                   15,
+E                   1,
+E                   75.0,
+E               )
+
+tests/test_stage1_database.py:92: AssertionError
+___________________ test_stage1_rejects_inconsistent_metrics ___________________
+
+tmp_path = PosixPath('/tmp/pytest-of-runner/pytest-0/test_stage1_rejects_inconsiste0')
+
+    def test_stage1_rejects_inconsistent_metrics(tmp_path: Path) -> None:
+        path = tmp_path / "test.db"
+        connection = sqlite3.connect(path)
+        connection.executescript(
+            """
+            CREATE TABLE sources (id INTEGER PRIMARY KEY, display_name TEXT NOT NULL);
+            CREATE TABLE lessons (
+                id INTEGER PRIMARY KEY,
+                source_id INTEGER NOT NULL,
+                legacy_metin_id INTEGER NOT NULL DEFAULT 0,
+                title TEXT NOT NULL,
+                text TEXT NOT NULL
+            );
+            CREATE TABLE practice_results (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                lesson_id INTEGER NOT NULL,
+                duration_seconds REAL NOT NULL,
+                correct_chars INTEGER NOT NULL DEFAULT 0,
+                wrong_chars INTEGER NOT NULL DEFAULT 0,
+                wpm REAL NOT NULL DEFAULT 0,
+                correct_words INTEGER NOT NULL DEFAULT 0,
+                wrong_words INTEGER NOT NULL DEFAULT 0,
+                words_per_minute REAL NOT NULL DEFAULT 0,
+                characters_per_minute REAL NOT NULL DEFAULT 0
+            );
+            INSERT INTO sources VALUES (1, 'Test');
+            INSERT INTO lessons VALUES (1, 1, 1, 'Ders', 'Metin');
+            """
+        )
+        connection.commit()
+        connection.close()
+    
+>       db = Database(path)
+             ^^^^^^^^^^^^^^
+
+tests/test_stage1_database.py:128: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+keycan/data/database_runtime.py:75: in _init
+    _ensure_default_snapshot(self)
+keycan/data/database_runtime.py:39: in _ensure_default_snapshot
+    _migrate_custom_relative_paths(self)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <keycan.data.database.Database object at 0x7fad915e73e0>
+
+    def _migrate_custom_relative_paths(self: Database) -> None:
+>       rows = self.conn.execute(
+            """SELECT id, custom_key FROM sources
+               WHERE is_custom = 1 AND (relative_path = '' OR relative_path IS NULL)
+               ORDER BY id"""
+        ).fetchall()
+E       sqlite3.OperationalError: no such column: relative_path
+
+keycan/data/database_runtime.py:21: OperationalError
+=========================== short test summary info ============================
+FAILED tests/test_custom_content.py::test_old_custom_groups_with_empty_paths_are_migrated - sqlite3.IntegrityError: UNIQUE constraint failed: sources.relative_path
+FAILED tests/test_custom_content.py::test_backup_round_trip_restores_content_and_stats - AttributeError: 'Database' object has no attribute '_managed_groups'. Did you mean: 'managed_groups'?
+FAILED tests/test_stage1_database.py::test_stage1_save_result_and_migration - AssertionError: assert ('1. Test Kay..., 16, 15, ...) == ('Test Kaynak..., 16, 15, ...)
+  
+  At index 0 diff: '1. Test Kaynak' != 'Test Kaynak'
+  
+  Full diff:
+    (
+  -     'Test Kaynak',
+  +     '1. Test Kaynak',
+  ?      +++
+        'Test Ders',
+        4,
+        4,
+        16,
+        15,
+        1,
+        75.0,
+    )
+FAILED tests/test_stage1_database.py::test_stage1_rejects_inconsistent_metrics - sqlite3.OperationalError: no such column: relative_path
+4 failed, 10 passed in 0.60s
