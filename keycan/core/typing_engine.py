@@ -40,3 +40,10 @@ class TypingEngine:
                 matched.add(index)
 
         return TypingResult(matched, correctness)
+
+    def character_correctness(self, target_text: str, typed_text: str) -> list[bool]:
+        """Return case-insensitive correctness for each typed character."""
+        return [
+            index < len(target_text) and character.casefold() == target_text[index].casefold()
+            for index, character in enumerate(typed_text)
+        ]
