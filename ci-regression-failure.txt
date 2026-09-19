@@ -1,0 +1,30 @@
+......F.......                                                           [100%]
+=================================== FAILURES ===================================
+______________ test_backup_round_trip_restores_content_and_stats _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-runner/pytest-0/test_backup_round_trip_restore0')
+
+    def test_backup_round_trip_restores_content_and_stats(tmp_path: Path) -> None:
+        db = make_db(tmp_path / "source.db")
+        try:
+            group = db.create_custom_group("Yedek Grubu")
+            lesson = db.create_custom_lesson(group, "yedek metni")
+            db.save_result(
+                lesson, 60, 4, 0,
+                target_word_count=4, typed_word_count=4, total_characters=12,
+                correct_characters=12, wrong_characters=0, words_per_minute=4,
+                characters_per_minute=12, accuracy_percent=100,
+            )
+            backup = db.export_data()
+        finally:
+            db.close()
+        restored = make_db(tmp_path / "restored.db")
+        try:
+            imported, skipped = restored.import_data(backup)
+>           assert imported == 2 and skipped == 0
+E           assert (3 == 2)
+
+tests/test_custom_content.py:157: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_custom_content.py::test_backup_round_trip_restores_content_and_stats - assert (3 == 2)
+1 failed, 13 passed in 0.53s
