@@ -147,6 +147,7 @@ def test_backup_round_trip_restores_content_and_stats(tmp_path: Path) -> None:
             target_word_count=4, typed_word_count=4, total_characters=12,
             correct_characters=12, wrong_characters=0, words_per_minute=4,
             characters_per_minute=12, accuracy_percent=100,
+            wrong_letter_counts={"a": 2, "E": 1},
         )
         backup = db.export_data()
     finally:
@@ -160,6 +161,8 @@ def test_backup_round_trip_restores_content_and_stats(tmp_path: Path) -> None:
         lessons = restored.custom_lessons(groups[0][0])
         assert [row[1] for row in lessons] == ["yedek metni"]
         assert restored.practice_statistics("Tümü")["practices"] == 1
-        json.loads(restored.export_data())
+        assert restored.wrong_letter_statistics("Tümü") == [("a", 2), ("e", 1)]
+        exported = json.loads(restored.export_data())
+        assert exported["practice_results"][0]["wrong_letter_counts"] == {"a": 2, "E": 1}
     finally:
         restored.close()
