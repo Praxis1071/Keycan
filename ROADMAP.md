@@ -24,22 +24,23 @@ Keycan'ın mevcut durumu ve gelecekteki geliştirme planı.
 
 ### ✅ Aşama 3 — İçerik ve Veri Yönetimi
 - Yerleşik ve özel ders grupları
+- Ders gruplarını yeniden adlandırma
 - Metin ekleme, düzenleme, silme ve sıralama
 - Varsayılan içerikleri geri yükleme
 - Tüm ders ve metinleri sıfırlama
 - İstatistik ve içerik verilerini içe/dışa aktarma
 - Kopyala/yapıştır ve metin aktarımı açıklarının engellenmesi
 
-### ✅ Aşama 4 — 2.2.x Bakım ve Hata Düzeltmeleri
-Bu aşama yeni bir özellik geliştirme aşaması değildir. Mevcut sürümün kullanımında ortaya çıkan sorunlar ele alınmış ve mevcut 2.2.x sürümü için planlanan bakım çalışmaları tamamlanmıştır.
+### ✅ Aşama 4 — 2.3.x Bakım ve Hata Düzeltmeleri
+Bu aşama yeni bir özellik geliştirme aşaması değildir. 2.2.0 sonrasında kullanıcı tarafından bildirilen kullanım ve kararlılık sorunları giderilmiş, mevcut özelliklerin güvenilirliği artırılmıştır.
 
-- Kullanıcı tarafından bildirilen hataların giderilmesi
-- Runtime ve kararlılık sorunlarının düzeltilmesi
-- Veri kaybına yol açabilecek sorunların giderilmesi
-- Gerektiğinde Flatpak ile ilgili sorunların düzeltilmesi
+- GTK4 widget hiyerarşisi ve yeniden ebeveynleme kaynaklı çökme sorunlarının giderilmesi
+- Ders grubu listesinin güvenli biçimde yenilenmesi
+- Runtime çeviri backreference hatasının giderilmesi
+- Ders grubu yönetiminde yeniden adlandırma akışının iyileştirilmesi
 - Mevcut özelliklerin bozulmasını önleyen bakım çalışmaları
 
-Responsive arayüz ve temel stabilizasyon çalışmaları da tamamlanmıştır; ayrı bir gelecek hedefi değildir.
+Responsive arayüz ve temel stabilizasyon çalışmaları tamamlanmıştır; ayrı bir gelecek hedefi değildir.
 
 ---
 
@@ -54,12 +55,11 @@ Keycan'ın mevcut istatistik altyapısını daha ayrıntılı bir performans ana
 - Toplam kelime / karakter
 - Ders bazlı performans
 - Ayrıntılı dönem filtreleri
-- İstatistik ekranının Genel, Gelişim, Dersler, Hatalar ve Rekorlar olarak ayrıştırılması
-- Hata yapılan harflerin kompakt ve taranabilir görünümü
+- İstatistik ekranının Genel, Gelişim, Dersler ve Rekorlar olarak ayrıştırılması
 - Dönem karşılaştırmaları
 - Rekor geçmişi
 - Ayrıntılı performans analizi
-- En çok hata yapılan harfleri belirleme
+- Otomatik istatistik test altyapısı
 
 ---
 
@@ -72,9 +72,11 @@ Keycan'ın mevcut istatistik altyapısını daha ayrıntılı bir performans ana
 - Dil değişikliğinin uygulama yeniden başlatılmadan anında uygulanması
 - Dil tercihinin kalıcı olarak saklanması
 - Merkezi ve GTK arayüzünden bağımsız çeviri kataloğu
+- Dinamik oluşturulan arayüz metinlerinin çevrilmesi
 - Preferences ve translation servislerinin `main.py` dışında tutulması
 - Stage 6 otomatik testleri ve CI Python modül doğrulaması
 - Atomik preference dosyası yazımı
+- GTK4 widget hiyerarşisi ve ders grubu yönetimi kararlılık düzeltmeleri
 
 ---
 
@@ -88,7 +90,7 @@ Sidebar'da İstatistikler'den bağımsız, ayrı bir **Profil** bölümü oluşt
 - Başarı rozetleri
 - Çalışma serisi (streak)
 - Profil üzerinde XP, seviye, rozet ve streak bilgilerinin gösterilmesi
-- Profil sisteminin Aşama 5'teki çalışma ve istatistik verilerinden beslenmesi
+- Profil sisteminin mevcut çalışma ve istatistik verilerinden beslenmesi
 - XP, seviye, rozet ve streak bilgilerinin İstatistikler ekranına karıştırılmaması
 
 ---
