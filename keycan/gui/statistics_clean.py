@@ -119,6 +119,7 @@ class ActivityHeatmap(Gtk.DrawingArea):
     def __init__(self) -> None:
         super().__init__(); self.set_content_width(1); self.set_content_height(190); self.set_hexpand(True); self.set_draw_func(self._draw)
         self.year = datetime.now().year; self.days: dict[date, dict[str, object]] = {}; self._cell_size = 12.0; self._gap = 4.0; self._left = 38.0; self._top = 26.0
+        self.set_has_tooltip(True)
         motion = Gtk.EventControllerMotion(); motion.connect("motion", self._on_motion); motion.connect("leave", self._on_leave); self.add_controller(motion)
 
     def set_data(self, year: int, days: list[dict[str, object]]) -> None:
@@ -165,6 +166,7 @@ class ActivityHeatmap(Gtk.DrawingArea):
         if not item: text=f"{day.day} {MONTHS[day.month-1]} {day.year}\nÇalışma yok"
         else: text=f"{day.day} {MONTHS[day.month-1]} {day.year}\n{int(item['sessions'])} çalışma · {self._duration_text(float(item['duration_seconds']))}\nOrtalama hız: Dakikada {float(item['average_speed']):.0f} kelime · Doğruluk: %{float(item['accuracy_percent']):.0f}"
         self.set_tooltip_text(text)
+        self.trigger_tooltip_query()
     def _on_leave(self,_controller): self.set_tooltip_text(None)
     @staticmethod
     def _duration_text(seconds):
@@ -230,7 +232,6 @@ class StatisticsPanel(Gtk.Box):
 
         general=page()
         general.append(self._section("Genel","Seçili dönemin temel yazma sonuçları."))
-        general.append(self._revealed(self._header(),40))
         general.append(self._revealed(self._period(),80))
         general.append(self._revealed(self._metrics(),120))
         general.append(self._revealed(self._accuracy(),160))
@@ -264,7 +265,6 @@ class StatisticsPanel(Gtk.Box):
 
         self.statistics_stack.set_visible_child_name("general")
         scroll.set_child(self.statistics_stack)
-    def _header(self): return self._section("İstatistikler","Yazma gelişimini tek bakışta takip et.")
     def _period(self):
         s=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=8); s.append(self._section("Dönem"))
         c=Gtk.FlowBox(); c.set_selection_mode(Gtk.SelectionMode.NONE); c.set_homogeneous(True); c.set_min_children_per_line(1); c.set_max_children_per_line(len(self.PERIODS)); c.set_column_spacing(4); c.set_row_spacing(4); c.add_css_class("linked"); self.period_buttons=[]; prev=None
