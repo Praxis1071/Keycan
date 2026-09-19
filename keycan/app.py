@@ -10,6 +10,10 @@ from gi.repository import Adw
 
 from keycan.window import KeycanWindow
 
+# Runtime modules register database/statistics integrations explicitly.
+import keycan.data.database_runtime  # noqa: F401
+import keycan.gui.statistics_runtime  # noqa: F401
+
 APP_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_DB = APP_DIR / "typing_data.db"
 
