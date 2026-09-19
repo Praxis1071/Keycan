@@ -155,6 +155,7 @@ def apply_to_widget_tree(root: Gtk.Widget, language: str) -> None:
         elif isinstance(widget, Gtk.SpinButton):
             _set_tooltip(widget, language)
         elif isinstance(widget, Adw.ComboRow):
+            _set_title_subtitle(widget, language)
             _translate_string_list(widget.get_model(), language)
         elif isinstance(widget, Adw.ActionRow):
             _set_title_subtitle(widget, language)
@@ -195,7 +196,7 @@ def _translate_string_list(model, language: str) -> None:
             model.splice(index, 1, [translated])
 
 
-def _set_title_subtitle(row: Adw.ActionRow, language: str) -> None:
+def _set_title_subtitle(row, language: str) -> None:
     title, subtitle = row.get_title(), row.get_subtitle()
     if title:
         row.set_title(translate(title, language))
