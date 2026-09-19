@@ -476,7 +476,7 @@ class Database:
                         correct_words, wrong_words, words_per_minute, characters_per_minute,
                         completed_at, source_name_snapshot, lesson_title_snapshot,
                         target_word_count, typed_word_count, total_characters,
-                        correct_characters, wrong_characters, accuracy_percent
+                        correct_characters, wrong_characters, accuracy_percent, wrong_letter_counts
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
                         lesson_id, float(result.get("duration_seconds", 0)), 0, 0,
@@ -487,6 +487,7 @@ class Database:
                         int(result.get("target_word_count", 0)), int(result.get("typed_word_count", 0)),
                         int(result.get("total_characters", 0)), int(result.get("correct_characters", 0)),
                         int(result.get("wrong_characters", 0)), float(result.get("accuracy_percent", 0)),
+                        json.dumps(result.get("wrong_letter_counts", {}), ensure_ascii=False),
                     ),
                 )
                 imported += 1
