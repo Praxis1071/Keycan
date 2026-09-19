@@ -191,7 +191,7 @@ class StatisticsPanel(Gtk.Box):
     def _build(self):
         scroll=Gtk.ScrolledWindow(); scroll.set_policy(Gtk.PolicyType.NEVER,Gtk.PolicyType.AUTOMATIC); scroll.set_hexpand(True); scroll.set_vexpand(True); self.append(scroll)
         content=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=22); content.set_hexpand(True); content.set_margin_top(28); content.set_margin_bottom(40); content.set_margin_start(20); content.set_margin_end(20); scroll.set_child(content)
-        content.append(self._revealed(self._header(),40)); content.append(self._revealed(self._period(),80)); content.append(self._revealed(self._metrics(),120)); content.append(self._revealed(self._speed(),160)); content.append(self._revealed(self._accuracy(),200)); content.append(self._revealed(self._activity(),240)); content.append(self._revealed(self._records(),280)); content.append(self._revealed(self._progress(),320)); content.append(self._revealed(self._history(),360))
+        content.append(self._revealed(self._header(),40)); content.append(self._revealed(self._period(),80)); content.append(self._revealed(self._metrics(),120)); content.append(self._revealed(self._speed(),160)); content.append(self._revealed(self._accuracy(),200)); content.append(self._revealed(self._activity(),240)); content.append(self._revealed(self._records(),280)); content.append(self._revealed(self._progress(),320)); content.append(self._revealed(self._history(),360)); content.append(self._revealed(self._advanced(),400))
     def _header(self): return self._section("İstatistikler","Yazma gelişimini tek bakışta takip et.")
     def _period(self):
         s=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=8); s.append(self._section("Dönem"))
@@ -218,6 +218,77 @@ class StatisticsPanel(Gtk.Box):
         s=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=10); s.append(self._section("Gelişim","İlk ve son çalışmaların arasındaki değişim")); g=Adw.PreferencesGroup(); self.progress_speed=Adw.ActionRow(); self.progress_speed.set_title("Yazma hızı"); self.progress_speed.set_subtitle("Yeterli veri olduğunda gösterilir"); g.add(self.progress_speed); self.progress_accuracy=Adw.ActionRow(); self.progress_accuracy.set_title("Doğruluk"); self.progress_accuracy.set_subtitle("Yeterli veri olduğunda gösterilir"); g.add(self.progress_accuracy); s.append(g); return s
     def _history(self):
         s=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=10); s.append(self._section("Son çalışmalar","Tamamlanan çalışmaların ayrıntıları")); f=Gtk.Frame(); f.add_css_class("card"); self.history_box=Gtk.Box(orientation=Gtk.Orientation.VERTICAL); self.history_empty=Gtk.Label(label="Henüz tamamlanmış çalışma yok"); self.history_empty.add_css_class("dim-label"); self.history_empty.set_margin_top(18); self.history_empty.set_margin_bottom(18); self.history_box.append(self.history_empty); f.set_child(self.history_box); s.append(f); return s
+    def _advanced(self):
+        box=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=22)
+        box.append(self._section("Gelişmiş analiz","Dönem karşılaştırmaları, ders performansı ve hata analizi."))
+        comparison=Adw.PreferencesGroup()
+        comparison.set_title("Dönem karşılaştırması")
+        comparison.set_description("Seçili dönem ile önceki eşdeğer dönemi karşılaştır.")
+        self.comparison_rows=[]
+        for title in ("Çalışma sayısı","Toplam süre","Ortalama hız","Doğruluk"):
+            row=Adw.ActionRow(); row.set_title(title); row.set_subtitle("—"); comparison.add(row); self.comparison_rows.append(row)
+        box.append(comparison)
+
+        lesson_group=Adw.PreferencesGroup(); lesson_group.set_title("Ders bazlı performans"); lesson_group.set_description("Hangi derslerde ne kadar çalıştığını ve performansını gör.")
+        self.lesson_box=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=4); lesson_group.add(self.lesson_box); box.append(lesson_group)
+
+        error_group=Adw.PreferencesGroup(); error_group.set_title("En çok hata yapılan harfler"); error_group.set_description("Çalışmalarında en sık hata yapılan harfleri gösterir.")
+        self.error_box=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=4); error_group.add(self.error_box); box.append(error_group)
+
+        record_group=Adw.PreferencesGroup(); record_group.set_title("Rekor geçmişi"); record_group.set_description("Yeni hız ve doğruluk rekorlarının oluştuğu çalışmalar.")
+        self.record_history=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=4); record_group.add(self.record_history); box.append(record_group)
+        return box
+
+    @staticmethod
+    def _clear_children(box):
+        child=box.get_first_child()
+        while child:
+            nxt=child.get_next_sibling(); child.unparent(); child=nxt
+
+    def _refresh_advanced(self, history):
+        self._clear_children(self.lesson_box); lessons=self.db.lesson_performance(self.selected_period)
+        if not lessons:
+            self.lesson_box.append(Gtk.Label(label="Bu dönemde ders verisi yok."))
+        else:
+            for item in lessons[:12]:
+                row=Adw.ActionRow()
+                row.set_title(f"{item['source_name']} · {item['lesson_title']}")
+                row.set_subtitle(f"{item['sessions']} çalışma · Dakikada {item['average_wpm']:.0f} kelime · %{item['accuracy_percent']:.0f} doğruluk")
+                self.lesson_box.append(row)
+
+        self._clear_children(self.error_box); errors=self.db.wrong_letter_statistics(self.selected_period,10)
+        if not errors:
+            self.error_box.append(Gtk.Label(label="Henüz harf hata verisi yok."))
+        else:
+            for letter,count in errors:
+                row=Adw.ActionRow(); row.set_title(letter.upper()); row.set_subtitle(f"{count} hata"); self.error_box.append(row)
+
+        self._clear_children(self.record_history)
+        if not history:
+            self.record_history.append(Gtk.Label(label="Henüz rekor geçmişi yok."))
+        else:
+            ordered=sorted(history,key=lambda x:x["completed_at"])
+            best_speed=-1.0; best_accuracy=-1.0
+            for item in ordered:
+                speed=float(item["words_per_minute"]); accuracy=float(item["accuracy_percent"])
+                events=[]
+                if speed>best_speed: best_speed=speed; events.append(f"yeni hız rekoru: Dakikada {speed:.0f} kelime")
+                if accuracy>best_accuracy: best_accuracy=accuracy; events.append(f"yeni doğruluk rekoru: %{accuracy:.0f}")
+                if events:
+                    row=Adw.ActionRow(); row.set_title(self._date_text(item["completed_at"])); row.set_subtitle(" · ".join(events)); self.record_history.append(row)
+            if self.record_history.get_first_child() is None:
+                self.record_history.append(Gtk.Label(label="Bu dönemde yeni rekor oluşmadı."))
+
+        if self.selected_period == "Tümü":
+            for row in self.comparison_rows: row.set_subtitle("Karşılaştırma için günlük, haftalık, aylık veya yıllık dönem seç.")
+        else:
+            data=self.db.period_comparison(self.selected_period)
+            cur=data["current"]; prev=data["previous"]
+            values=((cur["sessions"],prev["sessions"]," çalışma"),(cur["duration_seconds"]/60,prev["duration_seconds"]/60," dk"),(cur["wpm"],prev["wpm"]," kelime/dk"),(cur["accuracy"],prev["accuracy"],"%"))
+            for row,(current,previous,suffix) in zip(self.comparison_rows,values):
+                delta=current-previous; sign="+" if delta>=0 else ""
+                row.set_subtitle(f"Şimdi: {current:.0f}{suffix} · Önceki: {previous:.0f}{suffix} · Değişim: {sign}{delta:.0f}{suffix}")
+
     def _on_period_toggled(self,b,p):
         if b.get_active(): self.selected_period=p; self.refresh()
     def _on_activity_year_changed(self,d,_p):
@@ -276,4 +347,4 @@ class StatisticsPanel(Gtk.Box):
             self.history_box.append(row)
     def refresh(self):
         stats=self.db.practice_statistics(self.selected_period); practices=int(stats["practices"]); duration=float(stats["duration_seconds"]); accuracy=float(stats["accuracy_percent"]); points=list(stats["speed_points"]); history=list(stats["history"]); avg=sum(float(v) for _,v in points)/len(points) if points else 0
-        self.metric_cards[0].set_value(avg,lambda n:f"{n:.0f}"," kelime/dk"); self.metric_cards[1].set_value(accuracy,lambda n:f"%{n:.0f}"); self.metric_cards[2].set_value(duration/60,lambda n:self._duration_text(n*60)); self.metric_cards[3].set_value(practices); self.chart.set_points(points); self.chart_empty.set_visible(not bool(points)); self.accuracy_value.set_text(f"%{accuracy:.0f}"); self.accuracy_bar.set_fraction(max(0,min(1,accuracy/100))); self.correct_label.set_text(f"Doğru: {int(stats['correct_words'])}"); self.wrong_label.set_text(f"Yanlış: {int(stats['wrong_words'])}"); self._refresh_activity_years(); self._refresh_activity(); self._set_records(history); self._set_progress(history); self._set_history(history)
+        self.metric_cards[0].set_value(avg,lambda n:f"{n:.0f}"," kelime/dk"); self.metric_cards[1].set_value(accuracy,lambda n:f"%{n:.0f}"); self.metric_cards[2].set_value(duration/60,lambda n:self._duration_text(n*60)); self.metric_cards[3].set_value(practices); self.chart.set_points(points); self.chart_empty.set_visible(not bool(points)); self.accuracy_value.set_text(f"%{accuracy:.0f}"); self.accuracy_bar.set_fraction(max(0,min(1,accuracy/100))); self.correct_label.set_text(f"Doğru: {int(stats['correct_words'])}"); self.wrong_label.set_text(f"Yanlış: {int(stats['wrong_words'])}"); self._refresh_activity_years(); self._refresh_activity(); self._set_records(history); self._set_progress(history); self._set_history(history); self._refresh_advanced(history)
