@@ -43,7 +43,7 @@ Responsive arayüz ve temel stabilizasyon çalışmaları da tamamlanmıştır; 
 
 ---
 
-## 🔧 Aşama 5 — Gelişmiş İstatistikler
+## ✅ Aşama 5 — Gelişmiş İstatistikler
 
 Keycan'ın mevcut istatistik altyapısını daha ayrıntılı bir performans analiz sistemine dönüştürmek.
 
