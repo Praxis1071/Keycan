@@ -69,22 +69,24 @@ Keycan'ın güncel geliştirme planı:
 | 1 | ⌨️ Temel Yazma Deneyimi | ✅ Tamamlandı |
 | 2 | 📊 İstatistik ve Veri Altyapısı | ✅ Tamamlandı |
 | 3 | 📚 İçerik ve Veri Yönetimi | ✅ Tamamlandı |
-| 4 | 🔧 2.2.x Bakım ve Hata Düzeltmeleri | 🔧 Devam ediyor |
-| 5 | 📈 Gelişmiş İstatistikler | ⏳ Planlandı |
+| 4 | 🔧 2.2.x Bakım ve Hata Düzeltmeleri | ✅ Tamamlandı |
+| 5 | 📈 Gelişmiş İstatistikler | ✅ Tamamlandı |
 | 6 | 🎨 Kullanıcı Deneyimi | ⏳ Planlandı |
 | 7 | 👤 Profil, XP, Seviye ve Rozet Sistemi | ⏳ Planlandı |
 | 8 | 🧑 Gelişmiş Yerel Profil | ⏳ Planlandı |
+| 9 | 📖 Klavye Rehberi | ⏳ Planlandı |
 
-### Aşama 5 — Gelişmiş İstatistikler
+### Aşama 5 — Gelişmiş İstatistikler ✅
 
-- Günlük / haftalık / aylık istatistikler
+- Günlük / haftalık / aylık / yıllık ve son 7 / 30 / 90 gün filtreleri
 - Uzun dönemli WPM ve doğruluk gelişimi
 - Toplam çalışma süresi ve toplam kelime / karakter
 - Ders bazlı performans
 - Ayrıntılı dönem filtreleri ve dönem karşılaştırmaları
 - Rekor geçmişi
-- Ayrıntılı performans analizi
+- Performans özeti ve hız tutarlılığı analizi
 - En çok hata yapılan harfleri belirleme
+- İstatistik verileri için otomatik test altyapısı
 
 ### Aşama 6 — Kullanıcı Deneyimi
 
