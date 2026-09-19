@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
+from collections import Counter
 import gi
 
 gi.require_version("Gtk", "4.0")
@@ -373,6 +374,18 @@ class KeycanWindow(Adw.ApplicationWindow):
         words_per_minute = typed_word_count / minutes if minutes else 0.0
         characters_per_minute = total_characters / minutes if minutes else 0.0
         accuracy_percent = result.correct / typed_word_count * 100.0 if typed_word_count else 0.0
+        wrong_letters = Counter()
+        for index, typed_char in enumerate(self.typed):
+            if index < len(self.current_text) and typed_char != self.current_text[index]:
+                expected = self.current_text[index]
+                if expected.isalpha():
+                    wrong_letters[expected.lower()] += 1
+                elif typed_char.isalpha():
+                    wrong_letters[typed_char.lower()] += 1
+        if len(self.typed) > len(self.current_text):
+            for typed_char in self.typed[len(self.current_text):]:
+                if typed_char.isalpha():
+                    wrong_letters[typed_char.lower()] += 1
 
         self.db.save_result(
             self.current_lesson_id,
@@ -387,6 +400,7 @@ class KeycanWindow(Adw.ApplicationWindow):
             words_per_minute=words_per_minute,
             characters_per_minute=characters_per_minute,
             accuracy_percent=accuracy_percent,
+            wrong_letter_counts=dict(wrong_letters),
         )
         self.status.set_text(
             f"Süre doldu. Doğru: {result.correct}  |  Yanlış: {result.wrong}  |  Toplam: {typed_word_count}"
