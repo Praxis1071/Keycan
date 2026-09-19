@@ -32,6 +32,13 @@ TRANSLATIONS = {
     "Keycan'ın ilk kurulumdaki hazır ders gruplarını ve metinlerini geri yükle.": "Restore Keycan's default lesson groups and texts.",
     "Varsayılanları ekle": "Restore defaults",
     "Hakkında": "About",
+    "Görünüm ve dil": "Appearance and language",
+    "Keycan arayüzünün görünümünü ve dilini belirle.": "Choose Keycan's appearance and language.",
+    "İptal": "Cancel",
+    "Sil": "Delete",
+    "Keycan yedeğini kaydet": "Save Keycan backup",
+    "Keycan yedeğini seç": "Choose Keycan backup",
+
     "Ayarlar ve uygulama tercihleri": "Settings and application preferences",
     "Tema": "Theme",
     "Sistem": "System",
