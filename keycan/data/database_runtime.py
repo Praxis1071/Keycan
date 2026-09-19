@@ -271,12 +271,13 @@ def _export_data(self: Database) -> str:
     rows = self.conn.execute(
         """SELECT r.completed_at, r.duration_seconds, r.correct_words, r.wrong_words, r.words_per_minute,
                   r.characters_per_minute, r.target_word_count, r.typed_word_count, r.total_characters,
-                  r.correct_characters, r.wrong_characters, r.accuracy_percent, r.source_name_snapshot,
+                  r.correct_characters, r.wrong_characters, r.accuracy_percent, r.wrong_letter_counts,
+                  r.source_name_snapshot,
                   r.lesson_title_snapshot, s.custom_key, l.custom_key, l.id, s.id
            FROM practice_results r LEFT JOIN lessons l ON l.id = r.lesson_id LEFT JOIN sources s ON s.id = l.source_id
            WHERE r.completed_at != '' ORDER BY r.completed_at, r.rowid"""
     ).fetchall()
-    fields = ("completed_at", "duration_seconds", "correct_words", "wrong_words", "words_per_minute", "characters_per_minute", "target_word_count", "typed_word_count", "total_characters", "correct_characters", "wrong_characters", "accuracy_percent", "source_name", "lesson_title", "source_key", "lesson_key", "lesson_id", "source_id")
+    fields = ("completed_at", "duration_seconds", "correct_words", "wrong_words", "words_per_minute", "characters_per_minute", "target_word_count", "typed_word_count", "total_characters", "correct_characters", "wrong_characters", "accuracy_percent", "wrong_letter_counts", "source_name", "lesson_title", "source_key", "lesson_key", "lesson_id", "source_id")
     return json.dumps({"format": "keycan-backup", "version": 2, "exported_at": datetime.now().astimezone().isoformat(), "groups": groups, "practice_results": [dict(zip(fields, row)) for row in rows]}, ensure_ascii=False, indent=2)
 
 
@@ -369,13 +370,14 @@ def _import_data(self: Database, raw: str):
                     int(result.get("typed_word_count", 0)), int(result.get("total_characters", 0)),
                     int(result.get("correct_characters", 0)), int(result.get("wrong_characters", 0)),
                     float(result.get("accuracy_percent", 0)),
+                    json.dumps(self._normalize_wrong_letter_counts(result.get("wrong_letter_counts", {})), ensure_ascii=False),
                 )
                 self.conn.execute(
                     """INSERT INTO practice_results(lesson_id, duration_seconds, correct_chars, wrong_chars, wpm,
                        correct_words, wrong_words, words_per_minute, characters_per_minute, completed_at,
                        source_name_snapshot, lesson_title_snapshot, target_word_count, typed_word_count,
-                       total_characters, correct_characters, wrong_characters, accuracy_percent)
-                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                       total_characters, correct_characters, wrong_characters, accuracy_percent, wrong_letter_counts)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                     values,
                 )
                 imported += 1
