@@ -6,7 +6,7 @@ layer. Only application-owned UI strings are translated.
 
 from __future__ import annotations
 
-from gi.repository import Gtk
+from gi.repository import Adw, Gtk
 
 
 TRANSLATIONS = {
