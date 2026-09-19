@@ -1,11 +1,11 @@
 from keycan.core.typing_engine import TypingEngine
 
 
-def test_words_must_match_in_target_order() -> None:
+def test_words_can_match_any_unused_target_word() -> None:
     result = TypingEngine().match_words("alpha beta", "beta alpha")
 
-    assert result.correctness == [False, False]
-    assert result.matched_target_indices == set()
+    assert result.correctness == [True, True]
+    assert result.matched_target_indices == {0, 1}
 
 
 def test_word_matching_remains_case_insensitive() -> None:
