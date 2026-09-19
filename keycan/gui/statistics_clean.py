@@ -176,7 +176,7 @@ class ActivityHeatmap(Gtk.DrawingArea):
 
 
 class StatisticsPanel(Gtk.Box):
-    PERIODS=("Günlük","Haftalık","Aylık","Yıllık","Tümü")
+    PERIODS=("Günlük","Haftalık","Aylık","Yıllık","Son 7 Gün","Son 30 Gün","Son 90 Gün","Tümü")
     def __init__(self,database: Database)->None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL,spacing=0); self.set_hexpand(True); self.set_vexpand(True); self.db=database; self.selected_period="Haftalık"; self.activity_year=datetime.now().year; self._build(); self.refresh()
     @staticmethod
@@ -200,7 +200,7 @@ class StatisticsPanel(Gtk.Box):
             b=Gtk.ToggleButton(label=p); b.set_hexpand(True); b.set_active(p==self.selected_period); b.set_group(prev) if prev else None; b.connect("toggled",self._on_period_toggled,p); c.append(b); self.period_buttons.append(b); prev=b
         s.append(c); return s
     def _metrics(self):
-        g=Gtk.FlowBox(); g.set_selection_mode(Gtk.SelectionMode.NONE); g.set_homogeneous(True); g.set_min_children_per_line(1); g.set_max_children_per_line(4); g.set_column_spacing(10); g.set_row_spacing(10); self.metric_cards=tuple(MetricCard(x) for x in ("Ortalama hız","Doğruluk","Çalışma süresi","Çalışma sayısı"))
+        g=Gtk.FlowBox(); g.set_selection_mode(Gtk.SelectionMode.NONE); g.set_homogeneous(True); g.set_min_children_per_line(1); g.set_max_children_per_line(4); g.set_column_spacing(10); g.set_row_spacing(10); self.metric_cards=tuple(MetricCard(x) for x in ("Ortalama hız","Doğruluk","Çalışma süresi","Çalışma sayısı","Toplam kelime","Toplam karakter"))
         for card in self.metric_cards: g.append(card)
         return g
     def _speed(self):
@@ -228,6 +228,12 @@ class StatisticsPanel(Gtk.Box):
         for title in ("Çalışma sayısı","Toplam süre","Ortalama hız","Doğruluk"):
             row=Adw.ActionRow(); row.set_title(title); row.set_subtitle("—"); comparison.add(row); self.comparison_rows.append(row)
         box.append(comparison)
+
+        analysis=Adw.PreferencesGroup(); analysis.set_title("Performans özeti"); analysis.set_description("Seçili dönemdeki çalışma düzeni ve performans tutarlılığı.")
+        self.analysis_rows=[]
+        for title in ("Ortalama çalışma süresi","En yüksek hız","En düşük hız","Hız aralığı"):
+            row=Adw.ActionRow(); row.set_title(title); row.set_subtitle("—"); analysis.add(row); self.analysis_rows.append(row)
+        box.append(analysis)
 
         lesson_group=Adw.PreferencesGroup(); lesson_group.set_title("Ders bazlı performans"); lesson_group.set_description("Hangi derslerde ne kadar çalıştığını ve performansını gör.")
         self.lesson_box=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=4); lesson_group.add(self.lesson_box); box.append(lesson_group)
@@ -280,7 +286,7 @@ class StatisticsPanel(Gtk.Box):
                 self.record_history.append(Gtk.Label(label="Bu dönemde yeni rekor oluşmadı."))
 
         if self.selected_period == "Tümü":
-            for row in self.comparison_rows: row.set_subtitle("Karşılaştırma için günlük, haftalık, aylık veya yıllık dönem seç.")
+            for row in self.comparison_rows: row.set_subtitle("Karşılaştırma için bir dönem filtresi seç.")
         else:
             data=self.db.period_comparison(self.selected_period)
             cur=data["current"]; prev=data["previous"]
@@ -288,6 +294,17 @@ class StatisticsPanel(Gtk.Box):
             for row,(current,previous,suffix) in zip(self.comparison_rows,values):
                 delta=current-previous; sign="+" if delta>=0 else ""
                 row.set_subtitle(f"Şimdi: {current:.0f}{suffix} · Önceki: {previous:.0f}{suffix} · Değişim: {sign}{delta:.0f}{suffix}")
+
+        if not history:
+            for row in self.analysis_rows: row.set_subtitle("Henüz yeterli veri yok.")
+        else:
+            durations=[float(item["duration_seconds"]) for item in history]
+            speeds=[float(item["words_per_minute"]) for item in history]
+            average_duration=sum(durations)/len(durations); highest=max(speeds); lowest=min(speeds)
+            self.analysis_rows[0].set_subtitle(self._duration_text(average_duration))
+            self.analysis_rows[1].set_subtitle(f"Dakikada {highest:.0f} kelime")
+            self.analysis_rows[2].set_subtitle(f"Dakikada {lowest:.0f} kelime")
+            self.analysis_rows[3].set_subtitle(f"{highest-lowest:.0f} kelime/dk")
 
     def _on_period_toggled(self,b,p):
         if b.get_active(): self.selected_period=p; self.refresh()
@@ -347,4 +364,4 @@ class StatisticsPanel(Gtk.Box):
             self.history_box.append(row)
     def refresh(self):
         stats=self.db.practice_statistics(self.selected_period); practices=int(stats["practices"]); duration=float(stats["duration_seconds"]); accuracy=float(stats["accuracy_percent"]); points=list(stats["speed_points"]); history=list(stats["history"]); avg=sum(float(v) for _,v in points)/len(points) if points else 0
-        self.metric_cards[0].set_value(avg,lambda n:f"{n:.0f}"," kelime/dk"); self.metric_cards[1].set_value(accuracy,lambda n:f"%{n:.0f}"); self.metric_cards[2].set_value(duration/60,lambda n:self._duration_text(n*60)); self.metric_cards[3].set_value(practices); self.chart.set_points(points); self.chart_empty.set_visible(not bool(points)); self.accuracy_chart.set_points(list(stats["accuracy_points"]), "%"); self.accuracy_value.set_text(f"%{accuracy:.0f}"); self.accuracy_bar.set_fraction(max(0,min(1,accuracy/100))); self.correct_label.set_text(f"Doğru: {int(stats['correct_words'])}"); self.wrong_label.set_text(f"Yanlış: {int(stats['wrong_words'])}"); self._refresh_activity_years(); self._refresh_activity(); self._set_records(history); self._set_progress(history); self._set_history(history); self._refresh_advanced(history)
+        self.metric_cards[0].set_value(avg,lambda n:f"{n:.0f}"," kelime/dk"); self.metric_cards[1].set_value(accuracy,lambda n:f"%{n:.0f}"); self.metric_cards[2].set_value(duration/60,lambda n:self._duration_text(n*60)); self.metric_cards[3].set_value(practices); self.metric_cards[4].set_value(float(stats["total_words"])); self.metric_cards[5].set_value(float(stats["total_characters"])); self.chart.set_points(points); self.chart_empty.set_visible(not bool(points)); self.accuracy_chart.set_points(list(stats["accuracy_points"]), "%"); self.accuracy_value.set_text(f"%{accuracy:.0f}"); self.accuracy_bar.set_fraction(max(0,min(1,accuracy/100))); self.correct_label.set_text(f"Doğru: {int(stats['correct_words'])}"); self.wrong_label.set_text(f"Yanlış: {int(stats['wrong_words'])}"); self._refresh_activity_years(); self._refresh_activity(); self._set_records(history); self._set_progress(history); self._set_history(history); self._refresh_advanced(history)
