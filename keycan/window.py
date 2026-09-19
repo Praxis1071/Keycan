@@ -536,7 +536,7 @@ class ConfiguredKeycanWindow(KeycanWindow):
         if parent is not None:
             old.unparent()
             if previous is not None:
-                self.source_dropdown.insert_after(parent, previous)
+                parent.insert_after(self.source_dropdown, previous)
             else:
                 parent.append(self.source_dropdown)
         self._install_sidebar_navigation()
