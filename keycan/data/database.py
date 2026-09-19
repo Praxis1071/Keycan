@@ -804,7 +804,7 @@ class Database:
             return {"sessions": sessions, "duration_seconds": sum(float(r[0]) for r in rows),
                     "wpm": sum(float(r[3]) for r in rows) / sessions if sessions else 0.0,
                     "accuracy": correct / words * 100.0 if words else 0.0}
-        return {"current": aggregate(current_start, now), "previous": aggregate(previous_start, current_start)}
+        return {"current": aggregate(current_start, now + timedelta(seconds=1)), "previous": aggregate(previous_start, current_start)}
 
     def close(self) -> None:
         self.conn.close()
