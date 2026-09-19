@@ -35,7 +35,7 @@ Keycan 2.2.0 ile istatistikler, içerik yönetimi ve veri yönetimi önemli öl�
 - Karışık Sırada Yazma
 - Metin Boyutu Ayarı
 - Sistem / Açık / Koyu tema seçimi
-- Türkçe / English dil seçimi
+- Türkçe / English dil seçimi (hemen uygulanır ve kalıcıdır)
 - Kopyala/yapıştır kullanımının engellenmesi
 - Yerel ve çevrimdışı veri yönetimi
 - GTK4 + libadwaita
@@ -73,7 +73,7 @@ Keycan'ın güncel geliştirme planı:
 | 3 | 📚 İçerik ve Veri Yönetimi | ✅ Tamamlandı |
 | 4 | 🔧 2.2.x Bakım ve Hata Düzeltmeleri | ✅ Tamamlandı |
 | 5 | 📈 Gelişmiş İstatistikler | ✅ Tamamlandı |
-| 6 | 🎨 Kullanıcı Deneyimi | 🚧 Devam Ediyor |
+| 6 | 🎨 Kullanıcı Deneyimi | ✅ Tamamlandı |
 | 7 | 👤 Profil, XP, Seviye ve Rozet Sistemi | ⏳ Planlandı |
 | 8 | 🧑 Gelişmiş Yerel Profil | ⏳ Planlandı |
 | 9 | 📖 Klavye Rehberi | ⏳ Planlandı |
@@ -91,11 +91,14 @@ Keycan'ın güncel geliştirme planı:
 - En çok hata yapılan harfleri belirleme
 - İstatistik verileri için otomatik test altyapısı
 
-### Aşama 6 — Kullanıcı Deneyimi
+### Aşama 6 — Kullanıcı Deneyimi ✅
 
 - Sistem / Açık / Koyu tema seçenekleri (hemen uygulanır)
-- Türkçe / English dil sistemi (ayar kalıcıdır; dil değişikliği yeniden başlatmada uygulanır)
+- Türkçe / English dil sistemi (hemen uygulanır ve kalıcıdır)
 - Tema ve dil tercihlerini ana uygulama mantığından ayrı tutan merkezi ayar altyapısı
+- GTK arayüzünden ayrıştırılmış merkezi çeviri kataloğu
+- Tema/dil tercihlerinin atomik ve güvenli yerel olarak saklanması
+- Stage 6 için otomatik testler ve Python modül doğrulaması
 
 ### Aşama 7 — Profil, XP, Seviye ve Rozet Sistemi
 
