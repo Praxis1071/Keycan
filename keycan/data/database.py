@@ -207,6 +207,26 @@ class Database:
         ).fetchall()
 
     @staticmethod
+    def _normalize_wrong_letter_counts(value: object) -> dict[str, int]:
+        if isinstance(value, str):
+            try:
+                value = json.loads(value)
+            except json.JSONDecodeError as exc:
+                raise ValueError("Hatalı harf verisi geçersiz") from exc
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            raise ValueError("Hatalı harf verisinin yapısı geçersiz")
+        normalized: dict[str, int] = {}
+        for letter, count in value.items():
+            if not isinstance(letter, str) or len(letter) != 1 or not letter.isalpha():
+                raise ValueError("Hatalı harf verisinde geçersiz harf bulundu")
+            if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+                raise ValueError("Hatalı harf sayısı geçersiz")
+            normalized[letter.lower()] = normalized.get(letter.lower(), 0) + count
+        return normalized
+
+    @staticmethod
     def _validate_group_name(name: str) -> str:
         value = " ".join(name.strip().split())
         if not value:
@@ -487,7 +507,7 @@ class Database:
                         int(result.get("target_word_count", 0)), int(result.get("typed_word_count", 0)),
                         int(result.get("total_characters", 0)), int(result.get("correct_characters", 0)),
                         int(result.get("wrong_characters", 0)), float(result.get("accuracy_percent", 0)),
-                        json.dumps(result.get("wrong_letter_counts", {}), ensure_ascii=False),
+                        json.dumps(self._normalize_wrong_letter_counts(result.get("wrong_letter_counts", {})), ensure_ascii=False),
                     ),
                 )
                 imported += 1
@@ -526,7 +546,7 @@ class Database:
             "words_per_minute": words_per_minute,
             "characters_per_minute": characters_per_minute,
             "accuracy_percent": accuracy_percent,
-            "wrong_letter_counts": wrong_letter_counts or {},
+            "wrong_letter_counts": self._normalize_wrong_letter_counts(wrong_letter_counts),
         }
         numeric_metrics = {key: value for key, value in metrics.items() if key != "wrong_letter_counts"}
         if any(not math.isfinite(value) or value < 0 for value in numeric_metrics.values()):
@@ -558,7 +578,7 @@ class Database:
                 correct, wrong, words_per_minute, characters_per_minute,
                 source_name, lesson_title, target_word_count, typed_word_count,
                 total_characters, correct_characters, wrong_characters, accuracy_percent,
-                json.dumps(wrong_letter_counts or {}, ensure_ascii=False),
+                json.dumps(metrics["wrong_letter_counts"], ensure_ascii=False),
             ),
         )
         self.conn.commit()
@@ -727,9 +747,12 @@ class Database:
                 values = json.loads(raw or "{}")
             except json.JSONDecodeError:
                 continue
+            if not isinstance(values, dict):
+                continue
             for letter, count in values.items():
-                if isinstance(letter, str) and isinstance(count, int):
-                    stats[letter] = stats.get(letter, 0) + count
+                if isinstance(letter, str) and len(letter) == 1 and isinstance(count, int) and count >= 0:
+                    key = letter.lower()
+                    stats[key] = stats.get(key, 0) + count
         return sorted(stats.items(), key=lambda item: (-item[1], item[0]))[:max(1, limit)]
 
     def lesson_performance(self, period: str = "Tümü") -> list[dict[str, object]]:
