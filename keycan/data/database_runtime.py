@@ -314,7 +314,8 @@ def _import_data(self: Database, raw: str):
                     (name, relative_path, int(is_custom), source_key),
                 ).lastrowid)
             self.conn.execute("UPDATE sources SET display_name = ?, is_deleted = 0, is_custom = ? WHERE id = ?", (name, int(is_custom), source_id))
-            imported += 1
+            if is_custom:
+                imported += 1
             for order, item in enumerate(group.get("lessons", [])):
                 text = self._validate_text(str(item.get("text", "")))
                 default_lesson_id = item.get("default_lesson_id")
