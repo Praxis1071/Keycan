@@ -21,7 +21,7 @@ CSS = """
 headerbar.keycan-header { background: var(--headerbar-bg-color); color: var(--headerbar-fg-color); }
 .keycan-content, .keycan-controls, .keycan-bottom { background: var(--window-bg-color); color: var(--window-fg-color); }
 .keycan-controls label, .keycan-status { color: var(--window-fg-color); }
-.keycan-editor { background: var(--view-bg-color); color: var(--view-fg-color); border: 1px solid var(--borders); }
+.keycan-editor { background: var(--view-bg-color); color: var(--view-fg-color); border: 1px solid var(--border-color); }
 .keycan-editor textview, .keycan-editor textview text { background: var(--view-bg-color); color: var(--view-fg-color); }
 .keycan-editor textview { padding: 10px; }
 .keycan-status { padding: 2px 2px 4px; }
