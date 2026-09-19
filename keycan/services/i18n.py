@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from gi.repository import Adw, Gtk
 
+from keycan.services.translations import translate
+
 
 TRANSLATIONS = {
     "Ayarlar": "Settings",
