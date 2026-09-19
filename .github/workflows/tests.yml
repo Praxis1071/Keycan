@@ -7,6 +7,9 @@ on:
 permissions:
   contents: write
 
+env:
+  PYTHONPATH: .
+
 jobs:
   stage5:
     runs-on: ubuntu-latest
