@@ -53,7 +53,7 @@ class Preferences:
     def save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         payload = json.dumps(self.values, ensure_ascii=False, indent=2) + "\n"
-        fd, temporary = NamedTemporaryFile(
+        temporary = NamedTemporaryFile(
             mode="w",
             encoding="utf-8",
             dir=self.path.parent,
@@ -61,10 +61,10 @@ class Preferences:
             delete=False,
         )
         try:
-            with fd:
-                fd.write(payload)
-                fd.flush()
-                os.fsync(fd.fileno())
+            with temporary as handle:
+                handle.write(payload)
+                handle.flush()
+                os.fsync(handle.fileno())
             os.replace(temporary.name, self.path)
         finally:
             if os.path.exists(temporary.name):
