@@ -68,7 +68,14 @@ class KeycanWindow(Adw.ApplicationWindow):
         manager.set_color_scheme(schemes[self.preferences.get("theme")])
 
     def apply_language(self) -> None:
-        apply_to_widget_tree(self, self.preferences.get("language"))
+        language = self.preferences.get("language")
+        apply_to_widget_tree(self, language)
+        # Re-render dynamic pages after a language change so generated
+        # statistics/status text is translated too.
+        statistics_page = getattr(self, "statistics_page", None)
+        if statistics_page is not None:
+            statistics_page.refresh()
+        apply_to_widget_tree(self, language)
 
     def _install_css(self) -> None:
         provider = Gtk.CssProvider()
