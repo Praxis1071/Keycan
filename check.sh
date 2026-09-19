@@ -31,5 +31,5 @@ try:
 finally:
     connection.close()
 PY
-python -m pytest -q tests/test_stage1_database.py tests/test_stage3_database.py tests/test_custom_content.py
+python -m pytest -q tests/test_stage1_database.py tests/test_stage3_database.py tests/test_custom_content.py tests/test_stage6_preferences.py
 echo "Keycan sözdizimi, veritabanı, içerik yönetimi, varsayılan geri yükleme, istatistik sıfırlama ve yedekleme kontrolleri hazır."
