@@ -395,11 +395,8 @@ class KeycanWindow(Adw.ApplicationWindow):
         target_word_count = len(WORD_PATTERN.findall(self.current_text))
         typed_word_count = len(WORD_PATTERN.findall(self.typed))
         total_characters = len(self.typed)
-        correct_characters = sum(
-            1
-            for index, character in enumerate(self.typed)
-            if index < len(self.current_text) and character.casefold() == self.current_text[index].casefold()
-        )
+        character_correctness = self.engine.character_correctness(self.current_text, self.typed)
+        correct_characters = sum(character_correctness)
         wrong_characters = total_characters - correct_characters
         minutes = elapsed / 60.0 if elapsed > 0 else 0.0
         words_per_minute = typed_word_count / minutes if minutes else 0.0
@@ -407,7 +404,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         accuracy_percent = result.correct / typed_word_count * 100.0 if typed_word_count else 0.0
         wrong_letters = Counter()
         for index, typed_char in enumerate(self.typed):
-            if index < len(self.current_text) and typed_char.casefold() != self.current_text[index].casefold():
+            if index < len(self.current_text) and not character_correctness[index]:
                 expected = self.current_text[index]
                 if expected.isalpha():
                     wrong_letters[expected.lower()] += 1
