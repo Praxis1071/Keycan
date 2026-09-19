@@ -665,6 +665,23 @@ class Database:
             (label, sum(values) / len(values))
             for (_bucket, label), values in sorted(speed_buckets.items(), key=lambda item: item[0][0])
         ]
+        accuracy_buckets: dict[object, list[float]] = {}
+        for row in reversed(rows):
+            completed = self._parse_completed_at(row[1])
+            if period == "Günlük":
+                bucket, label = completed, completed.strftime("%H:%M")
+            elif period in {"Haftalık", "Aylık"}:
+                bucket, label = completed.date(), completed.strftime("%d %b")
+            else:
+                bucket, label = (completed.year, completed.month), completed.strftime("%b %Y")
+            typed = int(row[7])
+            accuracy_buckets.setdefault((bucket, label), []).append(
+                int(row[5]) / typed * 100.0 if typed else 0.0
+            )
+        accuracy_points = [
+            (label, sum(values) / len(values))
+            for (_bucket, label), values in sorted(accuracy_buckets.items(), key=lambda item: item[0][0])
+        ]
         history = [
             {
                 "completed_at": self._parse_completed_at(row[1]),
@@ -685,6 +702,7 @@ class Database:
             "wrong_words": total_wrong,
             "accuracy_percent": accuracy,
             "speed_points": speed_points,
+            "accuracy_points": accuracy_points,
             "history": history,
         }
 
