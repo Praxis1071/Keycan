@@ -7,7 +7,7 @@ gi.require_version("Pango", "1.0")
 from gi.repository import Gtk, Pango
 
 
-class SourceSearchDropdown(Gtk.Box):
+class SourceSearchDropdown(Gtk.Button):
     """Source chooser with reliable substring search inside its popover.
 
     The widget owns only its presentation and selection state. The parent
@@ -16,18 +16,14 @@ class SourceSearchDropdown(Gtk.Box):
     """
 
     def __init__(self) -> None:
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
+        super().__init__()
         self.set_hexpand(True)
         self._entries: list[tuple[int, str]] = []
         self._rows: list[tuple[Gtk.ListBoxRow, int, str]] = []
         self.selected = Gtk.INVALID_LIST_POSITION
         self.on_selected_changed = None
 
-        self.button = Gtk.Button()
-        self.button.set_hexpand(True)
-        self.button.set_halign(Gtk.Align.FILL)
-        self.button.set_valign(Gtk.Align.CENTER)
-        self.button.connect("clicked", self._toggle_popover)
+        self.connect("clicked", self._toggle_popover)
 
         button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         button_box.set_hexpand(True)
@@ -42,14 +38,13 @@ class SourceSearchDropdown(Gtk.Box):
         arrow = Gtk.Image.new_from_icon_name("pan-down-symbolic")
         arrow.set_halign(Gtk.Align.END)
         button_box.append(arrow)
-        self.button.set_child(button_box)
-        self.append(self.button)
+        self.set_child(button_box)
 
         self.popover = Gtk.Popover()
         self.popover.set_has_arrow(False)
         self.popover.set_autohide(True)
         self.popover.set_position(Gtk.PositionType.BOTTOM)
-        self.popover.set_parent(self.button)
+        self.popover.set_parent(self)
 
         panel = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         panel.set_margin_top(8)
