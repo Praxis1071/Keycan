@@ -251,16 +251,11 @@ class StatisticsPanel(Gtk.Box):
         lessons.append(self._revealed(self._history(),80))
         self.statistics_stack.add_titled(lessons,"lessons","Dersler")
 
-        errors=page()
-        errors.append(self._section("Hatalar","En sık yapılan hataları ve hata örüntülerini daha kompakt gör."))
-        errors.append(self._revealed(advanced_children[4],40))
-        self.statistics_stack.add_titled(errors,"errors","Hatalar")
-
         records=page()
         records.append(self._section("Rekorlar","Kişisel rekorlarını ve dönem karşılaştırmalarını takip et."))
         records.append(self._revealed(self._records(),40))
         records.append(self._revealed(advanced_children[1],80))
-        records.append(self._revealed(advanced_children[5],120))
+        records.append(self._revealed(advanced_children[4],120))
         self.statistics_stack.add_titled(records,"records","Rekorlar")
 
         self.statistics_stack.set_visible_child_name("general")
@@ -310,16 +305,6 @@ class StatisticsPanel(Gtk.Box):
         lesson_group=Adw.PreferencesGroup(); lesson_group.set_title("Ders bazlı performans"); lesson_group.set_description("Hangi derslerde ne kadar çalıştığını ve performansını gör.")
         self.lesson_box=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=4); lesson_group.add(self.lesson_box); box.append(lesson_group)
 
-        error_group=Adw.PreferencesGroup(); error_group.set_title("En çok hata yapılan harfler"); error_group.set_description("Çalışmalarında en sık hata yapılan harfleri kompakt olarak gösterir.")
-        self.error_box=Gtk.FlowBox()
-        self.error_box.set_selection_mode(Gtk.SelectionMode.NONE)
-        self.error_box.set_homogeneous(True)
-        self.error_box.set_min_children_per_line(2)
-        self.error_box.set_max_children_per_line(5)
-        self.error_box.set_column_spacing(8)
-        self.error_box.set_row_spacing(8)
-        error_group.add(self.error_box); box.append(error_group)
-
         record_group=Adw.PreferencesGroup(); record_group.set_title("Rekor geçmişi"); record_group.set_description("Yeni hız ve doğruluk rekorlarının oluştuğu çalışmalar.")
         self.record_history=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=4); record_group.add(self.record_history); box.append(record_group)
         return box
@@ -342,28 +327,6 @@ class StatisticsPanel(Gtk.Box):
                 row.set_title(f"{item['source_name']} · {item['lesson_title']}")
                 row.set_subtitle(f"{item['sessions']} çalışma · Dakikada {item['average_wpm']:.0f} kelime · %{item['accuracy_percent']:.0f} doğruluk")
                 self.lesson_box.append(row)
-
-        self._clear_children(self.error_box); errors=self.db.wrong_letter_statistics(self.selected_period,10)
-        if not errors:
-            empty=Gtk.Label(label="Henüz harf hata verisi yok.")
-            empty.add_css_class("dim-label")
-            empty.set_margin_top(10); empty.set_margin_bottom(10)
-            self.error_box.append(empty)
-        else:
-            for letter,count in errors:
-                chip=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=3)
-                chip.set_halign(Gtk.Align.FILL)
-                chip.set_margin_top(8); chip.set_margin_bottom(8)
-                chip.set_margin_start(8); chip.set_margin_end(8)
-                chip.add_css_class("card")
-                key_label=Gtk.Label(label=letter.upper())
-                key_label.add_css_class("title-2")
-                key_label.set_xalign(0.5)
-                count_label=Gtk.Label(label=f"{count} hata")
-                count_label.add_css_class("dim-label")
-                count_label.set_xalign(0.5)
-                chip.append(key_label); chip.append(count_label)
-                self.error_box.append(chip)
 
         self._clear_children(self.record_history)
         if not history:
