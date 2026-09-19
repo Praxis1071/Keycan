@@ -28,9 +28,18 @@ def format_remaining(seconds: float) -> str:
     return f"{minutes:02d}:{seconds:02d}"
 
 
+def normalize_character(character: str) -> str:
+    value = character.casefold().replace("ı", "i")
+    return "".join(
+        char
+        for char in unicodedata.normalize("NFKD", value)
+        if not unicodedata.combining(char)
+    )
+
+
 def normalize_word(word: str) -> str:
     return "".join(
-        char.casefold()
+        normalize_character(char)
         for char in word
         if not unicodedata.category(char).startswith("P")
     )
