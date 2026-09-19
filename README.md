@@ -78,7 +78,8 @@ Keycan'ın güncel geliştirme planı:
 
 ### Aşama 5 — Gelişmiş İstatistikler ✅
 
-- Günlük / haftalık / aylık / yıllık ve son 7 / 30 / 90 gün filtreleri
+- Günlük / haftalık / aylık / yıllık ve tüm zamanlar filtreleri
+- İstatistikleri Genel, Gelişim, Dersler, Hatalar ve Rekorlar bölümlerine ayıran üst navigasyon
 - Uzun dönemli WPM ve doğruluk gelişimi
 - Toplam çalışma süresi ve toplam kelime / karakter
 - Ders bazlı performans
