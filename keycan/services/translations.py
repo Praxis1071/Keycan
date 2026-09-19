@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 TRANSLATIONS = {
     "Ayarlar": "Settings",
     "Veri ve içerik": "Data and content",
@@ -126,11 +128,41 @@ def translate(text: str, language: str) -> str:
     return reverse.get(text, text)
 
 
-
 def translate(text: str, language: str) -> str:
-    """Translate application-owned UI text in either direction."""
+    """Translate static and runtime-generated application UI text."""
     if language == "en":
-        return TRANSLATIONS.get(text, text)
+        translated = TRANSLATIONS.get(text, text)
+        return _translate_runtime_patterns(translated, "en")
     reverse = {translated: source for source, translated in TRANSLATIONS.items()}
-    return reverse.get(text, text)
+    translated = reverse.get(text, text)
+    return _translate_runtime_patterns(translated, "tr")
 
+
+_RUNTIME_PATTERNS = (
+    (r"^Doğru: (.+)$", r"Correct: \\1", r"^Correct: (.+)$", r"Doğru: \\1"),
+    (r"^Yanlış: (.+)$", r"Wrong: \\1", r"^Wrong: (.+)$", r"Yanlış: \\1"),
+    (r"^Dakikada (.+) kelime$", r"\\1 words per minute", r"^(.+) words per minute$", r"Dakikada \\1 kelime"),
+    (r"^(.+) kelime/dk$", r"\\1 words/min", r"^(.+) words/min$", r"\\1 kelime/dk"),
+    (r"^Şimdi: (.+) · Önceki: (.+) · Değişim: (.+)$", r"Now: \\1 · Previous: \\2 · Change: \\3", r"^Now: (.+) · Previous: (.+) · Change: (.+)$", r"Şimdi: \\1 · Önceki: \\2 · Değişim: \\3"),
+    (r"^İlk: (.+)  →  Son: (.+)  \\((.+)\\)$", r"First: \\1  →  Latest: \\2  (\\3)", r"^First: (.+)  →  Latest: (.+)  \\((.+)\\)$", r"İlk: \\1  →  Son: \\2  (\\3)"),
+    (r"^(.+) puan$", r"\\1 points", r"^(.+) points$", r"\\1 puan"),
+    (r"^(.+) çalışma$", r"\\1 practice sessions", r"^(.+) practice sessions$", r"\\1 çalışma"),
+    (r"^(.+) aktif gün · (.+) çalışma · (.+) toplam süre$", r"\\1 active days · \\2 practice sessions · \\3 total time", r"^(.+) active days · (.+) practice sessions · (.+) total time$", r"\\1 aktif gün · \\2 çalışma · \\3 toplam süre"),
+    (r"^Henüz çalışma yok$", r"No practice yet", r"^No practice yet$", r"Henüz çalışma yok"),
+    (r"^Henüz tamamlanmış çalışma yok$", r"No completed practice yet", r"^No completed practice yet$", r"Henüz tamamlanmış çalışma yok"),
+    (r"^Henüz yeterli veri yok\\.$", r"Not enough data yet.", r"^Not enough data yet\\.$", r"Henüz yeterli veri yok."),
+    (r"^Yeterli veri olduğunda gösterilir$", r"Shown when enough data is available", r"^Shown when enough data is available$", r"Yeterli veri olduğunda gösterilir"),
+    (r"^En az iki çalışma olduğunda karşılaştırma gösterilir$", r"Comparison is shown after at least two practice sessions", r"^Comparison is shown after at least two practice sessions$", r"En az iki çalışma olduğunda karşılaştırma gösterilir"),
+)
+
+
+def _translate_runtime_patterns(text: str, language: str) -> str:
+    if language == "en":
+        for tr_pattern, en_replacement, _en_pattern, _tr_replacement in _RUNTIME_PATTERNS:
+            if re.match(tr_pattern, text):
+                return re.sub(tr_pattern, en_replacement, text)
+        return text
+    for _tr_pattern, _en_replacement, en_pattern, tr_replacement in _RUNTIME_PATTERNS:
+        if re.match(en_pattern, text):
+            return re.sub(en_pattern, tr_replacement, text)
+    return text
