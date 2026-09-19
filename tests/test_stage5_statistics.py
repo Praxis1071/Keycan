@@ -22,6 +22,18 @@ def _seed_database(path: Path) -> Database:
             title TEXT NOT NULL,
             text TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS practice_results (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            lesson_id INTEGER NOT NULL,
+            duration_seconds REAL NOT NULL,
+            correct_chars INTEGER NOT NULL DEFAULT 0,
+            wrong_chars INTEGER NOT NULL DEFAULT 0,
+            wpm REAL NOT NULL DEFAULT 0,
+            correct_words INTEGER NOT NULL DEFAULT 0,
+            wrong_words INTEGER NOT NULL DEFAULT 0,
+            words_per_minute REAL NOT NULL DEFAULT 0,
+            characters_per_minute REAL NOT NULL DEFAULT 0
+        );
         """
     )
     db.conn.execute(
