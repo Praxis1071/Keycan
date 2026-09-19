@@ -1,16 +1,44 @@
+F.                                                                       [100%]
+=================================== FAILURES ===================================
+_______________ test_stage5_statistics_totals_and_error_analysis _______________
 
-==================================== ERRORS ====================================
-_______________ ERROR collecting tests/test_stage5_statistics.py _______________
-ImportError while importing test module '/home/runner/work/Keycan/Keycan/tests/test_stage5_statistics.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/test_stage5_statistics.py:7: in <module>
-    from keycan.data.database import Database
-E   ModuleNotFoundError: No module named 'keycan'
+tmp_path = PosixPath('/tmp/pytest-of-runner/pytest-0/test_stage5_statistics_totals_0')
+
+    def test_stage5_statistics_totals_and_error_analysis(tmp_path: Path) -> None:
+        db = _seed_database(tmp_path / "stats.db")
+        try:
+            db.save_result(
+                1, 60, 2, 1,
+                target_word_count=3, typed_word_count=3,
+                total_characters=15, correct_characters=13, wrong_characters=2,
+                words_per_minute=3, characters_per_minute=15, accuracy_percent=66.666,
+                wrong_letter_counts={"a": 2, "e": 1},
+            )
+            db.save_result(
+                1, 120, 4, 0,
+                target_word_count=4, typed_word_count=4,
+                total_characters=20, correct_characters=20, wrong_characters=0,
+                words_per_minute=2, characters_per_minute=10, accuracy_percent=100,
+                wrong_letter_counts={"e": 2},
+            )
+    
+            stats = db.practice_statistics("Son 7 Gün")
+            assert stats["practices"] == 2
+            assert stats["total_words"] == 7
+            assert stats["total_characters"] == 35
+            assert stats["wrong_words"] == 1
+            assert stats["accuracy_percent"] > 80
+    
+            assert db.wrong_letter_statistics("Son 7 Gün", 2) == [("e", 3), ("a", 2)]
+            lesson = db.lesson_performance("Son 7 Gün")
+            assert lesson[0]["sessions"] == 2
+            assert lesson[0]["typed_words"] == 7
+    
+            comparison = db.period_comparison("Son 7 Gün")
+>           assert comparison["current"]["sessions"] == 2
+E           assert 0 == 2
+
+tests/test_stage5_statistics.py:79: AssertionError
 =========================== short test summary info ============================
-ERROR tests/test_stage5_statistics.py
-!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
-1 error in 0.07s
+FAILED tests/test_stage5_statistics.py::test_stage5_statistics_totals_and_error_analysis - assert 0 == 2
+1 failed, 1 passed in 0.11s
