@@ -11,16 +11,14 @@ import os
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from gi.repository import GLib
-
-
 class Preferences:
     """Small, version-tolerant JSON preference store."""
 
     DEFAULTS = {"theme": "system", "language": "tr"}
 
     def __init__(self) -> None:
-        self.path = Path(GLib.get_user_config_dir()) / "keycan" / "preferences.json"
+        config_home = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+        self.path = config_home / "keycan" / "preferences.json"
         self.values = dict(self.DEFAULTS)
         self.load()
 
