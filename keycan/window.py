@@ -528,17 +528,14 @@ class ConfiguredKeycanWindow(KeycanWindow):
         super()._build_ui()
         old = self.source_dropdown
         parent = old.get_parent()
-        previous = old.get_prev_sibling() if parent is not None else None
+        lesson_dropdown = self.lesson_dropdown
         self.source_dropdown = SourceSearchDropdown()
         self.source_dropdown.on_selected_changed = self._on_source_changed
         self.source_dropdown.set_hexpand(True)
         self.source_dropdown.set_halign(Gtk.Align.FILL)
         if parent is not None:
             old.unparent()
-            if previous is not None:
-                parent.insert_after(self.source_dropdown, previous)
-            else:
-                parent.append(self.source_dropdown)
+            parent.insert_before(self.source_dropdown, lesson_dropdown)
         self._install_sidebar_navigation()
         compact_height = Adw.Breakpoint.new(Adw.BreakpointCondition.parse("max-height: 650sp"))
         compact_height.add_setter(self.workspace.editors, "position", 280)
