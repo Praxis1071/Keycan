@@ -1,51 +1,35 @@
-# Keycan ⌨️
+# Keycan
 
-Keycan, Linux masaüstü sistemleri için geliştirilmiş modern ve kullanıcı dostu bir **on parmak klavye pratik uygulamasıdır**.
+Keycan is a modern, offline-first **touch-typing practice application for Linux desktops** built with Python, GTK4 and libadwaita.
 
-Farklı ders gruplarındaki metinlerle yazma pratiği yapabilir, çalışma süresini belirleyebilir ve sonuçlarını yerel olarak takip edebilirsiniz. Keycan temel kullanımda çevrimdışı çalışır ve verileri yerel SQLite veritabanında saklar.
+It lets you practice with configurable lesson groups, track performance locally, and manage your own typing content without requiring an online account.
 
-## 🚀 Keycan 2.3.0
+## Keycan 2.3.0
 
-Keycan 2.3.0 ile önceki sürümdeki kullanım ve kararlılık sorunları giderildi; ders grubu yönetimi, istatistik ekranı ve Türkçe/İngilizce arayüz deneyimi iyileştirildi.
+The 2.3.0 release focuses on stability, lesson-group management, statistics, localization, themes, and the GTK4 desktop experience.
 
-### ✨ Öne Çıkanlar
+### Highlights
 
-- 📊 Yenilenen istatistikler ve GitHub tarzı yıllık aktivite grafiği
-- 📚 Yerleşik ve özel ders gruplarını yönetme
-- ✏️ Ders gruplarını yeniden adlandırma
-- ✏️ Metin ekleme, düzenleme, silme ve sıralama
-- 🔄 Varsayılan Keycan içeriklerini geri yükleme
-- 🗑️ Tüm ders ve metinleri sıfırlama
-- 💾 İstatistik ve içerik verilerini içe/dışa aktarma
-- 🌐 Türkçe / English dil sistemi
-- 🎨 Sistem / Açık / Koyu tema seçimi
-- 🛠️ GTK4 kararlılık ve runtime düzeltmeleri
-- 📦 GTK4 + libadwaita tabanlı Flatpak paketi
+- Typing practice with configurable sessions
+- Built-in and custom lesson groups
+- Lesson-group renaming and content management
+- Text creation, editing, deletion, and ordering
+- Statistics with GitHub-style activity history
+- Daily, weekly, monthly, yearly, and all-time views
+- Performance history and records
+- Import/export for local data
+- Turkish / English localization
+- System / Light / Dark theme selection
+- Local SQLite storage
+- Offline-first operation
+- GTK4 + libadwaita desktop interface
+- Flatpak packaging
 
-## ✨ Özellikler
+## Screenshots
 
-- On Parmak Klavye Pratiği
-- Ders ve Metin Seçimi
-- Ders Grubu Arama
-- Ders Grubu Yönetimi ve Yeniden Adlandırma
-- Ayarlanabilir Çalışma Süresi
-- Doğru / Yanlış Sonuçları
-- Çalışma Geçmişi ve İstatistikler
-- GitHub tarzı aktivite takvimi
-- Ders ve metin yönetimi
-- Veri yedekleme, içe/dışa aktarma
-- Büyük/Küçük Harf Bağımsızlığı
-- Noktalama İşaretlerini Yok Sayma
-- Karışık Sırada Yazma
-- Metin Boyutu Ayarı
-- Sistem / Açık / Koyu tema seçimi
-- Türkçe / English dil seçimi (hemen uygulanır ve kalıcıdır)
-- Kopyala/yapıştır kullanımının engellenmesi
-- Yerel ve çevrimdışı veri yönetimi
-- GTK4 + libadwaita
-- Flatpak
+Screenshots will be added as the GTK4 interface reaches a stable visual milestone.
 
-## 🛠️ Teknolojiler
+## Technology
 
 - Python
 - GTK4
@@ -55,64 +39,31 @@ Keycan 2.3.0 ile önceki sürümdeki kullanım ve kararlılık sorunları gideri
 - Flatpak
 - GNOME Platform 50
 
-## 📦 İndirme
+## Download
 
-En güncel sürüm için GitHub Releases sayfasındaki Flatpak paketini kullanabilirsiniz.
+For the latest packaged build, see the **GitHub Releases** section of this repository.
 
-## 📄 Lisans
+## Development roadmap
 
-Keycan, **GNU General Public License v3 veya sonrası (GPL-3.0-or-later)** altında dağıtılan özgür ve açık kaynaklı bir yazılımdır.
+The project is currently focused on the post-2.3 development roadmap:
 
-Ayrıntılar için [LICENSE](LICENSE) dosyasına bakın.
-
-## 🗺️ Geliştirme Yol Haritası
-
-Keycan'ın güncel geliştirme planı:
-
-| Aşama | Konu | Durum |
+| Stage | Area | Status |
 |---|---|---|
-| 0 | 🏗️ Temel Mimari | ✅ Tamamlandı |
-| 1 | ⌨️ Temel Yazma Deneyimi | ✅ Tamamlandı |
-| 2 | 📊 İstatistik ve Veri Altyapısı | ✅ Tamamlandı |
-| 3 | 📚 İçerik ve Veri Yönetimi | ✅ Tamamlandı |
-| 4 | 🔧 2.3.x Bakım ve Hata Düzeltmeleri | ✅ Tamamlandı |
-| 5 | 📈 Gelişmiş İstatistikler | ✅ Tamamlandı |
-| 6 | 🎨 Kullanıcı Deneyimi | ✅ Tamamlandı |
-| 7 | 👤 Profil, XP, Seviye ve Rozet Sistemi | ⏳ Planlandı |
-| 8 | 🧑 Gelişmiş Yerel Profil | ⏳ Planlandı |
-| 9 | 📖 Klavye Rehberi | ⏳ Planlandı |
+| 0 | Core architecture | Complete |
+| 1 | Typing experience | Complete |
+| 2 | Statistics and data layer | Complete |
+| 3 | Content and data management | Complete |
+| 4 | 2.3.x maintenance and fixes | Complete |
+| 5 | Advanced statistics | Complete |
+| 6 | User experience | Complete |
+| 7 | Profile, XP, levels and badges | Planned |
+| 8 | Advanced local profile | Planned |
+| 9 | Keyboard guide | Planned |
 
-### Aşama 5 — Gelişmiş İstatistikler ✅
+See [ROADMAP.md](ROADMAP.md) for the detailed plan.
 
-- Günlük / haftalık / aylık / yıllık ve tüm zamanlar filtreleri
-- Genel, Gelişim, Dersler ve Rekorlar bölümleri
-- Uzun dönemli WPM ve doğruluk gelişimi
-- Toplam çalışma süresi ve toplam kelime / karakter
-- Ders bazlı performans
-- Ayrıntılı dönem filtreleri ve dönem karşılaştırmaları
-- Rekor geçmişi
-- Performans özeti ve hız tutarlılığı analizi
-- İstatistik verileri için otomatik test altyapısı
+## License
 
-### Aşama 6 — Kullanıcı Deneyimi ✅
+Keycan is free and open-source software distributed under the **GNU General Public License v3 or later (GPL-3.0-or-later)**.
 
-- Sistem / Açık / Koyu tema seçenekleri (hemen uygulanır)
-- Türkçe / English dil sistemi (hemen uygulanır ve kalıcıdır)
-- Tema ve dil tercihlerini ana uygulama mantığından ayrı tutan merkezi ayar altyapısı
-- GTK arayüzünden ayrıştırılmış merkezi çeviri kataloğu
-- Tema/dil tercihlerinin atomik ve güvenli yerel olarak saklanması
-- Dinamik oluşturulan arayüz metinlerinin de çevrilmesi
-- Stage 6 için otomatik testler ve Python modül doğrulaması
-- GTK4 widget hiyerarşisi ve ders grubu yönetimi için kararlılık düzeltmeleri
-
-### Aşama 7 — Profil, XP, Seviye ve Rozet Sistemi
-
-Sidebar'da İstatistikler'den bağımsız ayrı bir Profil bölümü oluşturulacak. Profil; XP, seviye, seviye ilerlemesi, rozetler ve çalışma serisini gösterecek ve bu veriler mevcut istatistiklerden beslenecek.
-
-### Aşama 8 — Gelişmiş Yerel Profil
-
-Profilin kişiselleştirilmesi ve genişletilmesi planlanıyor. Kullanıcı kendi ismini ve profil fotoğrafını belirleyebilecek; profil yerel olarak saklanacak ve genel çalışma özeti ile ilerleme geçmişini gösterecek.
-
-Ayrıntılı roadmap için [ROADMAP.md](ROADMAP.md) dosyasına bakın.
-
-> Not: Katiplik modu, online özellikler, bulut senkronizasyonu, Odak/Pomodoro ve akıllı/adaptif eğitim sistemi mevcut yol haritasında yer almamaktadır.
+See [LICENSE](LICENSE) for the full license text.
