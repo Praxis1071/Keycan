@@ -25,6 +25,12 @@ The 2.3.0 release focuses on stability, lesson-group management, statistics, loc
 - GTK4 + libadwaita desktop interface
 - Flatpak packaging
 
+## Demo
+
+Keycan 2.3.0 in action:
+
+https://github.com/user-attachments/assets/4a78c778-8270-4cce-92c5-4f06d5501b0a
+
 ## Screenshots
 
 Screenshots will be added as the GTK4 interface reaches a stable visual milestone.
