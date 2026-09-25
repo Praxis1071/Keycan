@@ -7,7 +7,8 @@ import uuid
 from datetime import datetime
 
 from keycan.data.database import Database
-from keycan.utils.text import clean_source_name, natural_sort_key\nfrom keycan.services.progression import session_xp, streaks
+from keycan.utils.text import clean_source_name, natural_sort_key
+from keycan.services.progression import session_xp, streaks
 
 _ORIGINAL_INIT = Database.__init__
 
@@ -444,7 +445,8 @@ def _patch():
     Database.update_lesson = _update_lesson
     Database.delete_lesson = _delete_lesson
     Database.move_lesson = _move_lesson
-    Database.progression_summary = _progression_summary\n    Database.reset_all_content = _reset_all_content
+    Database.progression_summary = _progression_summary
+    Database.reset_all_content = _reset_all_content
     Database.restore_defaults = _restore_defaults
     Database.export_data = _export_data
     Database.import_data = _import_data
