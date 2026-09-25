@@ -312,7 +312,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.workspace.set_backspace_enabled(self.backspace_enabled)
         self._apply_privacy_state()
         if self.current_lesson_id:
-            if getattr(self, "profile_page", None) is not None:\n            self.profile_page.refresh()\n        self.status.set_text("Yazmaya başlayınca geri sayım çalışır.")
+            self.status.set_text("Yazmaya başlayınca geri sayım çalışır.")
             self.input_view.grab_focus()
         else:
             self.status.set_text("Bir ders ve metin seçin.")
@@ -459,6 +459,8 @@ class KeycanWindow(Adw.ApplicationWindow):
             accuracy_percent=accuracy_percent,
             wrong_letter_counts=dict(wrong_letters),
         )
+        if getattr(self, "profile_page", None) is not None:
+            self.profile_page.refresh()
         self.status.set_text(
             f"Süre doldu. Doğru: {result.correct}  |  Yanlış: {result.wrong}  |  Toplam: {typed_word_count}"
         )
