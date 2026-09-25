@@ -4,7 +4,8 @@ import gi
 gi.require_version("Adw", "1")
 gi.require_version("Gtk", "4.0")
 from gi.repository import Adw, Gtk
-from keycan.services.progression import BADGES, badge_keys, level_progress\nfrom keycan.services.translations import translate
+from keycan.services.progression import BADGES, badge_keys, level_progress
+from keycan.services.translations import translate
 
 class ProfilePanel(Gtk.Box):
     def __init__(self, database) -> None:
@@ -56,4 +57,5 @@ class ProfilePanel(Gtk.Box):
             title = Gtk.Label(label=translate(badge.title, self.language)); title.set_xalign(0); title.add_css_class("heading"); card.append(title)
             description = Gtk.Label(label=translate(badge.description, self.language)); description.set_xalign(0); description.set_wrap(True); description.add_css_class("dim-label"); card.append(description)
             self.badges_box.insert(card, -1)
-        self.empty.set_text(translate("Henüz rozet kazanılmadı.", self.language))\n        self.empty.set_visible(not unlocked)
+        self.empty.set_text(translate("Henüz rozet kazanılmadı.", self.language))
+        self.empty.set_visible(not unlocked)
