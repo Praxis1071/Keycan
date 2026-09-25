@@ -222,14 +222,6 @@ TRANSLATIONS = {
 
 }
 \n\ndef translate(text: str, language: str) -> str:
-    """Translate application-owned UI text in either direction."""
-    if language == "en":
-        return TRANSLATIONS.get(text, text)
-    reverse = {translated: source for source, translated in TRANSLATIONS.items()}
-    return reverse.get(text, text)
-
-
-def translate(text: str, language: str) -> str:
     """Translate static and runtime-generated application UI text."""
     if language == "en":
         translated = TRANSLATIONS.get(text, text)
