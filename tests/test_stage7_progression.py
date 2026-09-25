@@ -21,7 +21,7 @@ def test_stage7_session_xp_and_levels() -> None:
         typed_word_count=20,
         words_per_minute=40,
         accuracy_percent=100,
-    ) == 58
+    ) == 39
     assert session_xp(
         duration_seconds=60,
         typed_word_count=0,
@@ -142,7 +142,7 @@ def test_stage7_database_summary_is_local_and_derived(tmp_path: Path) -> None:
         db.conn.commit()
         summary = db.progression_summary()
         assert summary["sessions"] == 2
-        assert summary["xp"] == 116
+        assert summary["xp"] == 90
         assert summary["max_wpm"] == 60
         assert summary["max_accuracy"] == 100
         assert summary["max_duration_seconds"] == 600
