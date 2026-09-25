@@ -185,7 +185,6 @@ TRANSLATIONS = {
     "Yeni metin ekle": "Add text",
     "Metni kaydet": "Save text",
     "Metni sil": "Delete text",
-}
     "Profil": "Profile",
     "Seviye ilerlemesi": "Level progress",
     "İlerleme özeti": "Progress summary",
@@ -220,6 +219,8 @@ TRANSLATIONS = {
     "30 gün üst üste pratik yap.": "Practice for 30 consecutive days.",
     "Binlik": "The Thousand",
     "1.000 XP kazan.": "Earn 1,000 XP.",
+
+}
 \n\ndef translate(text: str, language: str) -> str:
     """Translate application-owned UI text in either direction."""
     if language == "en":
@@ -239,9 +240,9 @@ def translate(text: str, language: str) -> str:
 
 
 _RUNTIME_PATTERNS = (
-    (r"^Seviye (.+)$", r"Level \\1", r"^Level (.+)$", r"Seviye \\1"),
-    (r"^(.+) çalışma · (.+) XP · (.+) gün mevcut seri$", r"\\1 practice sessions · \\2 XP · \\3-day current streak", r"^(.+) practice sessions · (.+)-day current streak$", r"\\1 çalışma · \\2 XP · \\3 gün mevcut seri"),
-    (r"^(.+) gün$", r"\\1 days", r"^(.+) days$", r"\\1 gün"),
+    (r"^Seviye (.+)$", r"Level \1", r"^Level (.+)$", r"Seviye \1"),
+    (r"^(.+) çalışma · (.+) XP · (.+) gün mevcut seri$", r"\1 practice sessions · \\2 XP · \\3-day current streak", r"^(.+) practice sessions · (.+)-day current streak$", r"\1 çalışma · \\2 XP · \\3 gün mevcut seri"),
+    (r"^(.+) gün$", r"\1 days", r"^(.+) days$", r"\1 gün"),
     (r"^Doğru: (.+)$", r"Correct: \1", r"^Correct: (.+)$", r"Doğru: \1"),
     (r"^Yanlış: (.+)$", r"Wrong: \1", r"^Wrong: (.+)$", r"Yanlış: \1"),
     (r"^Dakikada (.+) kelime$", r"\1 words per minute", r"^(.+) words per minute$", r"Dakikada \1 kelime"),
