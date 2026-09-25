@@ -80,18 +80,22 @@ Keycan'ın mevcut istatistik altyapısını daha ayrıntılı bir performans ana
 
 ---
 
-## ⏳ Aşama 7 — Profil, XP, Seviye ve Rozet Sistemi
+## ✅ Aşama 7 — Profil, XP, Seviye ve Rozet Sistemi
 
-Sidebar'da İstatistikler'den bağımsız, ayrı bir **Profil** bölümü oluşturulacak.
+Sidebar'da İstatistikler'den bağımsız, ayrı bir **Profil** bölümü oluşturuldu.
 
-- XP sistemi
-- Seviye sistemi
-- Seviye ilerlemesi
-- Başarı rozetleri
-- Çalışma serisi (streak)
-- Profil üzerinde XP, seviye, rozet ve streak bilgilerinin gösterilmesi
-- Profil sisteminin mevcut çalışma ve istatistik verilerinden beslenmesi
-- XP, seviye, rozet ve streak bilgilerinin İstatistikler ekranına karıştırılmaması
+- Yerel ve hesap gerektirmeyen XP sistemi
+- Tamamlanan çalışmalardan deterministik XP hesaplama
+- XP tabanlı seviye sistemi ve ilerleme çubuğu
+- Mevcut ve en uzun çalışma serisinin takibi
+- Çalışma sayısı, XP ve ilerleme özeti
+- 12 kilometre taşından oluşan başarı rozeti sistemi
+- Rozetlerin mevcut çalışma geçmişinden otomatik türetilmesi
+- Profil verilerinin SQLite çalışma geçmişinden beslenmesi
+- İstatistikler ile profil ilerlemesinin ayrı tutulması
+- Türkçe / İngilizce profil arayüzü
+- Mevcut GTK4 + libadwaita tasarımına uyumlu profil ekranı
+- Stage 7 progression ve persistence davranışları için otomatik testler
 
 ---
 
