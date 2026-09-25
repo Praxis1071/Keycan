@@ -221,7 +221,9 @@ TRANSLATIONS = {
     "1.000 XP kazan.": "Earn 1,000 XP.",
 
 }
-\n\ndef translate(text: str, language: str) -> str:
+
+
+def translate(text: str, language: str) -> str:
     """Translate static and runtime-generated application UI text."""
     if language == "en":
         translated = TRANSLATIONS.get(text, text)
