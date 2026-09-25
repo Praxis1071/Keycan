@@ -186,9 +186,41 @@ TRANSLATIONS = {
     "Metni kaydet": "Save text",
     "Metni sil": "Delete text",
 }
-
-
-def translate(text: str, language: str) -> str:
+    "Profil": "Profile",
+    "Seviye ilerlemesi": "Level progress",
+    "İlerleme özeti": "Progress summary",
+    "Çalışmalar": "Practice sessions",
+    "Mevcut seri": "Current streak",
+    "En uzun seri": "Longest streak",
+    "Toplam XP": "Total XP",
+    "Rozetler": "Badges",
+    "Tamamladığın kilometre taşları.": "Milestones you have completed.",
+    "Henüz rozet kazanılmadı.": "No badges earned yet.",
+    "İlk Adım": "First Step",
+    "İlk yazma çalışmanı tamamla.": "Complete your first typing practice.",
+    "Düzenli Pratik": "Regular Practice",
+    "10 yazma çalışmasını tamamla.": "Complete 10 typing practices.",
+    "Alışkanlık": "Habit",
+    "50 yazma çalışmasını tamamla.": "Complete 50 typing practices.",
+    "Usta Çırak": "Apprentice Master",
+    "100 yazma çalışmasını tamamla.": "Complete 100 typing practices.",
+    "Hızlandı": "Getting Faster",
+    "40 WPM hızına ulaş.": "Reach 40 WPM.",
+    "Hızlı Yazıcı": "Fast Typist",
+    "60 WPM hızına ulaş.": "Reach 60 WPM.",
+    "Keskinlik": "Precision",
+    "%95 doğruluğa ulaş.": "Reach 95% accuracy.",
+    "Nokta Atışı": "Pinpoint Accuracy",
+    "%98 doğruluğa ulaş.": "Reach 98% accuracy.",
+    "Dayanıklılık": "Endurance",
+    "10 dakikalık bir çalışma tamamla.": "Complete a 10-minute practice.",
+    "7 Günlük Seri": "7-Day Streak",
+    "7 gün üst üste pratik yap.": "Practice for 7 consecutive days.",
+    "30 Günlük Seri": "30-Day Streak",
+    "30 gün üst üste pratik yap.": "Practice for 30 consecutive days.",
+    "Binlik": "The Thousand",
+    "1.000 XP kazan.": "Earn 1,000 XP.",
+\n\ndef translate(text: str, language: str) -> str:
     """Translate application-owned UI text in either direction."""
     if language == "en":
         return TRANSLATIONS.get(text, text)
@@ -207,6 +239,9 @@ def translate(text: str, language: str) -> str:
 
 
 _RUNTIME_PATTERNS = (
+    (r"^Seviye (.+)$", r"Level \\1", r"^Level (.+)$", r"Seviye \\1"),
+    (r"^(.+) çalışma · (.+) XP · (.+) gün mevcut seri$", r"\\1 practice sessions · \\2 XP · \\3-day current streak", r"^(.+) practice sessions · (.+)-day current streak$", r"\\1 çalışma · \\2 XP · \\3 gün mevcut seri"),
+    (r"^(.+) gün$", r"\\1 days", r"^(.+) days$", r"\\1 gün"),
     (r"^Doğru: (.+)$", r"Correct: \1", r"^Correct: (.+)$", r"Doğru: \1"),
     (r"^Yanlış: (.+)$", r"Wrong: \1", r"^Wrong: (.+)$", r"Yanlış: \1"),
     (r"^Dakikada (.+) kelime$", r"\1 words per minute", r"^(.+) words per minute$", r"Dakikada \1 kelime"),
