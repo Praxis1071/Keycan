@@ -564,6 +564,7 @@ class ConfiguredKeycanWindow(KeycanWindow):
         rows = [
             self._make_navigation_row("Çalışma Alanı", "input-keyboard-symbolic", "workspace"),
             self._make_navigation_row("İstatistikler", "utilities-system-monitor-symbolic", "statistics"),
+            self._make_navigation_row("Profil", "avatar-default-symbolic", "profile"),
             self._make_navigation_row("Ayarlar", "emblem-system-symbolic", "settings"),
         ]
         for row in rows:
@@ -574,7 +575,13 @@ class ConfiguredKeycanWindow(KeycanWindow):
         stack.add_named(root, "workspace")
         stats = StatisticsPanel(self.db); stats.set_hexpand(True); stats.set_vexpand(True)
         stack.add_named(stats, "statistics")
-        settings = SettingsPanel(self, on_content_changed=self._load_sources, on_statistics_changed=stats.refresh)
+        profile = ProfilePanel(self.db); profile.set_hexpand(True); profile.set_vexpand(True)
+        profile_scroll = Gtk.ScrolledWindow()
+        profile_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        profile_scroll.set_hexpand(True); profile_scroll.set_vexpand(True)
+        profile_scroll.set_child(profile)
+        stack.add_named(profile_scroll, "profile")
+        settings = SettingsPanel(self, on_content_changed=self._load_sources, on_statistics_changed=lambda: (stats.refresh(), profile.refresh()))
         settings.set_hexpand(True); settings.set_vexpand(True)
         settings_scroll = Gtk.ScrolledWindow()
         settings_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
@@ -589,6 +596,8 @@ class ConfiguredKeycanWindow(KeycanWindow):
             stack.set_visible_child_name(name)
             if name == "statistics":
                 stats.refresh()
+            elif name == "profile":
+                profile.refresh()
             split.set_show_sidebar(False)
         nav.connect("row-activated", activated)
         split.set_sidebar(nav); split.set_content(stack); toolbar.set_content(split)
