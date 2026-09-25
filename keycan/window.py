@@ -594,7 +594,7 @@ class ConfiguredKeycanWindow(KeycanWindow):
         stack.set_visible_child_name("workspace")
         def activated(_list, row):
             name = row.get_name()
-            if name not in {"workspace", "statistics", "settings"}:
+            if name not in {"workspace", "statistics", "profile", "settings"}:
                 return
             stack.set_visible_child_name(name)
             if name == "statistics":
