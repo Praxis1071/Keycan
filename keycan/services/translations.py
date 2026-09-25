@@ -193,8 +193,6 @@ TRANSLATIONS = {
     "rozetler açıldı.": "badges unlocked.",
     "Tamamlanan ve kilitli kilometre taşlarını takip et.": "Track completed and locked milestones.",
     "1 dakikadan kısa": "Less than 1 minute",
-    "sa": "hr",
-    "dk": "min",
     "Profil": "Profile",
     "Seviye ilerlemesi": "Level progress",
     "İlerleme özeti": "Progress summary",
