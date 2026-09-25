@@ -124,6 +124,16 @@ TRANSLATIONS = {
     "Yıl": "Year",
     "Henüz çalışma yok": "No practice yet",
     "Ortalama hız": "Average speed",
+    "Profil": "Profile",
+    "Seviye ilerlemesi": "Level progress",
+    "İlerleme özeti": "Progress summary",
+    "Çalışmalar": "Practice sessions",
+    "Mevcut seri": "Current streak",
+    "En uzun seri": "Longest streak",
+    "Toplam XP": "Total XP",
+    "Rozetler": "Badges",
+    "Tamamladığın kilometre taşları.": "Milestones you have completed.",
+    "Henüz rozet kazanılmadı.": "No badges earned yet.",
 }
 
 
