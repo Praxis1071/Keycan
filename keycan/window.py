@@ -14,7 +14,8 @@ from keycan.data.database import Database
 from keycan.gui.workspace import TypingWorkspace
 from keycan.gui.search import SourceSearchDropdown
 from keycan.gui.settings2 import SettingsPanel
-from keycan.gui.statistics_clean import StatisticsPanel\nfrom keycan.gui.profile import ProfilePanel
+from keycan.gui.statistics_clean import StatisticsPanel
+from keycan.gui.profile import ProfilePanel
 from keycan.services.i18n import apply_to_widget_tree
 from keycan.services.preferences import Preferences
 from keycan.utils.text import WORD_PATTERN, format_remaining
