@@ -249,7 +249,7 @@ def _progression_summary(self: Database):
         max_wpm = max(max_wpm, wpm)
         max_accuracy = max(max_accuracy, accuracy)
         max_duration = max(max_duration, duration)
-        timestamps.append(str(completed_at))
+        timestamps.append(self._parse_completed_at(str(completed_at)).strftime("%Y-%m-%d %H:%M:%S"))
     current_streak, best_streak = streaks(timestamps)
     return {
         "xp": xp,
