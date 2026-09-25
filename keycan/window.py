@@ -14,7 +14,7 @@ from keycan.data.database import Database
 from keycan.gui.workspace import TypingWorkspace
 from keycan.gui.search import SourceSearchDropdown
 from keycan.gui.settings2 import SettingsPanel
-from keycan.gui.statistics_clean import StatisticsPanel
+from keycan.gui.statistics_clean import StatisticsPanel\nfrom keycan.gui.profile import ProfilePanel
 from keycan.services.i18n import apply_to_widget_tree
 from keycan.services.preferences import Preferences
 from keycan.utils.text import WORD_PATTERN, format_remaining
@@ -312,7 +312,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.workspace.set_backspace_enabled(self.backspace_enabled)
         self._apply_privacy_state()
         if self.current_lesson_id:
-            self.status.set_text("Yazmaya başlayınca geri sayım çalışır.")
+            if getattr(self, "profile_page", None) is not None:\n            self.profile_page.refresh()\n        self.status.set_text("Yazmaya başlayınca geri sayım çalışır.")
             self.input_view.grab_focus()
         else:
             self.status.set_text("Bir ders ve metin seçin.")
@@ -589,7 +589,7 @@ class ConfiguredKeycanWindow(KeycanWindow):
             split.set_show_sidebar(False)
         nav.connect("row-activated", activated)
         split.set_sidebar(nav); split.set_content(stack); toolbar.set_content(split)
-        self.sidebar_view = split; self.navigation_list = nav; self.content_stack = stack; self.statistics_page = stats
+        self.sidebar_view = split; self.navigation_list = nav; self.content_stack = stack; self.statistics_page = stats; self.profile_page = profile
         toggle = Gtk.ToggleButton(); toggle.set_icon_name("sidebar-show-symbolic")
         toggle.set_tooltip_text("Yan paneli aç/kapat")
         toggle.connect("toggled", lambda button: split.set_show_sidebar(button.get_active()))
