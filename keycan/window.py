@@ -76,6 +76,9 @@ class KeycanWindow(Adw.ApplicationWindow):
         statistics_page = getattr(self, "statistics_page", None)
         if statistics_page is not None:
             statistics_page.refresh()
+        profile_page = getattr(self, "profile_page", None)
+        if profile_page is not None:
+            profile_page.set_language(language)
         apply_to_widget_tree(self, language)
 
     def _install_css(self) -> None:
