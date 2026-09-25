@@ -31,7 +31,7 @@ jobs:
       - name: Install test dependencies
         run: python -m pip install --upgrade pip pytest
       - name: Validate Stage 6 Python modules
-        run: python -m py_compile main.py keycan/app.py keycan/window.py keycan/gui/settings2.py keycan/services/preferences.py keycan/services/i18n.py
+        run: python -m py_compile main.py keycan/app.py keycan/window.py keycan/gui/settings2.py keycan/gui/profile.py keycan/services/preferences.py keycan/services/i18n.py keycan/services/progression.py
       - name: Run Stage 6 preference tests
         run: pytest -q tests/test_stage6_preferences.py tests/test_stage6_i18n.py
 
