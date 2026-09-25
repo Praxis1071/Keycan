@@ -38,6 +38,12 @@ class ProfilePanel(Gtk.Box):
         value = Gtk.Label(); value.add_css_class("monospace"); row.add_suffix(value); group.add(row); row._value_label = value
         return row
 
+    def set_language(self, language: str) -> None:
+        self.language = language
+        from keycan.services.i18n import apply_to_widget_tree
+        apply_to_widget_tree(self, language)
+        self.refresh()
+
     def refresh(self) -> None:
         data = self.db.progression_summary()
         xp = int(data["xp"]); level, into, span = level_progress(xp)
