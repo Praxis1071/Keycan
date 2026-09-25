@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 
 from keycan.data.database import Database
-from keycan.utils.text import clean_source_name, natural_sort_key
+from keycan.utils.text import clean_source_name, natural_sort_key\nfrom keycan.services.progression import session_xp, streaks
 
 _ORIGINAL_INIT = Database.__init__
 
@@ -222,6 +222,46 @@ def _normalize_order(self: Database, source_id: int) -> None:
     self.conn.commit()
 
 
+def _progression_summary(self: Database):
+    rows = self.conn.execute(
+        """SELECT completed_at, duration_seconds, typed_word_count,
+                  words_per_minute, accuracy_percent
+           FROM practice_results
+           WHERE completed_at != ''
+           ORDER BY completed_at ASC, id ASC"""
+    ).fetchall()
+    xp = 0
+    max_wpm = 0.0
+    max_accuracy = 0.0
+    max_duration = 0.0
+    timestamps = []
+    for completed_at, duration, words, wpm, accuracy in rows:
+        duration = float(duration)
+        words = int(words)
+        wpm = float(wpm)
+        accuracy = float(accuracy)
+        xp += session_xp(
+            duration_seconds=duration,
+            typed_word_count=words,
+            words_per_minute=wpm,
+            accuracy_percent=accuracy,
+        )
+        max_wpm = max(max_wpm, wpm)
+        max_accuracy = max(max_accuracy, accuracy)
+        max_duration = max(max_duration, duration)
+        timestamps.append(str(completed_at))
+    current_streak, best_streak = streaks(timestamps)
+    return {
+        "xp": xp,
+        "sessions": len(rows),
+        "max_wpm": max_wpm,
+        "max_accuracy": max_accuracy,
+        "max_duration_seconds": max_duration,
+        "current_streak": current_streak,
+        "best_streak": best_streak,
+    }
+
+
 def _reset_all_content(self: Database):
     _ensure_default_snapshot(self)
     groups = int(self.conn.execute("SELECT COUNT(*) FROM sources WHERE is_deleted = 0").fetchone()[0])
@@ -404,7 +444,7 @@ def _patch():
     Database.update_lesson = _update_lesson
     Database.delete_lesson = _delete_lesson
     Database.move_lesson = _move_lesson
-    Database.reset_all_content = _reset_all_content
+    Database.progression_summary = _progression_summary\n    Database.reset_all_content = _reset_all_content
     Database.restore_defaults = _restore_defaults
     Database.export_data = _export_data
     Database.import_data = _import_data
