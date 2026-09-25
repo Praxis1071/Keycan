@@ -235,20 +235,20 @@ def translate(text: str, language: str) -> str:
 
 _RUNTIME_PATTERNS = (
     (r"^Seviye (.+)$", r"Level \1", r"^Level (.+)$", r"Seviye \1"),
-    (r"^(.+) çalışma · (.+) XP · (.+) gün mevcut seri$", r"\1 practice sessions · \\2 XP · \\3-day current streak", r"^(.+) practice sessions · (.+)-day current streak$", r"\1 çalışma · \\2 XP · \\3 gün mevcut seri"),
+    (r"^(.+) çalışma · (.+) XP · (.+) gün mevcut seri$", r"\1 practice sessions · \2 XP · \3-day current streak", r"^(.+) practice sessions · (.+)-day current streak$", r"\1 çalışma · \2 XP · \3 gün mevcut seri"),
     (r"^(.+) gün$", r"\1 days", r"^(.+) days$", r"\1 gün"),
     (r"^Doğru: (.+)$", r"Correct: \1", r"^Correct: (.+)$", r"Doğru: \1"),
     (r"^Yanlış: (.+)$", r"Wrong: \1", r"^Wrong: (.+)$", r"Yanlış: \1"),
     (r"^Dakikada (.+) kelime$", r"\1 words per minute", r"^(.+) words per minute$", r"Dakikada \1 kelime"),
     (r"^(.+) kelime/dk$", r"\1 words/min", r"^(.+) words/min$", r"\1 kelime/dk"),
     (r"^Şimdi: (.+) · Önceki: (.+) · Değişim: (.+)$", r"Now: \1 · Previous: \2 · Change: \3", r"^Now: (.+) · Previous: (.+) · Change: (.+)$", r"Şimdi: \1 · Önceki: \2 · Değişim: \3"),
-    (r"^İlk: (.+)  →  Son: (.+)  \\((.+)\\)$", r"First: \1  →  Latest: \2  (\3)", r"^First: (.+)  →  Latest: (.+)  \\((.+)\\)$", r"İlk: \1  →  Son: \2  (\3)"),
+    (r"^İlk: (.+)  →  Son: (.+)  \((.+)\)$", r"First: \1  →  Latest: \2  (\3)", r"^First: (.+)  →  Latest: (.+)  \((.+)\)$", r"İlk: \1  →  Son: \2  (\3)"),
     (r"^(.+) puan$", r"\1 points", r"^(.+) points$", r"\1 puan"),
     (r"^(.+) çalışma$", r"\1 practice sessions", r"^(.+) practice sessions$", r"\1 çalışma"),
     (r"^(.+) aktif gün · (.+) çalışma · (.+) toplam süre$", r"\1 active days · \2 practice sessions · \3 total time", r"^(.+) active days · (.+) practice sessions · (.+) total time$", r"\1 aktif gün · \2 çalışma · \3 toplam süre"),
     (r"^Henüz çalışma yok$", r"No practice yet", r"^No practice yet$", r"Henüz çalışma yok"),
     (r"^Henüz tamamlanmış çalışma yok$", r"No completed practice yet", r"^No completed practice yet$", r"Henüz tamamlanmış çalışma yok"),
-    (r"^Henüz yeterli veri yok\\.$", r"Not enough data yet.", r"^Not enough data yet\\.$", r"Henüz yeterli veri yok."),
+    (r"^Henüz yeterli veri yok\.$", r"Not enough data yet.", r"^Not enough data yet\.$", r"Henüz yeterli veri yok."),
     (r"^Yeterli veri olduğunda gösterilir$", r"Shown when enough data is available", r"^Shown when enough data is available$", r"Yeterli veri olduğunda gösterilir"),
     (r"^En az iki çalışma olduğunda karşılaştırma gösterilir$", r"Comparison is shown after at least two practice sessions", r"^Comparison is shown after at least two practice sessions$", r"En az iki çalışma olduğunda karşılaştırma gösterilir"),
 )
