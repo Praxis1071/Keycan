@@ -56,4 +56,4 @@ class ProfilePanel(Gtk.Box):
             title = Gtk.Label(label=translate(badge.title, self.language)); title.set_xalign(0); title.add_css_class("heading"); card.append(title)
             description = Gtk.Label(label=translate(badge.description, self.language)); description.set_xalign(0); description.set_wrap(True); description.add_css_class("dim-label"); card.append(description)
             self.badges_box.insert(card, -1)
-        self.empty.set_visible(not unlocked)
+        self.empty.set_text(translate("Henüz rozet kazanılmadı.", self.language))\n        self.empty.set_visible(not unlocked)
