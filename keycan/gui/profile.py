@@ -11,6 +11,7 @@ class ProfilePanel(Gtk.Box):
     def __init__(self, database) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=18)
         self.db = database
+        self.language = "tr"
         self.set_margin_top(24); self.set_margin_bottom(24)
         self.set_margin_start(20); self.set_margin_end(20)
         self._build(); self.refresh()
