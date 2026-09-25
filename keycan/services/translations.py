@@ -235,7 +235,7 @@ def translate(text: str, language: str) -> str:
 
 _RUNTIME_PATTERNS = (
     (r"^Seviye (.+)$", r"Level \1", r"^Level (.+)$", r"Seviye \1"),
-    (r"^(.+) çalışma · (.+) XP · (.+) gün mevcut seri$", r"\1 practice sessions · \2 XP · \3-day current streak", r"^(.+) practice sessions · (.+)-day current streak$", r"\1 çalışma · \2 XP · \3 gün mevcut seri"),
+    (r"^(.+) çalışma · (.+) XP · (.+) gün mevcut seri$", r"\1 practice sessions · \2 XP · \3-day current streak", r"^(.+) practice sessions · (.+) XP · (.+)-day current streak$", r"\1 çalışma · \2 XP · \3 gün mevcut seri"),
     (r"^(.+) gün$", r"\1 days", r"^(.+) days$", r"\1 gün"),
     (r"^Doğru: (.+)$", r"Correct: \1", r"^Correct: (.+)$", r"Doğru: \1"),
     (r"^Yanlış: (.+)$", r"Wrong: \1", r"^Wrong: (.+)$", r"Yanlış: \1"),
