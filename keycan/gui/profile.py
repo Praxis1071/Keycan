@@ -4,7 +4,7 @@ import gi
 gi.require_version("Adw", "1")
 gi.require_version("Gtk", "4.0")
 from gi.repository import Adw, Gtk
-from keycan.services.progression import BADGES, badge_keys, level_progress
+from keycan.services.progression import BADGES, badge_keys, level_progress\nfrom keycan.services.translations import translate
 
 class ProfilePanel(Gtk.Box):
     def __init__(self, database) -> None:
@@ -28,7 +28,7 @@ class ProfilePanel(Gtk.Box):
         self.badges_box = Gtk.FlowBox(); self.badges_box.set_selection_mode(Gtk.SelectionMode.NONE)
         self.badges_box.set_row_spacing(8); self.badges_box.set_column_spacing(8); self.badges_box.set_max_children_per_line(3); self.badges_box.set_min_children_per_line(1)
         badge_group.add(self.badges_box)
-        self.empty = Gtk.Label(label="Henüz rozet kazanılmadı."); self.empty.set_xalign(0); self.empty.add_css_class("dim-label"); badge_group.add(self.empty)
+        self.empty = Gtk.Label(label=translate("Henüz rozet kazanılmadı.", self.language)); self.empty.set_xalign(0); self.empty.add_css_class("dim-label"); badge_group.add(self.empty)
 
     @staticmethod
     def _stat_row(group, title):
@@ -39,11 +39,11 @@ class ProfilePanel(Gtk.Box):
     def refresh(self) -> None:
         data = self.db.progression_summary()
         xp = int(data["xp"]); level, into, span = level_progress(xp)
-        self.level_label.set_text(f"Seviye {level}"); self.xp_label.set_text(f"{into} / {span} XP"); self.progress.set_fraction(into / span if span else 1.0)
+        self.level_label.set_text(translate(f"Seviye {level}", self.language)); self.xp_label.set_text(f"{into} / {span} XP"); self.progress.set_fraction(into / span if span else 1.0)
         sessions = int(data["sessions"]); current_streak = int(data["current_streak"]); best_streak = int(data["best_streak"])
-        self.summary.set_text(f"{sessions} çalışma · {xp} XP · {current_streak} gün mevcut seri")
-        self.session_row._value_label.set_text(str(sessions)); self.streak_row._value_label.set_text(f"{current_streak} gün")
-        self.best_streak_row._value_label.set_text(f"{best_streak} gün"); self.xp_total_row._value_label.set_text(str(xp))
+        self.summary.set_text(translate(f"{sessions} çalışma · {xp} XP · {current_streak} gün mevcut seri", self.language))
+        self.session_row._value_label.set_text(str(sessions)); self.streak_row._value_label.set_text(translate(f"{current_streak} gün", self.language))
+        self.best_streak_row._value_label.set_text(translate(f"{best_streak} gün", self.language)); self.xp_total_row._value_label.set_text(str(xp))
         unlocked = badge_keys(sessions=sessions, max_wpm=float(data["max_wpm"]), max_accuracy=float(data["max_accuracy"]), max_duration_seconds=float(data["max_duration_seconds"]), best_streak=best_streak, xp=xp)
         child = self.badges_box.get_first_child()
         while child is not None:
@@ -53,7 +53,7 @@ class ProfilePanel(Gtk.Box):
             card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
             card.set_margin_top(10); card.set_margin_bottom(10); card.set_margin_start(12); card.set_margin_end(12); card.set_size_request(170, 74)
             icon = Gtk.Image.new_from_icon_name("starred-symbolic"); icon.set_pixel_size(20); icon.set_halign(Gtk.Align.START); card.append(icon)
-            title = Gtk.Label(label=badge.title); title.set_xalign(0); title.add_css_class("heading"); card.append(title)
-            description = Gtk.Label(label=badge.description); description.set_xalign(0); description.set_wrap(True); description.add_css_class("dim-label"); card.append(description)
+            title = Gtk.Label(label=translate(badge.title, self.language)); title.set_xalign(0); title.add_css_class("heading"); card.append(title)
+            description = Gtk.Label(label=translate(badge.description, self.language)); description.set_xalign(0); description.set_wrap(True); description.add_css_class("dim-label"); card.append(description)
             self.badges_box.insert(card, -1)
         self.empty.set_visible(not unlocked)
