@@ -23,7 +23,7 @@ The 2.3.0 release focuses on stability, lesson-group management, statistics, loc
 - Local SQLite storage
 - Offline-first operation
 - GTK4 + libadwaita desktop interface
-- Flatpak packaging
+- Local profile with XP, levels, badges, and practice streaks\n- Flatpak packaging
 
 ## Demo
 
@@ -62,7 +62,7 @@ The project is currently focused on the post-2.3 development roadmap:
 | 4 | 2.3.x maintenance and fixes | Complete |
 | 5 | Advanced statistics | Complete |
 | 6 | User experience | Complete |
-| 7 | Profile, XP, levels and badges | Planned |
+| 7 | Profile, XP, levels and badges | Complete |
 | 8 | Advanced local profile | Planned |
 | 9 | Keyboard guide | Planned |
 
