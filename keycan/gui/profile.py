@@ -150,6 +150,12 @@ class ProfilePanel(Gtk.Box):
         self.characters_row = self._stat_row(stats, "Toplam karakter")
         self.lessons_row = self._stat_row(stats, "Tamamlanan dersler")
 
+        history = Adw.PreferencesGroup()
+        history.set_title("Son çalışmalar")
+        history.set_description("En son tamamladığın çalışmaların kısa özeti.")
+        self.append(history)
+        self.history_group = history
+
         badges = Adw.PreferencesGroup()
         badges.set_title("Rozetler")
         badges.set_description("Tamamladığın kilometre taşları.")
@@ -304,6 +310,8 @@ class ProfilePanel(Gtk.Box):
         self.characters_row._value_label.set_text(f"{int(data['total_characters']):,}".replace(",", " "))
         self.lessons_row._value_label.set_text(str(int(data["completed_lessons"])))
 
+        self._refresh_history(data.get("recent_sessions", []))
+
         goal = next_goal(
             sessions=sessions,
             max_wpm=max_wpm,
@@ -331,6 +339,26 @@ class ProfilePanel(Gtk.Box):
             translate(f"{len(unlocked)} / {len(BADGES)} rozet açıldı.", self.language)
         )
         self.title.set_text(self._profile_name or translate("Profil", self.language))
+
+    def _refresh_history(self, sessions) -> None:
+        child = self.history_group.get_first_child()
+        while child is not None:
+            next_child = child.get_next_sibling()
+            self.history_group.remove(child)
+            child = next_child
+        if not sessions:
+            row = Adw.ActionRow()
+            row.set_title(translate("Henüz çalışma yok", self.language))
+            self.history_group.add(row)
+            return
+        for item in sessions:
+            row = Adw.ActionRow()
+            row.set_title(f"{float(item['wpm']):.1f} WPM · {float(item['accuracy']):.1f}%")
+            row.set_subtitle(
+                f"{self._format_duration(float(item['duration_seconds']))} · "
+                f"{item['completed_at']}"
+            )
+            self.history_group.add(row)
 
     def _goal_progress_text(self, key: str, current: float, target: float) -> str:
         if key in {"speed_40", "speed_60"}:
