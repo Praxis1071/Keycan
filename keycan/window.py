@@ -345,7 +345,11 @@ class KeycanWindow(Adw.ApplicationWindow):
     def _apply_privacy_state(self) -> None:
         active = self.privacy_enabled and self.started_at is not None and not self.finished
         buffer = self.input_view.get_buffer()
-        hidden = self._get_tag(buffer, "privacy-hidden", self._editor_foreground())
+        hidden = buffer.get_tag_table().lookup("privacy-hidden")
+        if hidden is None:
+            hidden = buffer.create_tag("privacy-hidden", invisible=True)
+        else:
+            hidden.set_property("invisible", True)
         hidden.set_priority(max(0, buffer.get_tag_table().get_size() - 1))
         self.input_view.remove_css_class("keycan-hidden")
         start, end = buffer.get_start_iter(), buffer.get_end_iter()
