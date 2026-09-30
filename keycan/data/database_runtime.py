@@ -252,6 +252,18 @@ def _progression_summary(self: Database):
         max_duration = max(max_duration, duration)
         timestamps.append(self._parse_completed_at(str(completed_at)).strftime("%Y-%m-%d %H:%M:%S"))
     current_streak, best_streak = streaks(timestamps)
+    totals = self.conn.execute(
+        """SELECT
+               COALESCE(SUM(duration_seconds), 0),
+               COALESCE(SUM(typed_word_count), 0),
+               COALESCE(SUM(total_characters), 0),
+               COALESCE(AVG(words_per_minute), 0),
+               COALESCE(AVG(accuracy_percent), 0),
+               COUNT(DISTINCT lesson_id)
+           FROM practice_results
+           WHERE completed_at != ''"""
+    ).fetchone()
+    total_duration, total_words, total_characters, average_wpm, average_accuracy, completed_lessons = totals
     return {
         "xp": xp,
         "sessions": len(rows),
@@ -260,6 +272,12 @@ def _progression_summary(self: Database):
         "max_duration_seconds": max_duration,
         "current_streak": current_streak,
         "best_streak": best_streak,
+        "total_duration_seconds": float(total_duration),
+        "total_words": int(total_words),
+        "total_characters": int(total_characters),
+        "average_wpm": float(average_wpm),
+        "average_accuracy": float(average_accuracy),
+        "completed_lessons": int(completed_lessons),
     }
 
 
