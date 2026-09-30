@@ -9,6 +9,7 @@ import keycan.data.database_runtime  # noqa: F401
 from keycan.services.progression import (
     badge_keys,
     level_for_xp,
+    next_goal,
     level_progress,
     session_xp,
     streaks,
@@ -46,6 +47,31 @@ def test_stage7_streaks_use_distinct_calendar_days() -> None:
     ]
     assert streaks(timestamps, today=today) == (1, 3)
     assert streaks(timestamps, today=today - timedelta(days=1))[0] == 0
+
+
+def test_stage7_next_goal_tracks_nearest_unlocked_milestone() -> None:
+    goal = next_goal(
+        sessions=8,
+        max_wpm=35,
+        max_accuracy=94,
+        max_duration_seconds=300,
+        best_streak=4,
+        xp=300,
+    )
+    assert goal is not None
+    badge, current, target = goal
+    assert badge.key == "ten_sessions"
+    assert current == 8
+    assert target == 10
+
+    assert next_goal(
+        sessions=100,
+        max_wpm=60,
+        max_accuracy=98,
+        max_duration_seconds=600,
+        best_streak=30,
+        xp=1000,
+    ) is None
 
 
 def test_stage7_badges_are_derived_from_progress() -> None:
