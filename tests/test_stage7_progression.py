@@ -60,9 +60,9 @@ def test_stage7_next_goal_tracks_nearest_unlocked_milestone() -> None:
     )
     assert goal is not None
     badge, current, target = goal
-    assert badge.key == "ten_sessions"
-    assert current == 8
-    assert target == 10
+    assert badge.key == "accuracy_95"
+    assert current == 94
+    assert target == 95
 
     assert next_goal(
         sessions=100,
