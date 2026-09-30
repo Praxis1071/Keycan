@@ -63,8 +63,8 @@ The project is currently focused on the post-2.3 development roadmap:
 | 5 | Advanced statistics | Complete |
 | 6 | User experience | Complete |
 | 7 | Profile, XP, levels and badges | Complete |
-| 8 | Advanced local profile | Planned |
-| 9 | Keyboard guide | Planned |
+| 8 | Advanced local profile | Complete |
+| 9 | Keyboard guide | Complete |
 
 See [ROADMAP.md](ROADMAP.md) for the detailed plan.
 
