@@ -80,6 +80,9 @@ class KeycanWindow(Adw.ApplicationWindow):
         profile_page = getattr(self, "profile_page", None)
         if profile_page is not None:
             profile_page.set_language(language)
+        keyboard_guide_page = getattr(self, "keyboard_guide_page", None)
+        if keyboard_guide_page is not None:
+            keyboard_guide_page.set_language(language)
         apply_to_widget_tree(self, language)
 
     def _install_css(self) -> None:
