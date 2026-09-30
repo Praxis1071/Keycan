@@ -325,7 +325,7 @@ class ProfilePanel(Gtk.Box):
         else:
             badge, current, target = goal
             self.goal_label.set_text(
-                translate(f"{badge.title}: {self._goal_progress_text(badge.key, current, target)}", self.language)
+                f"{translate(badge.title, self.language)}: {self._goal_progress_text(badge.key, current, target)}"
             )
 
         unlocked = badge_keys(
