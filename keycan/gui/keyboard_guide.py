@@ -7,7 +7,7 @@ gi.require_version("Adw", "1")
 gi.require_version("Gtk", "4.0")
 from gi.repository import Adw, Gtk
 
-from keycan.services.i18n import apply_to_widget_tree
+from keycan.services.translations import translate
 
 
 class KeyboardGuidePanel(Gtk.Box):
@@ -82,4 +82,28 @@ class KeyboardGuidePanel(Gtk.Box):
         group.add(row)
 
     def set_language(self, language: str) -> None:
-        apply_to_widget_tree(self, language)
+        stack = [self]
+        while stack:
+            widget = stack.pop()
+            child = widget.get_first_child()
+            while child is not None:
+                stack.append(child)
+                child = child.get_next_sibling()
+            if isinstance(widget, Gtk.Label):
+                text = widget.get_text()
+                if text:
+                    widget.set_text(translate(text, language))
+            elif isinstance(widget, Adw.ActionRow):
+                title = widget.get_title()
+                subtitle = widget.get_subtitle()
+                if title:
+                    widget.set_title(translate(title, language))
+                if subtitle:
+                    widget.set_subtitle(translate(subtitle, language))
+            elif isinstance(widget, Adw.PreferencesGroup):
+                title = widget.get_title()
+                description = widget.get_description()
+                if title:
+                    widget.set_title(translate(title, language))
+                if description:
+                    widget.set_description(translate(description, language))
