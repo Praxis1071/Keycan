@@ -23,7 +23,9 @@ The 2.3.0 release focuses on stability, lesson-group management, statistics, loc
 - Local SQLite storage
 - Offline-first operation
 - GTK4 + libadwaita desktop interface
-- Local profile with XP, levels, badges, and practice streaks\n- Flatpak packaging
+- Local profile with XP, levels, badges, and practice streaks\n- Local profile names, photos, progression goals, and practice history
+- Built-in touch-typing keyboard guide
+- Flatpak packaging
 
 ## Demo
 
@@ -51,7 +53,7 @@ For the latest packaged build, see the **GitHub Releases** section of this repos
 
 ## Development roadmap
 
-The project is currently focused on the post-2.3 development roadmap:
+The current 0–9 development roadmap is complete. Future work will focus on maintenance, user feedback, bug fixes, and quality improvements:
 
 | Stage | Area | Status |
 |---|---|---|
