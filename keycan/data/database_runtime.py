@@ -264,6 +264,22 @@ def _progression_summary(self: Database):
            WHERE completed_at != ''"""
     ).fetchone()
     total_duration, total_words, total_characters, average_wpm, average_accuracy, completed_lessons = totals
+    recent_rows = self.conn.execute(
+        """SELECT completed_at, words_per_minute, accuracy_percent, duration_seconds
+           FROM practice_results
+           WHERE completed_at != ''
+           ORDER BY completed_at DESC, id DESC
+           LIMIT 5"""
+    ).fetchall()
+    recent_sessions = [
+        {
+            "completed_at": str(completed_at),
+            "wpm": float(wpm),
+            "accuracy": float(accuracy),
+            "duration_seconds": float(duration),
+        }
+        for completed_at, wpm, accuracy, duration in recent_rows
+    ]
     return {
         "xp": xp,
         "sessions": len(rows),
@@ -278,6 +294,7 @@ def _progression_summary(self: Database):
         "average_wpm": float(average_wpm),
         "average_accuracy": float(average_accuracy),
         "completed_lessons": int(completed_lessons),
+        "recent_sessions": recent_sessions,
     }
 
 
