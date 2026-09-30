@@ -99,7 +99,7 @@ Sidebar'da İstatistikler'den bağımsız, ayrı bir **Profil** bölümü oluşt
 
 ---
 
-## ⏳ Aşama 8 — Gelişmiş Yerel Profil
+## ✅ Aşama 8 — Gelişmiş Yerel Profil
 
 Aşama 7'de oluşturulan temel Profil sisteminin daha kapsamlı ve kişiselleştirilebilir hale getirilmesi.
 
@@ -114,13 +114,13 @@ Aşama 7'de oluşturulan temel Profil sisteminin daha kapsamlı ve kişiselleşt
   - Genel doğruluk
   - Tamamlanan dersler
   - Genel ilerleme
-- Profil üzerinden ilerleme geçmişinin görüntülenmesi
+- Profil üzerinden son çalışma geçmişinin görüntülenmesi
 - Profilin mevcut çalışma ve istatistik altyapısıyla bağlantısının genişletilmesi
 - Online hesap veya bulut senkronizasyonu olmadan yerel profil yapısının geliştirilmesi
 
 ---
 
-## ⏳ Aşama 9 — Klavye Rehberi
+## ✅ Aşama 9 — Klavye Rehberi
 
 Sidebar'da İstatistikler ve Profil'den bağımsız, ayrı bir **Klavye Rehberi** bölümü oluşturulacak.
 
