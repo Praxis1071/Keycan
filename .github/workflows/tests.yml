@@ -45,7 +45,7 @@ jobs:
       - name: Install test dependencies
         run: python -m pip install --upgrade pip pytest
       - name: Validate Stage 7 Python modules
-        run: python -m py_compile keycan/gui/profile.py keycan/services/progression.py
+        run: python -m py_compile keycan/gui/profile.py keycan/gui/keyboard_guide.py keycan/services/progression.py
       - name: Run Stage 7 progression tests
         run: pytest -q tests/test_stage7_progression.py
 
