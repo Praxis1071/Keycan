@@ -50,6 +50,48 @@ BADGES = (
     Badge("xp_1000", "Binlik", "1.000 XP kazan."),
 )
 
+GOAL_KEYS = (
+    "first_session", "ten_sessions", "speed_40", "accuracy_95", "long_session",
+    "streak_7", "xp_1000", "fifty_sessions", "speed_60", "accuracy_98",
+    "streak_30", "hundred_sessions",
+)
+
+
+def next_goal(*, sessions: int, max_wpm: float, max_accuracy: float,
+              max_duration_seconds: float, best_streak: int, xp: int) -> tuple[Badge, float, float] | None:
+    values = {
+        "first_session": (sessions, 1),
+        "ten_sessions": (sessions, 10),
+        "fifty_sessions": (sessions, 50),
+        "hundred_sessions": (sessions, 100),
+        "speed_40": (max_wpm, 40),
+        "speed_60": (max_wpm, 60),
+        "accuracy_95": (max_accuracy, 95),
+        "accuracy_98": (max_accuracy, 98),
+        "long_session": (max_duration_seconds, 600),
+        "streak_7": (best_streak, 7),
+        "streak_30": (best_streak, 30),
+        "xp_1000": (xp, 1000),
+    }
+    unlocked = badge_keys(
+        sessions=sessions, max_wpm=max_wpm, max_accuracy=max_accuracy,
+        max_duration_seconds=max_duration_seconds, best_streak=best_streak, xp=xp,
+    )
+    candidates = []
+    for index, key in enumerate(GOAL_KEYS):
+        if key in unlocked:
+            continue
+        current, target = values[key]
+        progress = min(1.0, max(0.0, float(current) / float(target)))
+        badge = next((item for item in BADGES if item.key == key), None)
+        if badge is not None:
+            candidates.append((progress, -index, badge, float(current), float(target)))
+    if not candidates:
+        return None
+    _progress, _order, badge, current, target = max(candidates, key=lambda item: (item[0], item[1]))
+    return badge, current, target
+
+
 def badge_keys(*, sessions: int, max_wpm: float, max_accuracy: float, max_duration_seconds: float, best_streak: int, xp: int) -> set[str]:
     checks = {
         "first_session": sessions >= 1, "ten_sessions": sessions >= 10,
