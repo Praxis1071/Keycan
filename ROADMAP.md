@@ -142,6 +142,10 @@ Kullanıcının 10 parmak yazmayı öğrenmesine yardımcı olan, açıklayıcı
 
 ---
 
+## 🏁 Mevcut Yol Haritasının Durumu
+
+Aşama 0–9 kapsamındaki mevcut geliştirme planı tamamlanmıştır. Bundan sonraki çalışmalar yeni bir roadmap maddesi eklenmeden önce bakım, kullanıcı geri bildirimi, hata düzeltmeleri ve mevcut özelliklerin kalite/stabilite iyileştirmeleri üzerinden ilerleyecektir.
+
 ## 📌 Yol Haritasının Sınırları
 
 Bu roadmap, Keycan'ın mevcut hedeflerini ve onaylanan gelecek geliştirmelerini tanımlar. Aşağıdaki fikirler mevcut roadmap'e dahil değildir:
