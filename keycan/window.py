@@ -16,6 +16,7 @@ from keycan.gui.search import SourceSearchDropdown
 from keycan.gui.settings2 import SettingsPanel
 from keycan.gui.statistics_clean import StatisticsPanel
 from keycan.gui.profile import ProfilePanel
+from keycan.gui.keyboard_guide import KeyboardGuidePanel
 from keycan.services.i18n import apply_to_widget_tree
 from keycan.services.preferences import Preferences
 from keycan.utils.text import WORD_PATTERN, format_remaining
@@ -572,6 +573,7 @@ class ConfiguredKeycanWindow(KeycanWindow):
             self._make_navigation_row("Çalışma Alanı", "input-keyboard-symbolic", "workspace"),
             self._make_navigation_row("İstatistikler", "utilities-system-monitor-symbolic", "statistics"),
             self._make_navigation_row("Profil", "avatar-default-symbolic", "profile"),
+            self._make_navigation_row("Klavye Rehberi", "help-browser-symbolic", "keyboard-guide"),
             self._make_navigation_row("Ayarlar", "emblem-system-symbolic", "settings"),
         ]
         for row in rows:
@@ -588,6 +590,13 @@ class ConfiguredKeycanWindow(KeycanWindow):
         profile_scroll.set_hexpand(True); profile_scroll.set_vexpand(True)
         profile_scroll.set_child(profile)
         stack.add_named(profile_scroll, "profile")
+        guide = KeyboardGuidePanel()
+        guide.set_hexpand(True); guide.set_vexpand(True)
+        guide_scroll = Gtk.ScrolledWindow()
+        guide_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        guide_scroll.set_hexpand(True); guide_scroll.set_vexpand(True)
+        guide_scroll.set_child(guide)
+        stack.add_named(guide_scroll, "keyboard-guide")
         settings = SettingsPanel(self, on_content_changed=self._load_sources, on_statistics_changed=lambda: (stats.refresh(), profile.refresh()))
         settings.set_hexpand(True); settings.set_vexpand(True)
         settings_scroll = Gtk.ScrolledWindow()
@@ -598,17 +607,19 @@ class ConfiguredKeycanWindow(KeycanWindow):
         stack.set_visible_child_name("workspace")
         def activated(_list, row):
             name = row.get_name()
-            if name not in {"workspace", "statistics", "profile", "settings"}:
+            if name not in {"workspace", "statistics", "profile", "keyboard-guide", "settings"}:
                 return
             stack.set_visible_child_name(name)
             if name == "statistics":
                 stats.refresh()
             elif name == "profile":
                 profile.refresh()
+            elif name == "keyboard-guide":
+                guide.set_language(self.preferences.get("language"))
             split.set_show_sidebar(False)
         nav.connect("row-activated", activated)
         split.set_sidebar(nav); split.set_content(stack); toolbar.set_content(split)
-        self.sidebar_view = split; self.navigation_list = nav; self.content_stack = stack; self.statistics_page = stats; self.profile_page = profile
+        self.sidebar_view = split; self.navigation_list = nav; self.content_stack = stack; self.statistics_page = stats; self.profile_page = profile; self.keyboard_guide_page = guide
         toggle = Gtk.ToggleButton(); toggle.set_icon_name("sidebar-show-symbolic")
         toggle.set_tooltip_text("Yan paneli aç/kapat")
         toggle.connect("toggled", lambda button: split.set_show_sidebar(button.get_active()))
