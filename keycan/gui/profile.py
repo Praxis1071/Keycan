@@ -46,15 +46,11 @@ class ProfilePanel(Gtk.Box):
         header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
         header.set_halign(Gtk.Align.FILL)
 
-        self.avatar = Gtk.Picture()
-        self.avatar.set_size_request(88, 88)
-        self.avatar.set_can_shrink(True)
+        self.avatar = Adw.Avatar(112, "Profil", True)
         self.avatar.set_halign(Gtk.Align.START)
         self.avatar.set_valign(Gtk.Align.CENTER)
         self.avatar.set_hexpand(False)
         self.avatar.set_vexpand(False)
-        self.avatar.set_content_fit(Gtk.ContentFit.COVER)
-        self.avatar.add_css_class("card")
         header.append(self.avatar)
 
         identity = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
@@ -64,15 +60,18 @@ class ProfilePanel(Gtk.Box):
         self.title = Gtk.Label(label="Profil")
         self.title.set_xalign(0)
         self.title.add_css_class("title-1")
+        self.title.set_wrap(True)
         identity.append(self.title)
 
         self.subtitle = Gtk.Label(label="Yerel ilerlemen ve başarıların")
         self.subtitle.set_xalign(0)
         self.subtitle.add_css_class("dim-label")
         self.subtitle.set_wrap(True)
+        self.subtitle.set_max_width_chars(42)
         identity.append(self.subtitle)
 
         self.photo_button = Gtk.Button(label="Profil fotoğrafı seç")
+        self.photo_button.add_css_class("pill")
         self.photo_button.set_halign(Gtk.Align.START)
         self.photo_button.connect("clicked", self._choose_photo)
         identity.append(self.photo_button)
@@ -225,6 +224,7 @@ class ProfilePanel(Gtk.Box):
     def _save_name(self, row) -> None:
         self._profile_name = row.get_text().strip()[:80]
         row.set_text(self._profile_name)
+        self.avatar.set_text(self._profile_name or "Profil")
         self._save_profile()
         self.refresh()
 
@@ -276,7 +276,7 @@ class ProfilePanel(Gtk.Box):
             texture = Gdk.Texture.new_from_filename(str(path))
         except GLib.Error:
             return
-        self.avatar.set_paintable(texture)
+        self.avatar.set_custom_image(texture)
 
     def refresh(self) -> None:
         data = self.db.progression_summary()
@@ -340,7 +340,9 @@ class ProfilePanel(Gtk.Box):
         self.empty.set_text(
             translate(f"{len(unlocked)} / {len(BADGES)} rozet açıldı.", self.language)
         )
-        self.title.set_text(self._profile_name or translate("Profil", self.language))
+        profile_title = self._profile_name or translate("Profil", self.language)
+        self.title.set_text(profile_title)
+        self.avatar.set_text(self._profile_name or "Profil")
 
     def _refresh_history(self, sessions) -> None:
         for row in self._history_rows:
