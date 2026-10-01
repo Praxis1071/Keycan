@@ -31,6 +31,9 @@ headerbar.keycan-header { background: var(--headerbar-bg-color); color: var(--he
 .keycan-editor textview { padding: 10px; }
 .keycan-status { padding: 2px 2px 4px; }
 .keycan-countdown { color: var(--window-fg-color); font-weight: 700; font-size: 16px; }
+.keycan-hidden text { color: transparent; }
+.keycan-hidden text selection { color: transparent; }
+.keycan-hidden { caret-color: transparent; }
 """
 
 
@@ -311,6 +314,8 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.finish_pending = False
         self.started_at = None
         self.duration_spin.set_sensitive(True)
+        self.source_dropdown.set_sensitive(True)
+        self.lesson_dropdown.set_sensitive(True)
         self.countdown.set_text(format_remaining(self._duration_seconds()))
         self.updating_input = True
         self.workspace.set_input_text("")
@@ -348,28 +353,24 @@ class KeycanWindow(Adw.ApplicationWindow):
 
     def _apply_privacy_state(self) -> None:
         active = self.privacy_enabled and self.started_at is not None and not self.finished
-        buffer = self.input_view.get_buffer()
-        hidden = buffer.get_tag_table().lookup("privacy-hidden")
-        if hidden is None:
-            hidden = buffer.create_tag("privacy-hidden", invisible=True)
-        else:
-            hidden.set_property("invisible", True)
-        hidden.set_priority(max(0, buffer.get_tag_table().get_size() - 1))
-        self.input_view.remove_css_class("keycan-hidden")
-        start, end = buffer.get_start_iter(), buffer.get_end_iter()
-        if active:
-            buffer.remove_all_tags(start, end)
-            buffer.apply_tag(hidden, start, end)
-            self.input_view.set_cursor_visible(False)
-        else:
-            buffer.remove_tag(hidden, start, end)
-            self.input_view.set_cursor_visible(not self.finished and self.current_lesson_id is not None)
+        self.input_view.set_css_classes(
+            [*self.input_view.get_css_classes(), "keycan-hidden"]
+            if active and not self.input_view.has_css_class("keycan-hidden")
+            else self.input_view.get_css_classes()
+        )
+        if not active:
+            self.input_view.remove_css_class("keycan-hidden")
+        self.input_view.set_cursor_visible(
+            not active and not self.finished and self.current_lesson_id is not None
+        )
 
     def _start_session(self) -> None:
         if self.started_at is not None or self.finished or self.current_lesson_id is None:
             return
         self.started_at = time.monotonic()
         self.duration_spin.set_sensitive(False)
+        self.source_dropdown.set_sensitive(False)
+        self.lesson_dropdown.set_sensitive(False)
         self.status.set_text("Ders başladı. Yazmaya devam et.")
         self._apply_privacy_state()
 
@@ -508,13 +509,14 @@ class KeycanWindow(Adw.ApplicationWindow):
 
     def _check_time(self) -> bool:
         if self.finished or self.started_at is None:
-            return True
+            self.tick_id = None
+            return GLib.SOURCE_REMOVE
         remaining = self._duration_seconds() - (time.monotonic() - self.started_at)
         if remaining <= 0:
             self._finish()
         else:
             self.countdown.set_text(format_remaining(remaining))
-        return True
+        return GLib.SOURCE_CONTINUE
 
     def _on_close_request(self, _window: Adw.ApplicationWindow) -> bool:
         if self.tick_id is not None:
