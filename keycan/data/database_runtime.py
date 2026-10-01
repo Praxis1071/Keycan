@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import uuid
 from datetime import datetime
 
@@ -437,16 +438,79 @@ def _import_data(self: Database, raw: str):
                 if lesson_id is None:
                     skipped += 1
                     continue
+                duration_seconds = float(result.get("duration_seconds", 0))
+                correct_words = int(result.get("correct_words", 0))
+                wrong_words = int(result.get("wrong_words", 0))
+                words_per_minute = float(result.get("words_per_minute", 0))
+                characters_per_minute = float(result.get("characters_per_minute", 0))
+                target_word_count = int(result.get("target_word_count", 0))
+                typed_word_count = int(result.get("typed_word_count", 0))
+                total_characters = int(result.get("total_characters", 0))
+                correct_characters = int(result.get("correct_characters", 0))
+                wrong_characters = int(result.get("wrong_characters", 0))
+                accuracy_percent = float(result.get("accuracy_percent", 0))
+                numeric_metrics = (
+                    duration_seconds, correct_words, wrong_words, words_per_minute,
+                    characters_per_minute, target_word_count, typed_word_count,
+                    total_characters, correct_characters, wrong_characters,
+                    accuracy_percent,
+                )
+                if any(not math.isfinite(value) or value < 0 for value in numeric_metrics):
+                    raise ValueError("Yedekteki çalışma ölçümleri geçersiz")
+                if correct_words + wrong_words != typed_word_count:
+                    raise ValueError("Yedekteki kelime ölçümleri tutarsız")
+                if total_characters != correct_characters + wrong_characters:
+                    raise ValueError("Yedekteki karakter ölçümleri tutarsız")
+                if accuracy_percent > 100:
+                    raise ValueError("Yedekteki doğruluk yüzdesi geçersiz")
+                normalized_wrong_letters = self._normalize_wrong_letter_counts(
+                    result.get("wrong_letter_counts", {})
+                )
+                candidates = self.conn.execute(
+                    """SELECT duration_seconds, correct_words, wrong_words,
+                              words_per_minute, characters_per_minute,
+                              target_word_count, typed_word_count, total_characters,
+                              correct_characters, wrong_characters, accuracy_percent,
+                              wrong_letter_counts
+                       FROM practice_results
+                       WHERE lesson_id = ? AND completed_at = ?""",
+                    (lesson_id, completed),
+                ).fetchall()
+                duplicate = False
+                for existing in candidates:
+                    try:
+                        existing_wrong_letters = self._normalize_wrong_letter_counts(existing[11])
+                    except ValueError:
+                        continue
+                    if (
+                        float(existing[0]) == duration_seconds
+                        and int(existing[1]) == correct_words
+                        and int(existing[2]) == wrong_words
+                        and float(existing[3]) == words_per_minute
+                        and float(existing[4]) == characters_per_minute
+                        and int(existing[5]) == target_word_count
+                        and int(existing[6]) == typed_word_count
+                        and int(existing[7]) == total_characters
+                        and int(existing[8]) == correct_characters
+                        and int(existing[9]) == wrong_characters
+                        and float(existing[10]) == accuracy_percent
+                        and existing_wrong_letters == normalized_wrong_letters
+                    ):
+                        duplicate = True
+                        break
+                if duplicate:
+                    skipped += 1
+                    continue
                 values = (
-                    lesson_id, float(result.get("duration_seconds", 0)), int(result.get("correct_characters", 0)),
-                    int(result.get("wrong_characters", 0)), float(result.get("words_per_minute", 0)),
-                    int(result.get("correct_words", 0)), int(result.get("wrong_words", 0)),
-                    float(result.get("words_per_minute", 0)), float(result.get("characters_per_minute", 0)),
-                    completed, source_name, lesson_title, int(result.get("target_word_count", 0)),
-                    int(result.get("typed_word_count", 0)), int(result.get("total_characters", 0)),
-                    int(result.get("correct_characters", 0)), int(result.get("wrong_characters", 0)),
-                    float(result.get("accuracy_percent", 0)),
-                    json.dumps(self._normalize_wrong_letter_counts(result.get("wrong_letter_counts", {})), ensure_ascii=False),
+                    lesson_id, duration_seconds, correct_characters,
+                    wrong_characters, words_per_minute,
+                    correct_words, wrong_words,
+                    words_per_minute, characters_per_minute,
+                    completed, source_name, lesson_title, target_word_count,
+                    typed_word_count, total_characters,
+                    correct_characters, wrong_characters,
+                    accuracy_percent,
+                    json.dumps(normalized_wrong_letters, ensure_ascii=False, sort_keys=True),
                 )
                 self.conn.execute(
                     """INSERT INTO practice_results(lesson_id, duration_seconds, correct_chars, wrong_chars, wpm,
@@ -457,7 +521,7 @@ def _import_data(self: Database, raw: str):
                     values,
                 )
                 imported += 1
-            except (TypeError, ValueError):
+            except (TypeError, ValueError, OverflowError):
                 skipped += 1
         self.conn.commit()
         return imported, skipped
