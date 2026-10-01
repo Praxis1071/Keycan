@@ -490,6 +490,34 @@ class Database:
                     continue
                 completed_at = str(result.get("completed_at", ""))
                 datetime.strptime(completed_at, "%Y-%m-%d %H:%M:%S")
+                try:
+                    duration_seconds = float(result.get("duration_seconds", 0))
+                    correct_words = int(result.get("correct_words", 0))
+                    wrong_words = int(result.get("wrong_words", 0))
+                    words_per_minute = float(result.get("words_per_minute", 0))
+                    characters_per_minute = float(result.get("characters_per_minute", 0))
+                    target_word_count = int(result.get("target_word_count", 0))
+                    typed_word_count = int(result.get("typed_word_count", 0))
+                    total_characters = int(result.get("total_characters", 0))
+                    correct_characters = int(result.get("correct_characters", 0))
+                    wrong_characters = int(result.get("wrong_characters", 0))
+                    accuracy_percent = float(result.get("accuracy_percent", 0))
+                except (TypeError, ValueError, OverflowError) as exc:
+                    raise ValueError("Yedekteki çalışma ölçümleri geçersiz") from exc
+                numeric_metrics = (
+                    duration_seconds, correct_words, wrong_words, words_per_minute,
+                    characters_per_minute, target_word_count, typed_word_count,
+                    total_characters, correct_characters, wrong_characters,
+                    accuracy_percent,
+                )
+                if any(not math.isfinite(value) or value < 0 for value in numeric_metrics):
+                    raise ValueError("Yedekteki çalışma ölçümleri geçersiz")
+                if correct_words + wrong_words != typed_word_count:
+                    raise ValueError("Yedekteki kelime ölçümleri tutarsız")
+                if total_characters != correct_characters + wrong_characters:
+                    raise ValueError("Yedekteki karakter ölçümleri tutarsız")
+                if accuracy_percent > 100:
+                    raise ValueError("Yedekteki doğruluk yüzdesi geçersiz")
                 self.conn.execute(
                     """INSERT INTO practice_results(
                         lesson_id, duration_seconds, correct_chars, wrong_chars, wpm,
@@ -499,14 +527,14 @@ class Database:
                         correct_characters, wrong_characters, accuracy_percent, wrong_letter_counts
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
-                        lesson_id, float(result.get("duration_seconds", 0)), 0, 0,
-                        float(result.get("words_per_minute", 0)),
-                        int(result.get("correct_words", 0)), int(result.get("wrong_words", 0)),
-                        float(result.get("words_per_minute", 0)), float(result.get("characters_per_minute", 0)),
+                        lesson_id, duration_seconds, 0, 0,
+                        words_per_minute,
+                        correct_words, wrong_words,
+                        words_per_minute, characters_per_minute,
                         completed_at, str(result.get("source_name", "")), str(result.get("lesson_title", "")),
-                        int(result.get("target_word_count", 0)), int(result.get("typed_word_count", 0)),
-                        int(result.get("total_characters", 0)), int(result.get("correct_characters", 0)),
-                        int(result.get("wrong_characters", 0)), float(result.get("accuracy_percent", 0)),
+                        target_word_count, typed_word_count,
+                        total_characters, correct_characters,
+                        wrong_characters, accuracy_percent,
                         json.dumps(self._normalize_wrong_letter_counts(result.get("wrong_letter_counts", {})), ensure_ascii=False),
                     ),
                 )
