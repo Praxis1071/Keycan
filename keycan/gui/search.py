@@ -35,9 +35,6 @@ class SourceSearchDropdown(Gtk.Button):
         self.button_label.set_single_line_mode(True)
         self.button_label.set_ellipsize(Pango.EllipsizeMode.END)
         button_box.append(self.button_label)
-        arrow = Gtk.Image.new_from_icon_name("pan-down-symbolic")
-        arrow.set_halign(Gtk.Align.END)
-        button_box.append(arrow)
         self.set_child(button_box)
 
         self.popover = Gtk.Popover()
