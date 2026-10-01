@@ -506,9 +506,11 @@ class KeycanWindow(Adw.ApplicationWindow):
             buffer.apply_tag(green if ok else red, buffer.get_iter_at_offset(match.start()), buffer.get_iter_at_offset(match.end()))
 
     def _check_time(self) -> bool:
-        if self.finished or self.started_at is None:
+        if self.finished:
             self.tick_id = None
             return GLib.SOURCE_REMOVE
+        if self.started_at is None:
+            return GLib.SOURCE_CONTINUE
         remaining = self._duration_seconds() - (time.monotonic() - self.started_at)
         if remaining <= 0:
             self.tick_id = None
