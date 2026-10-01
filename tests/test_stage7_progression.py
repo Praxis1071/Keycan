@@ -217,12 +217,7 @@ def test_stage7_backup_import_rejects_inconsistent_metrics(tmp_path: Path) -> No
 
         payload = json.loads(_backup_result())
         payload["practice_results"][0]["wrong_words"] = 9
-        try:
-            db.import_data(json.dumps(payload))
-        except ValueError:
-            pass
-        else:
-            raise AssertionError("inconsistent backup metrics were accepted")
+        assert db.import_data(json.dumps(payload)) == (0, 1)
         assert db.conn.execute("SELECT COUNT(*) FROM practice_results").fetchone()[0] == 0
     finally:
         db.close()
