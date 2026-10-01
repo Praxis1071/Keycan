@@ -48,7 +48,11 @@ class ProfilePanel(Gtk.Box):
 
         self.avatar = Gtk.Picture()
         self.avatar.set_size_request(88, 88)
-        self.avatar.set_can_shrink(False)
+        self.avatar.set_can_shrink(True)
+        self.avatar.set_halign(Gtk.Align.START)
+        self.avatar.set_valign(Gtk.Align.CENTER)
+        self.avatar.set_hexpand(False)
+        self.avatar.set_vexpand(False)
         self.avatar.set_content_fit(Gtk.ContentFit.COVER)
         self.avatar.add_css_class("card")
         header.append(self.avatar)
@@ -155,6 +159,7 @@ class ProfilePanel(Gtk.Box):
         history.set_description("En son tamamladığın çalışmaların kısa özeti.")
         self.append(history)
         self.history_group = history
+        self._history_rows: list[Adw.ActionRow] = []
 
         badges = Adw.PreferencesGroup()
         badges.set_title("Rozetler")
@@ -341,15 +346,14 @@ class ProfilePanel(Gtk.Box):
         self.title.set_text(self._profile_name or translate("Profil", self.language))
 
     def _refresh_history(self, sessions) -> None:
-        child = self.history_group.get_first_child()
-        while child is not None:
-            next_child = child.get_next_sibling()
-            self.history_group.remove(child)
-            child = next_child
+        for row in self._history_rows:
+            self.history_group.remove(row)
+        self._history_rows.clear()
         if not sessions:
             row = Adw.ActionRow()
             row.set_title(translate("Henüz çalışma yok", self.language))
             self.history_group.add(row)
+            self._history_rows.append(row)
             return
         for item in sessions:
             row = Adw.ActionRow()
@@ -359,6 +363,7 @@ class ProfilePanel(Gtk.Box):
                 f"{item['completed_at']}"
             )
             self.history_group.add(row)
+            self._history_rows.append(row)
 
     def _goal_progress_text(self, key: str, current: float, target: float) -> str:
         if key in {"speed_40", "speed_60"}:
