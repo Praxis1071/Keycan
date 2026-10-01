@@ -514,9 +514,10 @@ class KeycanWindow(Adw.ApplicationWindow):
             return GLib.SOURCE_REMOVE
         remaining = self._duration_seconds() - (time.monotonic() - self.started_at)
         if remaining <= 0:
+            self.tick_id = None
             self._finish()
-        else:
-            self.countdown.set_text(format_remaining(remaining))
+            return GLib.SOURCE_REMOVE
+        self.countdown.set_text(format_remaining(remaining))
         return GLib.SOURCE_CONTINUE
 
     def _on_close_request(self, _window: Adw.ApplicationWindow) -> bool:
