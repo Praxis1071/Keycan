@@ -242,4 +242,4 @@ class TypingWorkspace(Gtk.Box):
 
     def get_input_text(self) -> str:
         buffer = self.input_view.get_buffer()
-        return buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter(), False)
+        return buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter(), True)
