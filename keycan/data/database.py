@@ -518,6 +518,44 @@ class Database:
                     raise ValueError("Yedekteki karakter ölçümleri tutarsız")
                 if accuracy_percent > 100:
                     raise ValueError("Yedekteki doğruluk yüzdesi geçersiz")
+                normalized_wrong_letters = self._normalize_wrong_letter_counts(
+                    result.get("wrong_letter_counts", {})
+                )
+                duplicate = False
+                candidates = self.conn.execute(
+                    """SELECT duration_seconds, correct_words, wrong_words,
+                              words_per_minute, characters_per_minute,
+                              target_word_count, typed_word_count, total_characters,
+                              correct_characters, wrong_characters, accuracy_percent,
+                              wrong_letter_counts
+                       FROM practice_results
+                       WHERE lesson_id = ? AND completed_at = ?""",
+                    (lesson_id, completed_at),
+                ).fetchall()
+                for existing in candidates:
+                    try:
+                        existing_wrong_letters = self._normalize_wrong_letter_counts(existing[11])
+                    except ValueError:
+                        continue
+                    if (
+                        float(existing[0]) == duration_seconds
+                        and int(existing[1]) == correct_words
+                        and int(existing[2]) == wrong_words
+                        and float(existing[3]) == words_per_minute
+                        and float(existing[4]) == characters_per_minute
+                        and int(existing[5]) == target_word_count
+                        and int(existing[6]) == typed_word_count
+                        and int(existing[7]) == total_characters
+                        and int(existing[8]) == correct_characters
+                        and int(existing[9]) == wrong_characters
+                        and float(existing[10]) == accuracy_percent
+                        and existing_wrong_letters == normalized_wrong_letters
+                    ):
+                        duplicate = True
+                        break
+                if duplicate:
+                    skipped += 1
+                    continue
                 self.conn.execute(
                     """INSERT INTO practice_results(
                         lesson_id, duration_seconds, correct_chars, wrong_chars, wpm,
@@ -527,7 +565,7 @@ class Database:
                         correct_characters, wrong_characters, accuracy_percent, wrong_letter_counts
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
-                        lesson_id, duration_seconds, 0, 0,
+                        lesson_id, duration_seconds, correct_characters, wrong_characters,
                         words_per_minute,
                         correct_words, wrong_words,
                         words_per_minute, characters_per_minute,
@@ -535,7 +573,7 @@ class Database:
                         target_word_count, typed_word_count,
                         total_characters, correct_characters,
                         wrong_characters, accuracy_percent,
-                        json.dumps(self._normalize_wrong_letter_counts(result.get("wrong_letter_counts", {})), ensure_ascii=False),
+                        json.dumps(normalized_wrong_letters, ensure_ascii=False, sort_keys=True),
                     ),
                 )
                 imported += 1
