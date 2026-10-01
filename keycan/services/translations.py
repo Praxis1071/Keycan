@@ -76,6 +76,7 @@ TRANSLATIONS = {
     "Yeniden adlandır": "Rename",
     "Grubu sil": "Delete group",
     "Bir ders grubu seçin": "Select a lesson group",
+    "Ders grubu seçin": "Select a lesson group",
     "Yukarı taşı": "Move up",
     "Aşağı taşı": "Move down",
     "Seçili metin": "Selected text",
