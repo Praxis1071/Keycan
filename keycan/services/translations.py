@@ -301,6 +301,7 @@ _RUNTIME_PATTERNS = (
     (r"^(.+) gün$", r"\1 days", r"^(.+) days$", r"\1 gün"),
     (r"^Doğru: (.+)$", r"Correct: \1", r"^Correct: (.+)$", r"Doğru: \1"),
     (r"^Yanlış: (.+)$", r"Wrong: \1", r"^Wrong: (.+)$", r"Yanlış: \1"),
+    (r"^Süre doldu\. Doğru: (.+)  \|  Yanlış: (.+)  \|  Toplam: (.+)$", r"Time is up. Correct: \1  |  Wrong: \2  |  Total: \3", r"^Time is up\. Correct: (.+)  \|  Wrong: (.+)  \|  Total: (.+)$", r"Süre doldu. Doğru: \1  |  Yanlış: \2  |  Toplam: \3"),
     (r"^Dakikada (.+) kelime$", r"\1 words per minute", r"^(.+) words per minute$", r"Dakikada \1 kelime"),
     (r"^(.+) kelime/dk$", r"\1 words/min", r"^(.+) words/min$", r"\1 kelime/dk"),
     (r"^Şimdi: (.+) · Önceki: (.+) · Değişim: (.+)$", r"Now: \1 · Previous: \2 · Change: \3", r"^Now: (.+) · Previous: (.+) · Change: (.+)$", r"Şimdi: \1 · Önceki: \2 · Değişim: \3"),
