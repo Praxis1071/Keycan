@@ -354,12 +354,9 @@ class KeycanWindow(Adw.ApplicationWindow):
 
     def _apply_privacy_state(self) -> None:
         active = self.privacy_enabled and self.started_at is not None and not self.finished
-        self.input_view.set_css_classes(
-            [*self.input_view.get_css_classes(), "keycan-hidden"]
-            if active and not self.input_view.has_css_class("keycan-hidden")
-            else self.input_view.get_css_classes()
-        )
-        if not active:
+        if active:
+            self.input_view.add_css_class("keycan-hidden")
+        else:
             self.input_view.remove_css_class("keycan-hidden")
         self.input_view.set_cursor_visible(
             not active and not self.finished and self.current_lesson_id is not None
