@@ -32,8 +32,8 @@ headerbar.keycan-header { background: var(--headerbar-bg-color); color: var(--he
 .keycan-editor textview { padding: 10px; }
 .keycan-status { padding: 2px 2px 4px; }
 .keycan-countdown { color: var(--window-fg-color); font-weight: 700; font-size: 16px; }
-.keycan-editor textview.keycan-hidden text { color: transparent !important; }
-.keycan-editor textview.keycan-hidden text selection { color: transparent !important; }
+.keycan-editor textview.keycan-hidden text { color: transparent; }
+.keycan-editor textview.keycan-hidden text selection { color: transparent; }
 .keycan-editor textview.keycan-hidden { caret-color: transparent; }
 """
 
