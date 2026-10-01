@@ -32,9 +32,6 @@ headerbar.keycan-header { background: var(--headerbar-bg-color); color: var(--he
 .keycan-editor textview { padding: 10px; }
 .keycan-status { padding: 2px 2px 4px; }
 .keycan-countdown { color: var(--window-fg-color); font-weight: 700; font-size: 16px; }
-.keycan-editor textview.keycan-hidden text { color: transparent; }
-.keycan-editor textview.keycan-hidden text selection { color: transparent; }
-.keycan-editor textview.keycan-hidden { caret-color: transparent; }
 """
 
 
@@ -202,6 +199,11 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.workspace.add_controller(workspace_key_controller)
         self.target_view = self.workspace.target_view
         self.input_view = self.workspace.input_view
+
+        input_key_controller = Gtk.EventControllerKey()
+        input_key_controller.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        input_key_controller.connect("key-pressed", self._on_input_key_pressed)
+        self.input_view.add_controller(input_key_controller)
         self.status = self.workspace.status
         self.size_spin = self.workspace.size_spin
         self.workspace.preferences_button.connect("clicked", self._toggle_preferences)
@@ -354,10 +356,21 @@ class KeycanWindow(Adw.ApplicationWindow):
 
     def _apply_privacy_state(self) -> None:
         active = self.privacy_enabled and self.started_at is not None and not self.finished
-        if active:
-            self.input_view.add_css_class("keycan-hidden")
+        buffer = self.input_view.get_buffer()
+        table = buffer.get_tag_table()
+        hidden = table.lookup("privacy-hidden")
+        if hidden is None:
+            hidden = buffer.create_tag("privacy-hidden", invisible=True)
         else:
-            self.input_view.remove_css_class("keycan-hidden")
+            hidden.set_property("invisible", True)
+        hidden.set_priority(max(0, table.get_size() - 1))
+
+        start, end = buffer.get_start_iter(), buffer.get_end_iter()
+        if active:
+            buffer.apply_tag(hidden, start, end)
+        else:
+            buffer.remove_tag(hidden, start, end)
+
         self.input_view.set_cursor_visible(
             not active and not self.finished and self.current_lesson_id is not None
         )
@@ -372,26 +385,46 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.status.set_text(translate("Ders başladı. Yazmaya devam et.", self.preferences.get("language")))
         self._apply_privacy_state()
 
-    def _on_workspace_key_pressed(self, _controller, keyval, _keycode, state) -> bool:
-        if self.current_lesson_id is None or self.finished or self.started_at is not None:
-            return False
-        if state & (Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.ALT_MASK | Gdk.ModifierType.META_MASK):
-            return False
+    @staticmethod
+    def _key_character(keyval: int, state: Gdk.ModifierType) -> str | None:
+        if state & (
+            Gdk.ModifierType.CONTROL_MASK
+            | Gdk.ModifierType.ALT_MASK
+            | Gdk.ModifierType.META_MASK
+        ):
+            return None
         unicode_value = Gdk.keyval_to_unicode(keyval)
         if not unicode_value:
-            return False
+            return None
         character = chr(unicode_value)
         if not character.isprintable():
+            return None
+        return character
+
+    def _start_from_first_key(self, keyval: int, state: Gdk.ModifierType) -> bool:
+        if self.current_lesson_id is None or self.finished or self.started_at is not None:
+            return False
+        character = self._key_character(keyval, state)
+        if character is None:
             return False
 
         self._start_session()
+        return True
+
+    def _on_workspace_key_pressed(self, _controller, keyval, _keycode, state) -> bool:
+        if not self._start_from_first_key(keyval, state):
+            return False
         if self.input_view.has_focus():
             return False
 
         self.input_view.grab_focus()
         buffer = self.input_view.get_buffer()
-        buffer.insert_at_cursor(character)
+        buffer.insert_at_cursor(self._key_character(keyval, state))
         return True
+
+    def _on_input_key_pressed(self, _controller, keyval, _keycode, state) -> bool:
+        self._start_from_first_key(keyval, state)
+        return False
 
     def _on_input_changed(self, buffer: Gtk.TextBuffer) -> None:
         if self.updating_input or self.finished or self.current_lesson_id is None:
@@ -399,10 +432,10 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.typed = buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter(), False)
         if self.started_at is None and self.typed:
             self._start_session()
+        if self.started_at is not None and self.privacy_enabled:
+            self._apply_privacy_state()
         if self.started_at is not None and time.monotonic() - self.started_at >= self._duration_seconds():
             self._finish()
-        elif self.started_at is not None and self.privacy_enabled:
-            self._apply_privacy_state()
 
     def _finish(self) -> None:
         if self.finished or self.finish_pending or self.current_lesson_id is None:
