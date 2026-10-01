@@ -18,6 +18,7 @@ from keycan.gui.statistics_clean import StatisticsPanel
 from keycan.gui.profile import ProfilePanel
 from keycan.gui.keyboard_guide import KeyboardGuidePanel
 from keycan.services.i18n import apply_to_widget_tree
+from keycan.services.translations import translate
 from keycan.services.preferences import Preferences
 from keycan.utils.text import WORD_PATTERN, format_remaining
 
@@ -325,10 +326,10 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.workspace.set_backspace_enabled(self.backspace_enabled)
         self._apply_privacy_state()
         if self.current_lesson_id:
-            self.status.set_text("Yazmaya başlayınca geri sayım çalışır.")
+            self.status.set_text(translate("Yazmaya başlayınca geri sayım çalışır.", self.preferences.get("language")))
             self.input_view.grab_focus()
         else:
-            self.status.set_text("Bir ders ve metin seçin.")
+            self.status.set_text(translate("Bir ders ve metin seçin.", self.preferences.get("language")))
         if self.tick_id is None:
             self.tick_id = GLib.timeout_add(100, self._check_time)
 
@@ -371,7 +372,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.duration_spin.set_sensitive(False)
         self.source_dropdown.set_sensitive(False)
         self.lesson_dropdown.set_sensitive(False)
-        self.status.set_text("Ders başladı. Yazmaya devam et.")
+        self.status.set_text(translate("Ders başladı. Yazmaya devam et.", self.preferences.get("language")))
         self._apply_privacy_state()
 
     def _on_workspace_key_pressed(self, _controller, keyval, _keycode, state) -> bool:
@@ -475,7 +476,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         if getattr(self, "profile_page", None) is not None:
             self.profile_page.refresh()
         self.status.set_text(
-            f"Süre doldu. Doğru: {result.correct}  |  Yanlış: {result.wrong}  |  Toplam: {typed_word_count}"
+            translate(f"Süre doldu. Doğru: {result.correct}  |  Yanlış: {result.wrong}  |  Toplam: {typed_word_count}", self.preferences.get("language"))
         )
 
     def _render_target_results(self, matched: set[int]) -> None:
