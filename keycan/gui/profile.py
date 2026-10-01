@@ -46,7 +46,7 @@ class ProfilePanel(Gtk.Box):
         header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
         header.set_halign(Gtk.Align.FILL)
 
-        self.avatar = Adw.Avatar(112, "Profil", True)
+        self.avatar = Adw.Avatar.new(112, "Profil", True)
         self.avatar.set_halign(Gtk.Align.START)
         self.avatar.set_valign(Gtk.Align.CENTER)
         self.avatar.set_hexpand(False)
