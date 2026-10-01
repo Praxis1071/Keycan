@@ -35,6 +35,7 @@ def test_stage6_static_ui_strings_are_translated() -> None:
         ("Ders bazlı performans", "Performance by lesson"),
         ("Ders grubu ara…", "Search lesson groups…"),
         ("Eşleşen ders grubu bulunamadı.", "No matching lesson group found."),
+        ("Ders grubu seçin", "Select a lesson group"),
     )
     for source, expected in samples:
         assert translate(source, "en") == expected
@@ -47,6 +48,17 @@ def test_stage7_runtime_profile_text_is_translated_both_ways() -> None:
         "10 çalışma · 250 XP · 4 gün mevcut seri": "10 practice sessions · 250 XP · 4-day current streak",
         "İlk: 40  →  Son: 60  (50%)": "First: 40  →  Latest: 60  (50%)",
         "Henüz yeterli veri yok.": "Not enough data yet.",
+    }
+    for source, expected in samples.items():
+        assert translate(source, "en") == expected
+        assert translate(expected, "tr") == source
+
+
+def test_stage6_workspace_runtime_status_is_translated() -> None:
+    samples = {
+        "Yazmaya başlayınca geri sayım çalışır.": "The countdown starts when you begin typing.",
+        "Ders başladı. Yazmaya devam et.": "Practice started. Keep typing.",
+        "Süre doldu. Doğru: 10  |  Yanlış: 2  |  Toplam: 12": "Time is up. Correct: 10  |  Wrong: 2  |  Total: 12",
     }
     for source, expected in samples.items():
         assert translate(source, "en") == expected
