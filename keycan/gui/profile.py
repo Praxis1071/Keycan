@@ -233,8 +233,7 @@ class ProfilePanel(Gtk.Box):
         self.empty.add_css_class("dim-label")
         badges.add(self.empty)
 
-    @staticmethod
-    def _stat_row(title):
+    def _stat_row(self, title):
         card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
         card.add_css_class("card")
         card.set_margin_top(1)
