@@ -176,3 +176,64 @@ def test_stage7_database_summary_is_local_and_derived(tmp_path: Path) -> None:
         assert summary["best_streak"] == 2
     finally:
         db.close()
+
+
+def _backup_result() -> str:
+    import json
+
+    return json.dumps(
+        {
+            "format": "keycan-backup",
+            "version": 1,
+            "exported_at": "2026-10-01T00:00:00+00:00",
+            "custom_groups": [],
+            "practice_results": [
+                {
+                    "completed_at": "2026-10-01 10:00:00",
+                    "duration_seconds": 60,
+                    "correct_words": 10,
+                    "wrong_words": 1,
+                    "words_per_minute": 11,
+                    "characters_per_minute": 55,
+                    "target_word_count": 12,
+                    "typed_word_count": 11,
+                    "total_characters": 55,
+                    "correct_characters": 50,
+                    "wrong_characters": 5,
+                    "accuracy_percent": 90.9090909091,
+                    "wrong_letter_counts": {"a": 2},
+                    "source_name": "Test",
+                    "lesson_title": "Ders",
+                }
+            ],
+        }
+    )
+
+
+def test_stage7_backup_import_rejects_inconsistent_metrics(tmp_path: Path) -> None:
+    db = _make_db(tmp_path / "invalid-import.db")
+    try:
+        import json
+
+        payload = json.loads(_backup_result())
+        payload["practice_results"][0]["wrong_words"] = 9
+        try:
+            db.import_data(json.dumps(payload))
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("inconsistent backup metrics were accepted")
+        assert db.conn.execute("SELECT COUNT(*) FROM practice_results").fetchone()[0] == 0
+    finally:
+        db.close()
+
+
+def test_stage7_backup_import_is_idempotent_for_identical_results(tmp_path: Path) -> None:
+    db = _make_db(tmp_path / "duplicate-import.db")
+    try:
+        raw = _backup_result()
+        assert db.import_data(raw) == (1, 0)
+        assert db.import_data(raw) == (0, 1)
+        assert db.conn.execute("SELECT COUNT(*) FROM practice_results").fetchone()[0] == 1
+    finally:
+        db.close()
