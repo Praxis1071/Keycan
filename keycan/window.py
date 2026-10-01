@@ -429,7 +429,7 @@ class KeycanWindow(Adw.ApplicationWindow):
     def _on_input_changed(self, buffer: Gtk.TextBuffer) -> None:
         if self.updating_input or self.finished or self.current_lesson_id is None:
             return
-        self.typed = buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter(), False)
+        self.typed = buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter(), True)
         if self.started_at is None and self.typed:
             self._start_session()
         if self.started_at is not None and self.privacy_enabled:
