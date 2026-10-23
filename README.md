@@ -1,43 +1,44 @@
 # Keycan
 
-Keycan is a modern, offline-first **touch-typing practice application for Linux desktops** built with Python, GTK4 and libadwaita.
+Keycan, Python, GTK4 ve libadwaita ile geliştirilmiş, Linux masaüstü bilgisayarlar için modern ve **önce çevrimdışı çalışacak şekilde tasarlanmış bir on parmak yazma alıştırması uygulamasıdır**.
 
-It lets you practice with configurable lesson groups, track performance locally, and manage your own typing content without requiring an online account.
+Uygulama; özelleştirilebilir ders gruplarıyla pratik yapmanıza, performansınızı yerel olarak takip etmenize ve çevrimiçi bir hesap gerektirmeden kendi yazma içeriklerinizi yönetmenize olanak tanır.
 
 ## Keycan 2.3.0
 
-The 2.3.0 release focuses on stability, lesson-group management, statistics, localization, themes, and the GTK4 desktop experience.
+2.3.0 sürümü; kararlılığa, ders grubu yönetimine, istatistiklere, yerelleştirmeye, temalara ve GTK4 masaüstü deneyimine odaklanır.
 
-### Highlights
+### Öne çıkan özellikler
 
-- Typing practice with configurable sessions
-- Built-in and custom lesson groups
-- Lesson-group renaming and content management
-- Text creation, editing, deletion, and ordering
-- Statistics with GitHub-style activity history
-- Daily, weekly, monthly, yearly, and all-time views
-- Performance history and records
-- Import/export for local data
-- Turkish / English localization
-- System / Light / Dark theme selection
-- Local SQLite storage
-- Offline-first operation
-- GTK4 + libadwaita desktop interface
-- Local profile with XP, levels, badges, and practice streaks\n- Local profile names, photos, progression goals, and practice history
-- Built-in touch-typing keyboard guide
-- Flatpak packaging
+- Özelleştirilebilir oturumlarla yazma alıştırmaları
+- Yerleşik ve özel ders grupları
+- Ders gruplarını yeniden adlandırma ve içeriklerini yönetme
+- Metin oluşturma, düzenleme, silme ve sıralama
+- GitHub tarzı etkinlik geçmişi içeren istatistikler
+- Günlük, haftalık, aylık, yıllık ve tüm zamanları kapsayan görünümler
+- Performans geçmişi ve rekorlar
+- Yerel verileri içe ve dışa aktarma
+- Türkçe ve İngilizce dil desteği
+- Sistem, Açık ve Koyu tema seçenekleri
+- Yerel SQLite veri depolama
+- Öncelikle çevrimdışı çalışma
+- GTK4 ve libadwaita masaüstü arayüzü
+- XP, seviyeler, rozetler ve pratik serileri içeren yerel profil
+- Yerel profil adı ve fotoğrafı, ilerleme hedefleri ve pratik geçmişi
+- Yerleşik on parmak klavye rehberi
+- Flatpak paketi
 
-## Demo
+## Tanıtım
 
-Keycan 2.3.0 in action:
+Keycan 2.3.0 kullanımda:
 
 https://github.com/user-attachments/assets/4a78c778-8270-4cce-92c5-4f06d5501b0a
 
-## Screenshots
+## Ekran görüntüleri
 
-Screenshots will be added as the GTK4 interface reaches a stable visual milestone.
+GTK4 arayüzü görsel açıdan kararlı bir aşamaya ulaştığında ekran görüntüleri eklenecektir.
 
-## Technology
+## Kullanılan teknolojiler
 
 - Python
 - GTK4
@@ -47,31 +48,31 @@ Screenshots will be added as the GTK4 interface reaches a stable visual mileston
 - Flatpak
 - GNOME Platform 50
 
-## Download
+## İndirme
 
-For the latest packaged build, see the **GitHub Releases** section of this repository.
+En güncel paketlenmiş sürüm için bu deponun **GitHub Releases (Sürümler)** bölümüne bakın.
 
-## Development roadmap
+## Geliştirme yol haritası
 
-The current 0–9 development roadmap is complete. Future work will focus on maintenance, user feedback, bug fixes, and quality improvements:
+Mevcut 0–9 numaralı geliştirme yol haritası tamamlanmıştır. Bundan sonraki çalışmalar bakım, kullanıcı geri bildirimleri, hata düzeltmeleri ve kalite iyileştirmelerine odaklanacaktır:
 
-| Stage | Area | Status |
+| Aşama | Alan | Durum |
 |---|---|---|
-| 0 | Core architecture | Complete |
-| 1 | Typing experience | Complete |
-| 2 | Statistics and data layer | Complete |
-| 3 | Content and data management | Complete |
-| 4 | 2.3.x maintenance and fixes | Complete |
-| 5 | Advanced statistics | Complete |
-| 6 | User experience | Complete |
-| 7 | Profile, XP, levels and badges | Complete |
-| 8 | Advanced local profile | Complete |
-| 9 | Keyboard guide | Complete |
+| 0 | Temel mimari | Tamamlandı |
+| 1 | Yazma deneyimi | Tamamlandı |
+| 2 | İstatistikler ve veri katmanı | Tamamlandı |
+| 3 | İçerik ve veri yönetimi | Tamamlandı |
+| 4 | 2.3.x bakımı ve düzeltmeleri | Tamamlandı |
+| 5 | Gelişmiş istatistikler | Tamamlandı |
+| 6 | Kullanıcı deneyimi | Tamamlandı |
+| 7 | Profil, XP, seviyeler ve rozetler | Tamamlandı |
+| 8 | Gelişmiş yerel profil | Tamamlandı |
+| 9 | Klavye rehberi | Tamamlandı |
 
-See [ROADMAP.md](ROADMAP.md) for the detailed plan.
+Ayrıntılı plan için [ROADMAP.md](ROADMAP.md) dosyasına bakın.
 
-## License
+## Lisans
 
-Keycan is free and open-source software distributed under the **GNU General Public License v3 or later (GPL-3.0-or-later)**.
+Keycan, **GNU Genel Kamu Lisansı sürüm 3 veya üzeri (GPL-3.0-or-later)** kapsamında dağıtılan ücretsiz ve açık kaynaklı bir yazılımdır.
 
-See [LICENSE](LICENSE) for the full license text.
+Lisansın tam metni için [LICENSE](LICENSE) dosyasına bakın.
