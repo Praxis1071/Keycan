@@ -1,44 +1,44 @@
 # Keycan
 
-Keycan, Python, GTK4 ve libadwaita ile geliştirilmiş, Linux masaüstü bilgisayarlar için modern bir **on parmak yazma alıştırması uygulamasıdır**. Öncelikle çevrimdışı çalışacak şekilde tasarlanmıştır; kullanmak için çevrimiçi hesap gerekmez.
+Keycan is a modern **touch-typing practice app** for Linux desktop computers, built with Python, GTK4, and libadwaita. It is designed to work offline, with no online account required.
 
-Uygulama, yazma hızınızı ve doğruluğunuzu geliştirmenize yardımcı olur. Kendi ders gruplarınızı ve metinlerinizi oluşturabilir, çalışmalarınızı takip edebilir ve ilerlemenizi yerel olarak saklayabilirsiniz.
+The app helps you improve your typing speed and accuracy. You can create your own lesson groups and texts, track your practice sessions, and keep your progress stored locally.
 
-## Özellikler
+## Features
 
-- Özelleştirilebilir yazma alıştırmaları ve ders grupları
-- Ders gruplarındaki metinleri oluşturma, düzenleme, silme ve sıralama
-- Yazma hızı, doğruluk ve çalışma geçmişi istatistikleri
-- Günlük, haftalık, aylık, yıllık ve tüm zamanları kapsayan istatistik görünümleri
-- Verileri içe ve dışa aktarma
-- XP, seviyeler, rozetler, hedefler ve pratik serileri içeren yerel profil
-- Türkçe ve İngilizce dil desteği
-- Sistem, açık ve koyu tema seçenekleri
-- On parmak yazma tekniği için yerleşik klavye rehberi
-- SQLite ile yerel veri depolama
-- GTK4 ve libadwaita ile hazırlanmış Linux masaüstü arayüzü
-- Flatpak desteği
+- Customizable typing exercises and lesson groups
+- Create, edit, delete, and reorder texts within lesson groups
+- Statistics for typing speed, accuracy, and practice history
+- Daily, weekly, monthly, yearly, and all-time statistics
+- Import and export data
+- A local profile with XP, levels, badges, goals, and practice streaks
+- Turkish and English language support
+- System, light, and dark themes
+- Built-in guide to touch typing and proper keyboard finger placement
+- Local data storage with SQLite
+- Linux desktop interface built with GTK4 and libadwaita
+- Flatpak support
 
-## Tanıtım
+## Preview
 
 https://github.com/user-attachments/assets/4a78c778-8270-4cce-92c5-4f06d5501b0a
 
-## Kurulum
+## Installation
 
-En güncel sürümü indirmek için [GitHub Releases](https://github.com/Praxis1071/Keycan/releases) sayfasını ziyaret edin.
+Visit the [GitHub Releases](https://github.com/Praxis1071/Keycan/releases) page to download the latest version.
 
-## Kullanılan teknolojiler
+## Built With
 
 - Python
 - GTK4
-- libadwaita ve PyGObject
+- libadwaita and PyGObject
 - SQLite
 - Flatpak
 
-## Geliştirme
+## Development
 
-Geliştirme aşamaları ve planlanan çalışmalar için [ROADMAP.md](ROADMAP.md) dosyasına bakın.
+For development stages and planned work, see [ROADMAP.md](ROADMAP.md).
 
-## Lisans
+## License
 
-Keycan, **GNU Genel Kamu Lisansı sürüm 3 veya üzeri (GPL-3.0-or-later)** kapsamında dağıtılan ücretsiz ve açık kaynaklı bir yazılımdır. Ayrıntılar için [LICENSE](LICENSE) dosyasına bakın.
+Keycan is free and open-source software licensed under the **GNU General Public License v3 or later (GPL-3.0-or-later)**. See [LICENSE](LICENSE) for details.
