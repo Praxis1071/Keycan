@@ -106,6 +106,9 @@ def test_shared_translation_catalog_covers_profile_and_reset_actions() -> None:
     samples = {
         "İstatistikleri ve profili sıfırla": "Reset statistics and profile progress",
         "Profil fotoğrafını kaldır": "Remove profile photo",
+        "Çalışma kaydedildi ancak profil görünümü güncellenemedi.": (
+            "Practice was saved, but the profile view could not be refreshed."
+        ),
         "Çalışma tamamlandı ancak istatistiklere kaydedilemedi.": (
             "Practice finished, but the result could not be saved to statistics."
         ),
