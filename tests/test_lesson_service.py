@@ -90,3 +90,22 @@ def test_service_resolves_all_built_in_texts_to_catalog(database: Database) -> N
         }
         for lesson in group.lessons:
             assert resolved[lesson.id] == lesson.text
+
+
+
+def test_service_falls_back_to_sqlite_when_catalog_is_unavailable(
+    database: Database,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from keycan.services.lesson_catalog import LessonCatalogError
+
+    def unavailable():
+        raise LessonCatalogError("Ders kataloğu JSON biçimi geçersiz")
+
+    monkeypatch.setattr("keycan.services.lesson_service.load_lesson_catalog", unavailable)
+    service = LessonService(database)
+
+    assert service.catalog_error == "Ders kataloğu JSON biçimi geçersiz"
+    assert service.sources() == database.sources()
+    first_lesson_id = database.lessons(1)[0][0]
+    assert service.lesson(first_lesson_id) == database.lesson(first_lesson_id)
