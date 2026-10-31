@@ -71,18 +71,19 @@ class ProfilePanel(Gtk.Box):
         self.subtitle.set_max_width_chars(60)
         identity.append(self.subtitle)
 
+        photo_actions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        photo_actions.set_halign(Gtk.Align.START)
         self.photo_button = Gtk.Button(label="Profil fotoğrafı seç")
         self.photo_button.add_css_class("pill")
-        self.photo_button.set_halign(Gtk.Align.START)
         self.photo_button.connect("clicked", self._choose_photo)
-        identity.append(self.photo_button)
+        photo_actions.append(self.photo_button)
 
         self.remove_photo_button = Gtk.Button(label="Profil fotoğrafını kaldır")
         self.remove_photo_button.add_css_class("pill")
-        self.remove_photo_button.set_halign(Gtk.Align.START)
         self.remove_photo_button.set_sensitive(False)
         self.remove_photo_button.connect("clicked", self._remove_photo)
-        identity.append(self.remove_photo_button)
+        photo_actions.append(self.remove_photo_button)
+        identity.append(photo_actions)
         header.append(identity)
         self.append(header)
 
@@ -362,7 +363,7 @@ class ProfilePanel(Gtk.Box):
             return
 
         self.avatar.set_custom_image(None)
-        self.avatar.set_text(self._profile_name or "Profil")
+        self.avatar.set_text(self._profile_name or translate("Profil", self.language))
         self.remove_photo_button.set_sensitive(False)
 
         if old_path is not None:
