@@ -93,11 +93,11 @@ Bu aşamanın amacı mevcut Keycan özelliklerini koruyarak kod tabanını sadel
 
 ### 10.2 — JSON ders kataloğu ve içerik temizliği
 - [x] Ders kataloğu için sürümlenmiş, doğrulanabilir bir JSON şeması tanımlamak (şema sürüm 1)
-- [ ] Hazır ders gruplarını ve ders metinlerini JSON kaynaklarına taşımak
-- [ ] Uygulama içi erişimi tek bir lesson service üzerinden sağlamak
+- [x] Hazır ders gruplarını ve temizlenmiş ders metinlerini sürümlü JSON kataloğuna almak (geçiş katmanı etkin; SQLite henüz kaldırılmadı)
+- [x] Hazır derslerin GUI okuma akışını tek bir LessonService üzerinden sağlamak (SQLite yazma ve kullanıcı değişiklikleri korunuyor)
 - [x] Grup adlarını Türkçe/İngilizce harfler ve kelime boşlukları dışında karakter içermeyecek şekilde sadeleştirmek
 - [x] Hazır ders metinlerinden sayıları ve noktalama işaretlerini temizlemek; Türkçe karakterleri korumak
-- [ ] Metinleri temizlerken kelime sırasını, anlamı, seviye akışını ve tekrarları kontrol etmek
+- [x] Tüm 1.833 metinde kelime sırasını ve kelime çokluğunu temizleme öncesiyle karşılaştırmak; anlam/zorluk akışı için içerik incelemesini ayrıca sürdürmek
 - [x] Boş, yinelenen veya bozulmuş dersleri otomatik doğrulamalarla tespit etmek (boş ders yok; temizleme sonrası iki tekrar korunarak raporlandı)
 - [ ] Kullanıcı tarafından oluşturulan ders içeriğinin saklama biçimini ayrıca ele almak; mevcut özel içerikleri kayıpsız taşımadan eski kaynağı kaldırmamak
 - [ ] JSON okuma hatalarında uygulamanın çökmesini önlemek ve anlaşılır hata bildirimi sağlamak
