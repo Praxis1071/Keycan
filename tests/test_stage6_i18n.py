@@ -77,6 +77,9 @@ def test_shared_translation_catalog_covers_profile_and_reset_actions() -> None:
         "Seçili metni silmek istiyor musun?": "Delete the selected text?",
         "Veritabanına erişilemedi.": "Database could not be accessed.",
         "Varsayılan ders grupları ve metinleri geri yüklensin mi?": "Restore the default lesson groups and texts?",
+        "Ders grubu bulunamadı": "Lesson group not found.",
+        "Ders grubu adı boş olamaz": "Lesson group name cannot be empty.",
+        "Metin bulunamadı": "Text not found.",
     }
     for source, expected in samples.items():
         assert shared_translate(source, "en") == expected
