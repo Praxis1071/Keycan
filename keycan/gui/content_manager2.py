@@ -150,5 +150,5 @@ class ContentManagerWindow(Adw.Window):
             if getattr(row,"lesson_id",None)==current:self.lesson_list.select_row(row);break
         self._changed("Metin sırası güncellendi.")
     def _changed(self,msg):
-        self.status.set_text(msg)
+        self._message(msg)
         if self.on_changed:self.on_changed()
