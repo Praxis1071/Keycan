@@ -464,8 +464,6 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.duration_spin.set_sensitive(True)
         elapsed = 0.0 if self.started_at is None else min(time.monotonic() - self.started_at, self._duration_seconds())
         result = self.engine.match_words(self.current_text, self.typed)
-        self._render_target_results(result.matched_target_indices)
-        self._render_input_results(result.correctness)
 
         target_word_count = len(WORD_PATTERN.findall(self.current_text))
         typed_word_count = len(WORD_PATTERN.findall(self.typed))
@@ -517,9 +515,25 @@ class KeycanWindow(Adw.ApplicationWindow):
                 except Exception as exc:
                     profile_error = exc
 
-        # Rendering correctness tags clears existing tags, so re-apply the
-        # privacy tag after rendering. Privacy remains active until restart.
-        self._apply_privacy_state()
+        render_error = None
+        try:
+            self._render_target_results(result.matched_target_indices)
+        except Exception as exc:
+            render_error = exc
+        try:
+            self._render_input_results(result.correctness)
+        except Exception as exc:
+            if render_error is None:
+                render_error = exc
+        finally:
+            # Rendering correctness tags clears existing tags, so re-apply the
+            # privacy tag even if one of the rendering operations fails.
+            try:
+                self._apply_privacy_state()
+            except Exception as exc:
+                if render_error is None:
+                    render_error = exc
+
         if save_error is not None:
             message = translate(
                 "Çalışma tamamlandı ancak istatistiklere kaydedilemedi.",
