@@ -114,6 +114,7 @@ TRANSLATIONS = {
     "Yazarken önceki karakteri silmeyi engeller": "Prevent deleting the previous character while typing",
     "Ders Gruplarını Yönet": "Manage Lesson Groups",
     "Ders grupları": "Lesson groups",
+    "Ders grubu": "Lesson group",
     "Yeni ders grubu adı": "New lesson group name",
     "Oluştur": "Create",
     "Yeniden adlandır": "Rename",
