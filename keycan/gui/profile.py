@@ -437,16 +437,7 @@ class ProfilePanel(Gtk.Box):
         self.remove_photo_button.set_sensitive(False)
 
         if old_path is not None:
-            try:
-                data_dir = self._data_dir().resolve()
-                if (
-                    old_path.name.startswith("profile-photo.")
-                    and old_path.resolve().parent == data_dir
-                ):
-                    old_path.unlink(missing_ok=True)
-            except OSError:
-                # The reference is already cleared; a leftover file is harmless.
-                pass
+            self._delete_managed_photo(old_path)
 
     def _set_photo(self, path: Path) -> None:
         try:
