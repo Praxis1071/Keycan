@@ -647,7 +647,7 @@ def _import_data(self: Database, raw: str):
             is_custom = bool(group.get("is_custom", True))
             default_id = group.get("default_source_id")
             source_id = None
-            source_identity = str(group.get("identity", "")).strip()
+            source_identity = str(group.get("identity") or "").strip()
             if not is_custom and source_identity:
                 for (candidate_id,) in self.conn.execute(
                     "SELECT id FROM sources WHERE is_custom = 0"
@@ -712,7 +712,7 @@ def _import_data(self: Database, raw: str):
                 default_lesson_id = item.get("default_lesson_id")
                 lesson_key = str(item.get("key", "")).strip() or uuid.uuid4().hex
                 lesson_id = None
-                lesson_identity = str(item.get("identity", "")).strip()
+                lesson_identity = str(item.get("identity") or "").strip()
                 if not lesson_is_custom and lesson_identity:
                     for (candidate_id,) in self.conn.execute(
                         """SELECT id FROM lessons
