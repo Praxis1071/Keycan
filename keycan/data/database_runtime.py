@@ -471,6 +471,13 @@ def _import_data(self: Database, raw: str):
                 ).fetchone()
                 if found:
                     source_id = int(found[0])
+            if source_id is None and source_identity:
+                found = self.conn.execute(
+                    "SELECT id FROM sources WHERE custom_key = ? AND is_custom = 0",
+                    (source_identity,),
+                ).fetchone()
+                if found:
+                    source_id = int(found[0])
             if source_id is None and key:
                 found = self.conn.execute(
                     "SELECT id FROM sources WHERE custom_key = ? AND is_custom = ?",
@@ -479,7 +486,7 @@ def _import_data(self: Database, raw: str):
                 if found:
                     source_id = int(found[0])
             if source_id is None:
-                source_key = key or uuid.uuid4().hex
+                source_key = (source_identity or key) if not is_custom else (key or uuid.uuid4().hex)
                 relative_path = _custom_relative_path(0, source_key) if is_custom else f"default://{source_key}"
                 source_id = int(self.conn.execute(
                     """INSERT INTO sources(display_name, relative_path, is_custom, is_deleted, custom_key)
@@ -528,10 +535,11 @@ def _import_data(self: Database, raw: str):
                     ).fetchone()
                     if found:
                         lesson_id = int(found[0])
+                stored_lesson_key = lesson_identity or lesson_key
                 if lesson_id is None:
                     found = self.conn.execute(
                         "SELECT id FROM lessons WHERE custom_key = ? AND source_id = ? AND is_custom = ?",
-                        (lesson_key, source_id, int(lesson_is_custom)),
+                        (stored_lesson_key, source_id, int(lesson_is_custom)),
                     ).fetchone()
                     if found:
                         lesson_id = int(found[0])
@@ -541,7 +549,7 @@ def _import_data(self: Database, raw: str):
                     lesson_id = int(self.conn.execute(
                         """INSERT INTO lessons(source_id, legacy_metin_id, title, text, is_custom, is_deleted, custom_order, custom_key)
                            VALUES (?, 0, 'Ders', ?, ?, 0, ?, ?)""",
-                        (source_id, text, int(lesson_is_custom), order, lesson_key),
+                        (source_id, text, int(lesson_is_custom), order, stored_lesson_key),
                     ).lastrowid)
                 lesson_map[lesson_key] = lesson_id
                 if lesson_identity:
