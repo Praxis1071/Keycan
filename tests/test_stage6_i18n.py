@@ -27,6 +27,26 @@ def test_stage6_runtime_text_is_fully_translated() -> None:
         assert translate(expected, "tr") == source
 
 
+def test_statistics_and_profile_runtime_values_translate_recursively() -> None:
+    samples = {
+        "45 sn": "45 sec",
+        "2 dk 30 sn": "2 min 30 sec",
+        "3 sa 15 dk": "3 hr 15 min",
+        "2026: 5 aktif gün · 10 çalışma · 2 sa 30 dk toplam süre": (
+            "2026: 5 active days · 10 practice sessions · 2 hr 30 min total time"
+        ),
+        "5 çalışma · Dakikada 50 kelime · %95 doğruluk": (
+            "5 practice sessions · 50 words per minute · 95% accuracy"
+        ),
+        "yeni hız rekoru: Dakikada 75 kelime": "new speed record: 75 words per minute",
+        "2 / 5 rozet açıldı.": "2 / 5 badges unlocked.",
+        "Sonraki seviye için 120 XP": "120 XP to the next level",
+    }
+    for source, expected in samples.items():
+        assert translate(source, "en") == expected
+        assert translate(expected, "tr") == source
+
+
 def test_stage6_static_ui_strings_are_translated() -> None:
     samples = (
         ("Hakkında", "About"),
