@@ -87,3 +87,9 @@ Content normalization rules:
 - Make one coherent change per commit and keep all work on the dedicated refactor branch.
 - A phase is complete only when its tests pass and existing features are checked.
 - If tests cannot be executed in the current environment, report that limitation; do not claim they passed.
+
+## 6. Initial content audit
+
+The current default catalog contains 82 active groups and 1,833 lessons. A first-pass audit counted approximately 12,963 numeric characters and 23,070 punctuation/symbol characters in default lesson text. Turkish and other Unicode letters account for the remaining letter content; all whitespace should be normalized rather than removed.
+
+A mechanical group-name cleanup creates collisions (for example, the F/Q keyboard variants, groups distinguished by the number of matching initial letters, multiple tekerleme parts, and several date-based KM collections). Therefore group names must be reviewed with a unique-name check; a blind regex cleanup is not acceptable. Preserve group and lesson IDs/order while changing visible names and lesson text.
