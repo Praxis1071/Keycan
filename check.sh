@@ -4,9 +4,21 @@ project_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 cd "$project_dir"
 python -m py_compile main.py keycan/__init__.py keycan/app.py keycan/window.py keycan/core/__init__.py keycan/core/typing_engine.py keycan/data/__init__.py keycan/data/database.py keycan/data/database_runtime.py keycan/gui/content_manager2.py keycan/gui/settings2.py keycan/gui/statistics_clean.py keycan/gui/statistics_runtime.py keycan/gui/search.py keycan/gui/workspace.py keycan/gui/profile.py keycan/services/preferences.py keycan/services/lesson_catalog.py keycan/services/progression.py keycan/services/translations.py keycan/services/i18n.py tests/test_stage1_database.py tests/test_stage3_database.py tests/test_custom_content.py
 python - <<'PY'
+import shutil
 import sqlite3
-connection=sqlite3.connect("typing_data.db")
-try:
+import tempfile
+from pathlib import Path
+
+from keycan.data.database import Database
+from keycan.services.lesson_catalog import load_lesson_catalog
+import keycan.data.database_runtime  # noqa: F401
+
+with tempfile.TemporaryDirectory() as temp_dir:
+    database_path = Path(temp_dir) / "typing_data.db"
+    shutil.copy2("typing_data.db", database_path)
+    database = Database(database_path)
+    connection = database.conn
+    try:
     connection.execute("PRAGMA foreign_keys = ON")
     assert connection.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
     sources=connection.execute("SELECT COUNT(*) FROM sources WHERE is_deleted = 0").fetchone()[0]
@@ -30,13 +42,20 @@ try:
     if not snapshot_pending:
         assert snapshot_source_count == active_default_sources
         assert snapshot_lesson_count == active_default_lessons
+    catalog = load_lesson_catalog()
+    catalog_group_ids = {group.id for group in catalog.groups}
+    catalog_lesson_ids = {lesson.id for group in catalog.groups for lesson in group.lessons}
+    snapshot_group_ids = {row[0] for row in connection.execute("SELECT source_id FROM default_content_sources")}
+    snapshot_lesson_ids = {row[0] for row in connection.execute("SELECT lesson_id FROM default_content_lessons")}
+    assert catalog_group_ids == snapshot_group_ids
+    assert catalog_lesson_ids == snapshot_lesson_ids
     result_columns={row[1] for row in connection.execute("PRAGMA table_info(practice_results)")}
     assert {"completed_at","target_word_count","typed_word_count","total_characters","correct_characters","wrong_characters","accuracy_percent"} <= result_columns
     assert connection.execute("SELECT COUNT(*) FROM practice_results WHERE duration_seconds<0 OR correct_words<0 OR wrong_words<0 OR target_word_count<0 OR typed_word_count<0 OR total_characters<0 OR correct_characters<0 OR wrong_characters<0 OR words_per_minute<0 OR characters_per_minute<0 OR accuracy_percent<0 OR accuracy_percent>100").fetchone()[0] == 0
     assert connection.execute("SELECT COUNT(*) FROM practice_results WHERE total_characters != correct_characters + wrong_characters").fetchone()[0] == 0
     print(f"Veri denetimi başarılı: {sources} aktif kaynak, {lessons} aktif metin.")
-finally:
-    connection.close()
+    finally:
+        database.close()
 PY
 python -m pytest -q tests/test_stage1_database.py tests/test_stage3_database.py tests/test_custom_content.py tests/test_stage6_preferences.py tests/test_stage6_i18n.py tests/test_lesson_catalog.py
 echo "Keycan sözdizimi, veritabanı, içerik yönetimi, güncel varsayılan geri yükleme ve istatistik kontrolleri hazır."
