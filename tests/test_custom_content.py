@@ -277,3 +277,121 @@ def test_backup_preserves_custom_lesson_inside_default_group(tmp_path: Path) -> 
         ).fetchone() == (restored[0],)
     finally:
         target.close()
+
+def make_shifted_default_db(path: Path) -> Database:
+    connection = sqlite3.connect(path)
+    connection.executescript("""
+        CREATE TABLE sources (
+            id INTEGER PRIMARY KEY,
+            display_name TEXT NOT NULL,
+            relative_path TEXT NOT NULL UNIQUE DEFAULT ''
+        );
+        CREATE TABLE lessons (
+            id INTEGER PRIMARY KEY,
+            source_id INTEGER NOT NULL,
+            legacy_metin_id INTEGER NOT NULL DEFAULT 0,
+            title TEXT NOT NULL,
+            text TEXT NOT NULL,
+            FOREIGN KEY(source_id) REFERENCES sources(id)
+        );
+        CREATE TABLE practice_results (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            lesson_id INTEGER NOT NULL,
+            duration_seconds REAL NOT NULL,
+            correct_chars INTEGER NOT NULL DEFAULT 0,
+            wrong_chars INTEGER NOT NULL DEFAULT 0,
+            wpm REAL NOT NULL DEFAULT 0,
+            correct_words INTEGER NOT NULL DEFAULT 0,
+            wrong_words INTEGER NOT NULL DEFAULT 0,
+            words_per_minute REAL NOT NULL DEFAULT 0,
+            characters_per_minute REAL NOT NULL DEFAULT 0
+        );
+        INSERT INTO sources VALUES (1, 'Other Default', 'default://1');
+        INSERT INTO sources VALUES (2, 'Hazır Ders', 'default://2');
+        INSERT INTO lessons VALUES (1, 1, 1, 'Other Lesson', 'other text');
+        INSERT INTO lessons VALUES (2, 2, 1, 'Ders Test', 'hazır metin');
+    """)
+    connection.commit()
+    connection.close()
+    return Database(path)
+
+
+def test_default_backup_maps_by_content_identity_when_numeric_ids_shift(tmp_path: Path) -> None:
+    source = make_db(tmp_path / "identity-source.db")
+    try:
+        source.save_result(
+            1, 60, 1, 0,
+            target_word_count=1, typed_word_count=1, total_characters=5,
+            correct_characters=5, wrong_characters=0, words_per_minute=1,
+            characters_per_minute=5, accuracy_percent=100,
+        )
+        backup = source.export_data()
+    finally:
+        source.close()
+
+    target = make_shifted_default_db(tmp_path / "identity-target.db")
+    try:
+        imported, skipped = target.import_data(backup)
+        assert (imported, skipped) == (1, 0)
+        assert target.conn.execute(
+            "SELECT display_name FROM sources WHERE id = 1"
+        ).fetchone() == ("Other Default",)
+        assert target.conn.execute(
+            "SELECT lesson_id FROM practice_results"
+        ).fetchone() == (2,)
+        assert target.import_data(backup) == (0, 1)
+        assert target.conn.execute(
+            "SELECT COUNT(*) FROM practice_results"
+        ).fetchone()[0] == 1
+    finally:
+        target.close()
+
+
+def test_legacy_backup_skips_ambiguous_name_based_lesson_mapping(tmp_path: Path) -> None:
+    db = make_db(tmp_path / "ambiguous.db")
+    try:
+        db.conn.execute(
+            """INSERT INTO sources(
+                   display_name, relative_path, is_custom, is_deleted, custom_key
+               ) VALUES ('Hazır Ders', 'default://duplicate', 0, 0, '')"""
+        )
+        duplicate_source = db.conn.execute(
+            "SELECT id FROM sources WHERE relative_path = 'default://duplicate'"
+        ).fetchone()[0]
+        db.conn.execute(
+            """INSERT INTO lessons(
+                   source_id, legacy_metin_id, title, text,
+                   is_custom, is_deleted, custom_order, custom_key
+               ) VALUES (?, 1, 'Ders Test', 'başka metin', 0, 0, 0, '')""",
+            (duplicate_source,),
+        )
+        db.conn.commit()
+        backup = json.dumps({
+            "format": "keycan-backup",
+            "version": 1,
+            "custom_groups": [],
+            "practice_results": [{
+                "completed_at": "2026-10-31 10:00:00",
+                "duration_seconds": 60,
+                "correct_words": 1,
+                "wrong_words": 0,
+                "words_per_minute": 1,
+                "characters_per_minute": 5,
+                "target_word_count": 1,
+                "typed_word_count": 1,
+                "total_characters": 5,
+                "correct_characters": 5,
+                "wrong_characters": 0,
+                "accuracy_percent": 100,
+                "wrong_letter_counts": {},
+                "source_name": "Hazır Ders",
+                "lesson_title": "Ders Test",
+            }],
+        })
+        assert db.import_data(backup) == (0, 1)
+        assert db.conn.execute(
+            "SELECT COUNT(*) FROM practice_results"
+        ).fetchone()[0] == 0
+    finally:
+        db.close()
+
