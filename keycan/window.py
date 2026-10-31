@@ -81,6 +81,9 @@ class KeycanWindow(Adw.ApplicationWindow):
         profile_page = getattr(self, "profile_page", None)
         if profile_page is not None:
             profile_page.set_language(language)
+        settings_page = getattr(self, "settings_page", None)
+        if settings_page is not None:
+            settings_page.set_language(language)
         keyboard_guide_page = getattr(self, "keyboard_guide_page", None)
         if keyboard_guide_page is not None:
             keyboard_guide_page.set_language(language)
@@ -672,7 +675,7 @@ class ConfiguredKeycanWindow(KeycanWindow):
             split.set_show_sidebar(False)
         nav.connect("row-activated", activated)
         split.set_sidebar(nav); split.set_content(stack); toolbar.set_content(split)
-        self.sidebar_view = split; self.navigation_list = nav; self.content_stack = stack; self.statistics_page = stats; self.profile_page = profile; self.keyboard_guide_page = guide
+        self.sidebar_view = split; self.navigation_list = nav; self.content_stack = stack; self.statistics_page = stats; self.profile_page = profile; self.keyboard_guide_page = guide; self.settings_page = settings
         toggle = Gtk.ToggleButton(); toggle.set_icon_name("sidebar-show-symbolic")
         toggle.set_tooltip_text("Yan paneli aç/kapat")
         toggle.connect("toggled", lambda button: split.set_show_sidebar(button.get_active()))
