@@ -112,9 +112,9 @@ Bu aşamanın amacı mevcut Keycan özelliklerini koruyarak kod tabanını sadel
 - [ ] Eski veri biçimleriyle uyumluluk testleri eklemek
 
 ### 10.4 — Yinelenen modüller ve runtime müdahaleleri
-- [ ] `database.py` / `database_runtime.py` sorumluluklarını karşılaştırmak
-- [ ] `statistics.py`, `statistics_clean.py` ve `statistics_runtime.py` kullanımını doğrulamak
-- [ ] `settings.py` / `settings2.py` kullanımını doğrulamak
+- [x] `database.py` / `database_runtime.py` sorumluluklarını karşılaştırmak
+- [x] `statistics.py`, `statistics_clean.py` ve `statistics_runtime.py` kullanımını doğrulamak (aktif modül `statistics_clean.py`; animasyon güvenliği sınıfa taşındı, runtime dosyası uyumluluk katmanı)
+- [x] `settings.py` / `settings2.py` kullanımını doğrulamak (aktif modül `settings2.py`; eski dosya korunuyor)
 - [ ] Monkey-patching yerine açık sınıf/metot veya bağımlılık enjeksiyonu kullanmak
 - [ ] Tekrarlanan kodu birleştirmek; kullanılmayan eski modülleri ancak tüm referanslar temizlendikten sonra kaldırmak
 - [ ] Uygulama başlatma sırasını sadeleştirmek
