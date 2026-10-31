@@ -6,7 +6,9 @@ from pathlib import Path
 import pytest
 
 from keycan.data.database import Database
-import keycan.data.database_runtime  # noqa: F401
+from keycan.data.database_runtime import install_database_runtime
+
+install_database_runtime()
 from keycan.services.lesson_service import LessonService
 
 
