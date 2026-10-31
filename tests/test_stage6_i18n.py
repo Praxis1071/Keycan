@@ -63,3 +63,17 @@ def test_stage6_workspace_runtime_status_is_translated() -> None:
     for source, expected in samples.items():
         assert translate(source, "en") == expected
         assert translate(expected, "tr") == source
+
+def test_shared_translation_catalog_covers_profile_and_reset_actions() -> None:
+    from keycan.services.translations import translate as shared_translate
+
+    samples = {
+        "İstatistikleri ve profili sıfırla": "Reset statistics and profile progress",
+        "Profil fotoğrafını kaldır": "Remove profile photo",
+        "Çalışma tamamlandı ancak istatistiklere kaydedilemedi.": (
+            "Practice finished, but the result could not be saved to statistics."
+        ),
+    }
+    for source, expected in samples.items():
+        assert shared_translate(source, "en") == expected
+        assert shared_translate(expected, "tr") == source
