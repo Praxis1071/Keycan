@@ -343,8 +343,20 @@ def _export_data(self: Database) -> str:
         group_key = key or f"default:{source_id}"
         lessons = []
         for lesson_id, text, lesson_key, order, lesson_custom in self.managed_lessons(source_id):
-            lessons.append({"key": lesson_key or f"default:{lesson_id}", "text": text, "order": order, "default_lesson_id": None if lesson_custom else lesson_id})
-        groups.append({"key": group_key, "name": name, "lessons": lessons, "is_custom": bool(is_custom), "default_source_id": None if is_custom else source_id})
+            lessons.append({
+                "key": lesson_key or f"default:{lesson_id}",
+                "text": text,
+                "order": order,
+                "is_custom": bool(lesson_custom),
+                "default_lesson_id": None if lesson_custom else lesson_id,
+            })
+        groups.append({
+            "key": group_key,
+            "name": name,
+            "lessons": lessons,
+            "is_custom": bool(is_custom),
+            "default_source_id": None if is_custom else source_id,
+        })
     rows = self.conn.execute(
         """SELECT r.completed_at, r.duration_seconds, r.correct_words, r.wrong_words, r.words_per_minute,
                   r.characters_per_minute, r.target_word_count, r.typed_word_count, r.total_characters,
@@ -355,7 +367,13 @@ def _export_data(self: Database) -> str:
            WHERE r.completed_at != '' ORDER BY r.completed_at, r.rowid"""
     ).fetchall()
     fields = ("completed_at", "duration_seconds", "correct_words", "wrong_words", "words_per_minute", "characters_per_minute", "target_word_count", "typed_word_count", "total_characters", "correct_characters", "wrong_characters", "accuracy_percent", "wrong_letter_counts", "source_name", "lesson_title", "source_key", "lesson_key", "lesson_id", "source_id")
-    return json.dumps({"format": "keycan-backup", "version": 2, "exported_at": datetime.now().astimezone().isoformat(), "groups": groups, "practice_results": [dict(zip(fields, row)) for row in rows]}, ensure_ascii=False, indent=2)
+    practice_results = []
+    for row in rows:
+        item = dict(zip(fields, row))
+        item["source_key"] = item["source_key"] or f"default:{item['source_id']}"
+        item["lesson_key"] = item["lesson_key"] or f"default:{item['lesson_id']}"
+        practice_results.append(item)
+    return json.dumps({"format": "keycan-backup", "version": 2, "exported_at": datetime.now().astimezone().isoformat(), "groups": groups, "practice_results": practice_results}, ensure_ascii=False, indent=2)
 
 
 def _import_data(self: Database, raw: str):
@@ -367,6 +385,7 @@ def _import_data(self: Database, raw: str):
     if not isinstance(groups, list) or not isinstance(results, list):
         raise ValueError("Yedek dosyasının yapısı geçersiz")
     lesson_map = {}
+    source_map = {}
     imported = skipped = 0
     self.conn.execute("BEGIN")
     try:
@@ -377,10 +396,17 @@ def _import_data(self: Database, raw: str):
             default_id = group.get("default_source_id")
             source_id = None
             if not is_custom and isinstance(default_id, int):
-                if self.conn.execute("SELECT 1 FROM sources WHERE id = ?", (default_id,)).fetchone():
-                    source_id = int(default_id)
+                found = self.conn.execute(
+                    "SELECT id FROM sources WHERE id = ? AND is_custom = 0",
+                    (default_id,),
+                ).fetchone()
+                if found:
+                    source_id = int(found[0])
             if source_id is None and key:
-                found = self.conn.execute("SELECT id FROM sources WHERE custom_key = ?", (key,)).fetchone()
+                found = self.conn.execute(
+                    "SELECT id FROM sources WHERE custom_key = ? AND is_custom = ?",
+                    (key, int(is_custom)),
+                ).fetchone()
                 if found:
                     source_id = int(found[0])
             if source_id is None:
@@ -392,27 +418,36 @@ def _import_data(self: Database, raw: str):
                     (name, relative_path, int(is_custom), source_key),
                 ).lastrowid)
             self.conn.execute("UPDATE sources SET display_name = ?, is_deleted = 0, is_custom = ? WHERE id = ?", (name, int(is_custom), source_id))
+            source_map[key] = source_id
             if is_custom:
                 imported += 1
             for order, item in enumerate(group.get("lessons", [])):
                 text = self._validate_text(str(item.get("text", "")))
+                lesson_is_custom = bool(item.get("is_custom", is_custom))
                 default_lesson_id = item.get("default_lesson_id")
                 lesson_key = str(item.get("key", "")).strip() or uuid.uuid4().hex
                 lesson_id = None
-                if not is_custom and isinstance(default_lesson_id, int):
-                    if self.conn.execute("SELECT 1 FROM lessons WHERE id = ?", (default_lesson_id,)).fetchone():
-                        lesson_id = int(default_lesson_id)
+                if not lesson_is_custom and isinstance(default_lesson_id, int):
+                    found = self.conn.execute(
+                        "SELECT id FROM lessons WHERE id = ? AND source_id = ? AND is_custom = 0",
+                        (default_lesson_id, source_id),
+                    ).fetchone()
+                    if found:
+                        lesson_id = int(found[0])
                 if lesson_id is None:
-                    found = self.conn.execute("SELECT id FROM lessons WHERE custom_key = ?", (lesson_key,)).fetchone()
+                    found = self.conn.execute(
+                        "SELECT id FROM lessons WHERE custom_key = ? AND source_id = ? AND is_custom = ?",
+                        (lesson_key, source_id, int(lesson_is_custom)),
+                    ).fetchone()
                     if found:
                         lesson_id = int(found[0])
                 if lesson_id is not None:
-                    self.conn.execute("UPDATE lessons SET source_id = ?, text = ?, custom_order = ?, is_deleted = 0, is_custom = ? WHERE id = ?", (source_id, text, order, int(is_custom), lesson_id))
+                    self.conn.execute("UPDATE lessons SET source_id = ?, text = ?, custom_order = ?, is_deleted = 0, is_custom = ? WHERE id = ?", (source_id, text, order, int(lesson_is_custom), lesson_id))
                 else:
                     lesson_id = int(self.conn.execute(
                         """INSERT INTO lessons(source_id, legacy_metin_id, title, text, is_custom, is_deleted, custom_order, custom_key)
                            VALUES (?, 0, 'Ders', ?, ?, 0, ?, ?)""",
-                        (source_id, text, int(is_custom), order, lesson_key),
+                        (source_id, text, int(lesson_is_custom), order, lesson_key),
                     ).lastrowid)
                 lesson_map[lesson_key] = lesson_id
         for result in results:
@@ -424,16 +459,32 @@ def _import_data(self: Database, raw: str):
                     datetime.strptime(completed, "%Y-%m-%d %H:%M:%S")
                 source_name = str(result.get("source_name", result.get("source_name_snapshot", "")))
                 lesson_title = str(result.get("lesson_title", result.get("lesson_title_snapshot", "")))
-                lesson_id = lesson_map.get(str(result.get("lesson_key", ""))) if result.get("lesson_key") else None
+                lesson_key = str(result.get("lesson_key", "")).strip()
+                source_key = str(result.get("source_key", "")).strip()
+                lesson_id = lesson_map.get(lesson_key) if lesson_key else None
+                mapped_source_id = source_map.get(source_key) if source_key else None
                 if lesson_id is None and isinstance(result.get("lesson_id"), int):
-                    found = self.conn.execute("SELECT id FROM lessons WHERE id = ? AND is_deleted = 0", (int(result["lesson_id"]),)).fetchone()
+                    if mapped_source_id is not None:
+                        found = self.conn.execute(
+                            "SELECT id FROM lessons WHERE id = ? AND source_id = ? AND is_deleted = 0",
+                            (int(result["lesson_id"]), mapped_source_id),
+                        ).fetchone()
+                    else:
+                        found = self.conn.execute(
+                            "SELECT id FROM lessons WHERE id = ? AND is_deleted = 0",
+                            (int(result["lesson_id"]),),
+                        ).fetchone()
                     lesson_id = int(found[0]) if found else None
                 if lesson_id is None:
-                    row = self.conn.execute(
-                        """SELECT l.id FROM lessons l JOIN sources s ON s.id = l.source_id
-                           WHERE l.is_deleted = 0 AND s.is_deleted = 0 AND s.display_name = ? AND l.title = ? LIMIT 1""",
-                        (source_name, lesson_title),
-                    ).fetchone()
+                    query = """SELECT l.id FROM lessons l JOIN sources s ON s.id = l.source_id
+                               WHERE l.is_deleted = 0 AND s.is_deleted = 0
+                                 AND s.display_name = ? AND l.title = ?"""
+                    params = [source_name, lesson_title]
+                    if mapped_source_id is not None:
+                        query += " AND s.id = ?"
+                        params.append(mapped_source_id)
+                    query += " LIMIT 1"
+                    row = self.conn.execute(query, tuple(params)).fetchone()
                     lesson_id = int(row[0]) if row else None
                 if lesson_id is None:
                     skipped += 1
