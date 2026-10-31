@@ -491,6 +491,7 @@ class KeycanWindow(Adw.ApplicationWindow):
                     wrong_letters[typed_char.lower()] += 1
 
         save_error = None
+        profile_error = None
         try:
             self.db.save_result(
                 self.current_lesson_id,
@@ -511,20 +512,29 @@ class KeycanWindow(Adw.ApplicationWindow):
             save_error = exc
         else:
             if getattr(self, "profile_page", None) is not None:
-                self.profile_page.refresh()
+                try:
+                    self.profile_page.refresh()
+                except Exception as exc:
+                    profile_error = exc
 
         # Rendering correctness tags clears existing tags, so re-apply the
         # privacy tag after rendering. Privacy remains active until restart.
         self._apply_privacy_state()
-        if save_error is None:
-            message = f"Süre doldu. Doğru: {result.correct}  |  Yanlış: {result.wrong}  |  Toplam: {typed_word_count}"
-            self.status.set_text(translate(message, self.preferences.get("language")))
-        else:
+        if save_error is not None:
             message = translate(
                 "Çalışma tamamlandı ancak istatistiklere kaydedilemedi.",
                 self.preferences.get("language"),
             )
             self.status.set_text(f"{message} ({save_error})")
+        elif profile_error is not None:
+            message = translate(
+                "Çalışma kaydedildi ancak profil görünümü güncellenemedi.",
+                self.preferences.get("language"),
+            )
+            self.status.set_text(f"{message} ({profile_error})")
+        else:
+            message = f"Süre doldu. Doğru: {result.correct}  |  Yanlış: {result.wrong}  |  Toplam: {typed_word_count}"
+            self.status.set_text(translate(message, self.preferences.get("language")))
 
     def _render_target_results(self, matched: set[int]) -> None:
         buffer = self.target_view.get_buffer()
