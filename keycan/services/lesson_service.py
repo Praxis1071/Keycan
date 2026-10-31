@@ -72,7 +72,7 @@ class LessonService:
 
     @staticmethod
     def display_group_name(name: str, number: int) -> str:
-        match = re.match(r"^\\s*\\d+\\.\\s*(.*)$", name)
+        match = re.match(r"^\s*\d+\.\s*(.*)$", name)
         if match:
             return f"{number}. {match.group(1)}"
         return f"{number}. {name}"
