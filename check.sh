@@ -30,8 +30,6 @@ try:
     if not snapshot_pending:
         assert snapshot_source_count == active_default_sources
         assert snapshot_lesson_count == active_default_lessons
-    else:
-        assert snapshot_source_count >= 0 and snapshot_lesson_count >= 0
     result_columns={row[1] for row in connection.execute("PRAGMA table_info(practice_results)")}
     assert {"completed_at","target_word_count","typed_word_count","total_characters","correct_characters","wrong_characters","accuracy_percent"} <= result_columns
     assert connection.execute("SELECT COUNT(*) FROM practice_results WHERE duration_seconds<0 OR correct_words<0 OR wrong_words<0 OR target_word_count<0 OR typed_word_count<0 OR total_characters<0 OR correct_characters<0 OR wrong_characters<0 OR words_per_minute<0 OR characters_per_minute<0 OR accuracy_percent<0 OR accuracy_percent>100").fetchone()[0] == 0
