@@ -23,3 +23,4 @@ def test_debug_deleted_backup(tmp_path: Path):
     print("TARGET AFTER SOURCES", target.conn.execute("SELECT id,display_name,is_custom,is_deleted,custom_key FROM sources").fetchall())
     print("TARGET AFTER LESSONS", target.conn.execute("SELECT id,source_id,text,is_custom,is_deleted,custom_key FROM lessons").fetchall())
     target.close()
+    assert False, 'diagnostic output above'
