@@ -139,6 +139,7 @@ def test_stage6_ambiguous_catalog_entries_round_trip_without_losing_source_text(
         ("Çalışmalar", "Practice sessions"),
         ("rozet açıldı.", "badge unlocked."),
         ("rozetler açıldı.", "badges unlocked."),
+        ("Yedek dosyası açılamadı:", "Could not open backup file:"),
     )
     for source, expected in samples:
         assert translate(source, "en") == expected
