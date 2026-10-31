@@ -22,6 +22,7 @@ class LessonEntry:
 class LessonGroup:
     id: int
     name: str
+    legacy_name: str
     order: int
     lessons: tuple[LessonEntry, ...]
 
@@ -90,6 +91,9 @@ def load_lesson_catalog(path: Path | None = None) -> LessonCatalog:
         group_id = _positive_int(raw_group.get("id"), "group.id")
         group_order = _non_negative_int(raw_group.get("order"), "group.order")
         name = _letters_and_spaces(raw_group.get("name"), "Ders grubu adı")
+        legacy_name = raw_group.get("legacy_name")
+        if not isinstance(legacy_name, str) or not legacy_name.strip():
+            raise LessonCatalogError("Eski ders grubu adı geçersiz")
         if group_id in group_ids or name in group_names or group_order in group_orders:
             raise LessonCatalogError("Ders grubu kimliği, adı veya sırası yineleniyor")
         group_ids.add(group_id)
@@ -131,6 +135,7 @@ def load_lesson_catalog(path: Path | None = None) -> LessonCatalog:
             LessonGroup(
                 id=group_id,
                 name=name,
+                legacy_name=legacy_name,
                 order=group_order,
                 lessons=tuple(lessons),
             )
