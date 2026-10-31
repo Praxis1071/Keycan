@@ -691,7 +691,8 @@ def _import_data(self: Database, raw: str):
                     result.get("wrong_letter_counts", {})
                 )
                 session_uuid = str(result.get("session_uuid", "")).strip()
-                if session_uuid:
+                has_session_uuid = bool(session_uuid)
+                if has_session_uuid:
                     existing_session = self.conn.execute(
                         "SELECT 1 FROM practice_results WHERE session_uuid = ?",
                         (session_uuid,),
@@ -714,7 +715,7 @@ def _import_data(self: Database, raw: str):
                 duplicate = False
                 # V1/V2 backups have no stable session identifier. Retain the
                 # legacy metric-based fallback only for those older records.
-                legacy_candidates = candidates if not result.get("session_uuid") else ()
+                legacy_candidates = candidates if not has_session_uuid else ()
                 for existing in legacy_candidates:
                     try:
                         existing_wrong_letters = self._normalize_wrong_letter_counts(existing[11])
