@@ -241,3 +241,33 @@ def test_default_backup_does_not_overwrite_custom_group_with_same_id(tmp_path: P
         assert result_lesson == restored_lesson
     finally:
         target.close()
+
+def test_backup_preserves_custom_lesson_inside_default_group(tmp_path: Path) -> None:
+    source = make_db(tmp_path / "mixed-source.db")
+    try:
+        lesson_id = source.create_custom_lesson(1, "A custom lesson in a default group")
+        source.save_result(
+            lesson_id, 60, 1, 0,
+            target_word_count=1, typed_word_count=1, total_characters=5,
+            correct_characters=5, wrong_characters=0, words_per_minute=1,
+            characters_per_minute=5, accuracy_percent=100,
+        )
+        backup = source.export_data()
+    finally:
+        source.close()
+
+    target = make_db(tmp_path / "mixed-target.db")
+    try:
+        imported, skipped = target.import_data(backup)
+        assert (imported, skipped) == (1, 0)
+        restored = target.conn.execute(
+            "SELECT id, is_custom FROM lessons WHERE source_id = 1 AND text = ?",
+            ("A custom lesson in a default group",),
+        ).fetchone()
+        assert restored is not None
+        assert restored[1] == 1
+        assert target.conn.execute(
+            "SELECT lesson_id FROM practice_results"
+        ).fetchone() == (restored[0],)
+    finally:
+        target.close()
