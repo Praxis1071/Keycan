@@ -15,7 +15,7 @@ Confirmed findings from the current branch:
 - The active GUI imports `settings2.py` and `statistics_clean.py`. The older `settings.py` and `statistics.py` have no direct references in the current code-search results, but must be checked for indirect imports and tests before removal.
 - `statistics_runtime.py` monkey-patches `MetricCard.set_value` from `statistics_clean.py`.
 - The current backup format is already JSON (version 3), with stable identifiers and compatibility handling. It must be preserved and strengthened rather than replaced with a second unrelated format.
-- The current CI baseline has one failing regression: `test_backup_round_trip_preserves_deleted_lesson_history`. The failure occurs because a failed default-source identity match prevents the importer from trying the legacy source-ID-plus-name fallback. This must be corrected before content migration.
+- The initial CI baseline exposed `test_backup_round_trip_preserves_deleted_lesson_history`. The root cause was JSON `null` identities being converted to the literal string `None`, which selected the wrong identity-matching path. The importer now normalizes null identities before matching, and the full CI suite passes.
 
 These findings are an initial map, not permission to delete modules. Full import/reference checks and method-level comparisons remain mandatory.
 
