@@ -11,7 +11,8 @@ from pathlib import Path
 
 from keycan.data.database import Database
 from keycan.services.lesson_catalog import load_lesson_catalog
-import keycan.data.database_runtime  # noqa: F401
+from keycan.data.database_runtime import install_database_runtime
+install_database_runtime()
 
 with tempfile.TemporaryDirectory() as temp_dir:
     database_path = Path(temp_dir) / "typing_data.db"
