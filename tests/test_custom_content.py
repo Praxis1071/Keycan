@@ -156,7 +156,7 @@ def test_backup_round_trip_restores_content_and_stats(tmp_path: Path) -> None:
     restored = make_db(tmp_path / "restored.db")
     try:
         imported, skipped = restored.import_data(backup)
-        assert imported == 3 and skipped == 0
+        assert imported == 5 and skipped == 0
         groups = restored.custom_groups()
         assert len(groups) == 1
         lessons = restored.custom_lessons(groups[0][0])
