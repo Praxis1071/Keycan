@@ -643,7 +643,11 @@ class Database:
         if accuracy_percent > 100:
             raise ValueError("Doğruluk yüzdesi 100'ü aşamaz")
 
-        source_name, lesson_title = self.lesson_context(lesson_id)
+        context_provider = getattr(self, "lesson_service", None)
+        if context_provider is None:
+            source_name, lesson_title = self.lesson_context(lesson_id)
+        else:
+            source_name, lesson_title = context_provider.lesson_context(lesson_id)
         try:
             self.conn.execute(
                 """INSERT INTO practice_results(
