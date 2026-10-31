@@ -11,8 +11,6 @@ from typing import TYPE_CHECKING
 
 from keycan.services.lesson_catalog import (
     LessonCatalog,
-    LessonGroup,
-    LessonEntry,
     load_lesson_catalog,
 )
 from keycan.utils.text import natural_sort_key
@@ -158,7 +156,8 @@ class LessonService:
         db_group_ids = {
             int(row[0])
             for row in self.database.conn.execute(
-                "SELECT id FROM sources WHERE is_custom = 0"
+                "SELECT id FROM sources WHERE is_custom = 0 AND EXISTS "
+                "(SELECT 1 FROM lessons WHERE lessons.source_id = sources.id)"
             ).fetchall()
         }
         db_lesson_ids = {
