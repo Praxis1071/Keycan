@@ -646,7 +646,7 @@ class Database:
         source_name, lesson_title = self.lesson_context(lesson_id)
         try:
             self.conn.execute(
-                """INSERT INTO practice_results(
+                """INSERT OR IGNORE INTO practice_results(
                     lesson_id, duration_seconds, correct_chars, wrong_chars, wpm,
                     correct_words, wrong_words, words_per_minute, characters_per_minute,
                     completed_at, source_name_snapshot, lesson_title_snapshot,
