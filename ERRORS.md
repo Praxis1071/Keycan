@@ -318,6 +318,7 @@ Bu bölümdeki değişiklikler doğrudan **main** dalına uygulanmıştır.
 - [x] Tam sıfırlama sonrasında uygulama yeniden başlatılsa bile geri yükleme noktası korunuyor.
 - [x] Eski veritabanları için snapshot şema geçişi eklendi; grup adları, istatistikler ve çalışma geçmişi korunuyor.
 - [x] Silinmiş grup, silinmiş metin, güncel metin ve uygulama yeniden başlatıldıktan sonra geri yükleme senaryoları için regresyon testleri eklendi.
+- [x] check.sh veri denetimi, boş güncel varsayılan listesine ve tam sıfırlama sonrası bekleyen geri yükleme noktasına uygun hâle getirildi.
 
 ### 2. Yazım metnini karartma
 
