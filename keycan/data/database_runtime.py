@@ -60,27 +60,90 @@ def _ensure_default_snapshot(self: Database) -> None:
                legacy_metin_id INTEGER NOT NULL DEFAULT 0,
                title TEXT NOT NULL,
                text TEXT NOT NULL,
-               custom_order INTEGER NOT NULL DEFAULT 0
+               custom_order INTEGER NOT NULL DEFAULT 0,
+               is_custom INTEGER NOT NULL DEFAULT 0,
+               custom_key TEXT NOT NULL DEFAULT ''
            )"""
     )
+    columns = {
+        row[1] for row in self.conn.execute(
+            "PRAGMA table_info(default_content_lessons)"
+        ).fetchall()
+    }
+    if "is_custom" not in columns:
+        self.conn.execute(
+            "ALTER TABLE default_content_lessons ADD COLUMN is_custom INTEGER NOT NULL DEFAULT 0"
+        )
+    if "custom_key" not in columns:
+        self.conn.execute(
+            "ALTER TABLE default_content_lessons ADD COLUMN custom_key TEXT NOT NULL DEFAULT ''"
+        )
     if self.conn.execute("SELECT COUNT(*) FROM default_content_sources").fetchone()[0] == 0:
         source_rows = self.conn.execute(
-            "SELECT id, display_name, relative_path, custom_key FROM sources WHERE is_custom = 0 ORDER BY id"
+            """SELECT id, display_name, relative_path, custom_key
+               FROM sources WHERE is_custom = 0 AND is_deleted = 0 ORDER BY id"""
         ).fetchall()
         lesson_rows = self.conn.execute(
-            """SELECT id, source_id, legacy_metin_id, title, text, custom_order
-               FROM lessons WHERE is_custom = 0 ORDER BY source_id, legacy_metin_id, id"""
+            """SELECT l.id, l.source_id, l.legacy_metin_id, l.title, l.text,
+                      l.custom_order, l.is_custom, COALESCE(l.custom_key, '')
+               FROM lessons AS l JOIN sources AS s ON s.id = l.source_id
+               WHERE s.is_custom = 0 AND s.is_deleted = 0 AND l.is_deleted = 0
+               ORDER BY l.source_id, l.custom_order, l.legacy_metin_id, l.id"""
         ).fetchall()
         for row in source_rows:
             self.conn.execute("INSERT INTO default_content_sources VALUES (?,?,?,?)", row)
         for row in lesson_rows:
-            self.conn.execute("INSERT INTO default_content_lessons VALUES (?,?,?,?,?,?)", row)
+            self.conn.execute(
+                """INSERT INTO default_content_lessons(
+                       lesson_id, source_id, legacy_metin_id, title, text,
+                       custom_order, is_custom, custom_key
+                   ) VALUES (?,?,?,?,?,?,?,?)""", row
+            )
         self.conn.commit()
+
+
+def _sync_default_snapshot(self: Database) -> None:
+    """Mirror the currently active built-in workspace content for later restore."""
+    source_rows = self.conn.execute(
+        """SELECT id, display_name, relative_path, COALESCE(custom_key, '')
+           FROM sources WHERE is_custom = 0 AND is_deleted = 0 ORDER BY id"""
+    ).fetchall()
+    lesson_rows = self.conn.execute(
+        """SELECT l.id, l.source_id, l.legacy_metin_id, l.title, l.text,
+                  l.custom_order, l.is_custom, COALESCE(l.custom_key, '')
+           FROM lessons AS l JOIN sources AS s ON s.id = l.source_id
+           WHERE s.is_custom = 0 AND s.is_deleted = 0 AND l.is_deleted = 0
+           ORDER BY l.source_id, l.custom_order, l.legacy_metin_id, l.id"""
+    ).fetchall()
+    self.conn.execute("BEGIN")
+    try:
+        self.conn.execute("DELETE FROM default_content_lessons")
+        self.conn.execute("DELETE FROM default_content_sources")
+        self.conn.executemany(
+            "INSERT INTO default_content_sources VALUES (?,?,?,?)", source_rows
+        )
+        self.conn.executemany(
+            """INSERT INTO default_content_lessons(
+                   lesson_id, source_id, legacy_metin_id, title, text,
+                   custom_order, is_custom, custom_key
+               ) VALUES (?,?,?,?,?,?,?,?)""", lesson_rows
+        )
+        self.conn.commit()
+    except Exception:
+        self.conn.rollback()
+        raise
 
 
 def _init(self: Database, path):
     _ORIGINAL_INIT(self, path)
     _ensure_default_snapshot(self)
+    # Upgrade older databases whose snapshots still contain individually
+    # deleted groups, while preserving the snapshot after a full reset
+    # (when no built-in group remains active).
+    if self.conn.execute(
+        "SELECT 1 FROM sources WHERE is_custom = 0 AND is_deleted = 0 LIMIT 1"
+    ).fetchone():
+        _sync_default_snapshot(self)
 
 
 def _sources(self: Database):
@@ -137,6 +200,7 @@ def _rename_group(self: Database, source_id: int, name: str) -> None:
     if self.conn.execute("UPDATE sources SET display_name = ? WHERE id = ? AND is_deleted = 0", (name, source_id)).rowcount != 1:
         raise ValueError("Ders grubu bulunamadı")
     self.conn.commit()
+    _sync_default_snapshot(self)
 
 
 def _delete_group(self: Database, source_id: int) -> None:
@@ -144,6 +208,7 @@ def _delete_group(self: Database, source_id: int) -> None:
         raise ValueError("Ders grubu bulunamadı")
     self.conn.execute("UPDATE lessons SET is_deleted = 1 WHERE source_id = ?", (source_id,))
     self.conn.commit()
+    _sync_default_snapshot(self)
 
 
 def _create_custom_group(self: Database, name: str) -> int:
@@ -172,6 +237,7 @@ def _create_lesson(self: Database, source_id: int, text: str) -> int:
         (source_id, text, order, key),
     ).lastrowid)
     self.conn.commit()
+    _sync_default_snapshot(self)
     return lesson_id
 
 
@@ -180,6 +246,7 @@ def _update_lesson(self: Database, lesson_id: int, text: str) -> None:
     if self.conn.execute("UPDATE lessons SET text = ? WHERE id = ? AND is_deleted = 0", (text, lesson_id)).rowcount != 1:
         raise ValueError("Metin bulunamadı")
     self.conn.commit()
+    _sync_default_snapshot(self)
 
 
 def _delete_lesson(self: Database, lesson_id: int) -> None:
@@ -189,6 +256,7 @@ def _delete_lesson(self: Database, lesson_id: int) -> None:
     self.conn.execute("UPDATE lessons SET is_deleted = 1 WHERE id = ?", (lesson_id,))
     self.conn.commit()
     _normalize_order(self, int(row[0]))
+    _sync_default_snapshot(self)
 
 
 def _move_lesson(self: Database, lesson_id: int, direction: int) -> None:
@@ -214,6 +282,7 @@ def _move_lesson(self: Database, lesson_id: int, direction: int) -> None:
     except Exception:
         self.conn.rollback()
         raise
+    _sync_default_snapshot(self)
 
 
 def _normalize_order(self: Database, source_id: int) -> None:
@@ -302,6 +371,9 @@ def _progression_summary(self: Database):
 
 def _reset_all_content(self: Database):
     _ensure_default_snapshot(self)
+    # Capture the latest active workspace before hiding everything. Previously
+    # deleted groups/lessons are excluded from this new restore point.
+    _sync_default_snapshot(self)
     groups = int(self.conn.execute("SELECT COUNT(*) FROM sources WHERE is_deleted = 0").fetchone()[0])
     lessons = int(self.conn.execute("SELECT COUNT(*) FROM lessons WHERE is_deleted = 0").fetchone()[0])
     self.conn.execute("UPDATE lessons SET is_deleted = 1 WHERE is_deleted = 0")
@@ -313,7 +385,12 @@ def _reset_all_content(self: Database):
 def _restore_defaults(self: Database):
     _ensure_default_snapshot(self)
     source_rows = self.conn.execute("SELECT source_id, display_name, relative_path, custom_key FROM default_content_sources ORDER BY source_id").fetchall()
-    lesson_rows = self.conn.execute("SELECT lesson_id, source_id, legacy_metin_id, title, text, custom_order FROM default_content_lessons ORDER BY source_id, custom_order, lesson_id").fetchall()
+    lesson_rows = self.conn.execute(
+        """SELECT lesson_id, source_id, legacy_metin_id, title, text,
+                  custom_order, is_custom, custom_key
+           FROM default_content_lessons
+           ORDER BY source_id, custom_order, lesson_id"""
+    ).fetchall()
     self.conn.execute("BEGIN")
     try:
         for source_id, name, path, key in source_rows:
@@ -336,16 +413,17 @@ def _restore_defaults(self: Database):
         if ids:
             placeholders = ",".join("?" for _ in ids)
             self.conn.execute(f"UPDATE lessons SET is_deleted = 1 WHERE source_id IN ({placeholders})", tuple(ids))
-        for lesson_id, source_id, legacy_id, title, text, order in lesson_rows:
+        for lesson_id, source_id, legacy_id, title, text, order, is_custom, custom_key in lesson_rows:
             self.conn.execute(
                 """UPDATE lessons SET source_id = ?, legacy_metin_id = ?, title = ?, text = ?,
-                   is_custom = 0, is_deleted = 0, custom_order = ? WHERE id = ?""",
-                (source_id, legacy_id, title, text, order, lesson_id),
+                   is_custom = ?, is_deleted = 0, custom_order = ?, custom_key = ? WHERE id = ?""",
+                (source_id, legacy_id, title, text, is_custom, order, custom_key, lesson_id),
             )
         self.conn.commit()
     except Exception:
         self.conn.rollback()
         raise
+    _sync_default_snapshot(self)
     return len(source_rows), len(lesson_rows)
 
 
