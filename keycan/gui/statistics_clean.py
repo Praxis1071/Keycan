@@ -12,6 +12,8 @@ gi.require_version("Adw", "1")
 gi.require_version("Gtk", "4.0")
 from gi.repository import Adw, GLib, Gtk
 
+from keycan.services.translations import translate
+
 if TYPE_CHECKING:
     from keycan.data.database import Database
 
@@ -118,12 +120,16 @@ class MetricCard(Gtk.Box):
 class ActivityHeatmap(Gtk.DrawingArea):
     def __init__(self) -> None:
         super().__init__(); self.set_content_width(1); self.set_content_height(190); self.set_hexpand(True); self.set_draw_func(self._draw)
-        self.year = datetime.now().year; self.days: dict[date, dict[str, object]] = {}; self._cell_size = 12.0; self._gap = 4.0; self._left = 38.0; self._top = 26.0
+        self.year = datetime.now().year; self.days: dict[date, dict[str, object]] = {}; self.language = "tr"; self._cell_size = 12.0; self._gap = 4.0; self._left = 38.0; self._top = 26.0
         self.set_has_tooltip(True)
         motion = Gtk.EventControllerMotion(); motion.connect("motion", self._on_motion); motion.connect("leave", self._on_leave); self.add_controller(motion)
 
     def set_data(self, year: int, days: list[dict[str, object]]) -> None:
         self.year = year; self.days = {item["date"]: item for item in days}; self.queue_draw()
+
+    def set_language(self, language: str) -> None:
+        self.language = language
+        self.queue_draw()
     def _calendar_start(self) -> date:
         first = date(self.year, 1, 1); return first - timedelta(days=first.weekday())
     def _weeks(self) -> int:
@@ -142,29 +148,35 @@ class ActivityHeatmap(Gtk.DrawingArea):
         maximum=max((float(x["duration_seconds"]) for x in self.days.values()),default=0); start=self._calendar_start(); cr.set_font_size(10); cr.set_source_rgba(.45,.45,.45,.82)
         for row,label in enumerate(WEEKDAYS):
             if row not in (0,2,4,6): continue
-            cr.move_to(0,self._top+row*(cell+gap)+cell*.78); cr.show_text(label)
+            cr.move_to(0,self._top+row*(cell+gap)+cell*.78); cr.show_text(translate(label, self.language))
         last_month=None
         for week in range(weeks):
             week_start=start+timedelta(days=week*7)
             if week_start.month != last_month and week_start.year==self.year:
-                cr.move_to(self._left+week*(cell+gap),12); cr.show_text(MONTHS[week_start.month-1]); last_month=week_start.month
+                cr.move_to(self._left+week*(cell+gap),12); cr.show_text(translate(MONTHS[week_start.month-1], self.language)); last_month=week_start.month
             for row in range(7):
                 day=week_start+timedelta(days=row)
                 if day.year!=self.year: continue
                 level=self._intensity(self.days.get(day),maximum); x=self._left+week*(cell+gap); y=self._top+row*(cell+gap); self._rounded_rect(cr,x,y,cell,max(2,cell*.18))
                 cr.set_source_rgba(.45,.45,.45,.18) if level==0 else cr.set_source_rgba(.18,.52,.78,(.24,.42,.62,.82)[level-1]); cr.fill()
-        legend_y=min(height-14,self._top+7*(cell+gap)+18); cr.set_source_rgba(.45,.45,.45,.82); cr.move_to(self._left,legend_y+cell*.78); cr.show_text("Daha az"); x=self._left+52
+        legend_y=min(height-14,self._top+7*(cell+gap)+18); cr.set_source_rgba(.45,.45,.45,.82); cr.move_to(self._left,legend_y+cell*.78); cr.show_text(translate("Daha az", self.language)); x=self._left+52
         for level in range(5):
             self._rounded_rect(cr,x,legend_y,cell,max(2,cell*.18)); cr.set_source_rgba(.45,.45,.45,.18) if level==0 else cr.set_source_rgba(.18,.52,.78,(.24,.42,.62,.82)[level-1]); cr.fill(); x+=cell+gap
-        cr.set_source_rgba(.45,.45,.45,.82); cr.move_to(x+4,legend_y+cell*.78); cr.show_text("Daha fazla")
+        cr.set_source_rgba(.45,.45,.45,.82); cr.move_to(x+4,legend_y+cell*.78); cr.show_text(translate("Daha fazla", self.language))
     def _on_motion(self,_controller,x,y):
         week=int((x-self._left)/(self._cell_size+self._gap)); row=int((y-self._top)/(self._cell_size+self._gap))
         if week<0 or week>=self._weeks() or row<0 or row>=7: self.set_tooltip_text(None); return
         day=self._calendar_start()+timedelta(days=week*7+row)
         if day.year!=self.year: self.set_tooltip_text(None); return
         item=self.days.get(day)
-        if not item: text=f"{day.day} {MONTHS[day.month-1]} {day.year}\nÇalışma yok"
-        else: text=f"{day.day} {MONTHS[day.month-1]} {day.year}\n{int(item['sessions'])} çalışma · {self._duration_text(float(item['duration_seconds']))}\nOrtalama hız: Dakikada {float(item['average_speed']):.0f} kelime · Doğruluk: %{float(item['accuracy_percent']):.0f}"
+        month=translate(MONTHS[day.month-1], self.language)
+        if not item:
+            text=f"{day.day} {month} {day.year}\n{translate('Çalışma yok', self.language)}"
+        else:
+            sessions=f"{int(item['sessions'])} {translate('çalışma', self.language)}"
+            duration=translate(self._duration_text(float(item['duration_seconds'])), self.language)
+            speed=translate(f"Dakikada {float(item['average_speed']):.0f} kelime", self.language)
+            text=f"{day.day} {month} {day.year}\n{sessions} · {duration}\n{translate('Ortalama hız', self.language)}: {speed} · {translate('Doğruluk', self.language)}: %{float(item['accuracy_percent']):.0f}"
         self.set_tooltip_text(text)
         self.trigger_tooltip_query()
     def _on_leave(self,_controller): self.set_tooltip_text(None)
@@ -180,7 +192,7 @@ class ActivityHeatmap(Gtk.DrawingArea):
 class StatisticsPanel(Gtk.Box):
     PERIODS=("Günlük","Haftalık","Aylık","Yıllık","Tümü")
     def __init__(self,database: Database)->None:
-        super().__init__(orientation=Gtk.Orientation.VERTICAL,spacing=0); self.set_hexpand(True); self.set_vexpand(True); self.db=database; self.selected_period="Haftalık"; self.activity_year=datetime.now().year; self._build(); self.refresh()
+        super().__init__(orientation=Gtk.Orientation.VERTICAL,spacing=0); self.set_hexpand(True); self.set_vexpand(True); self.db=database; self.language="tr"; self.selected_period="Haftalık"; self.activity_year=datetime.now().year; self._build(); self.refresh()
     @staticmethod
     def _revealed(child,delay):
         r=Gtk.Revealer(); r.set_transition_type(Gtk.RevealerTransitionType.CROSSFADE); r.set_transition_duration(220); r.set_reveal_child(False); r.set_child(child); GLib.timeout_add(delay,lambda:(r.set_reveal_child(True),GLib.SOURCE_REMOVE)[1]); return r
@@ -380,8 +392,9 @@ class StatisticsPanel(Gtk.Box):
         minutes,remainder=divmod(total,60)
         if minutes<60:return f"{minutes} dk" if remainder==0 else f"{minutes} dk {remainder} sn"
         hours,minutes=divmod(minutes,60); return f"{hours} sa {minutes} dk" if minutes else f"{hours} sa"
-    @staticmethod
-    def _date_text(value): return f"{value.day} {MONTHS[value.month-1]} {value.year}, {value:%H:%M}"
+    def _date_text(self, value):
+        month = translate(MONTHS[value.month-1], self.language)
+        return f"{value.day} {month} {value.year}, {value:%H:%M}"
     @staticmethod
     def _clear_box(box):
         child=box.get_first_child()
@@ -404,7 +417,7 @@ class StatisticsPanel(Gtk.Box):
         fastest=max(history,key=lambda x:float(x["words_per_minute"])); accurate=max(history,key=lambda x:float(x["accuracy_percent"])); longest=max(history,key=lambda x:float(x["duration_seconds"])); by_day={}
         for item in history:
             day=item["completed_at"].date(); by_day[day]=by_day.get(day,0)+float(item["duration_seconds"])
-        busiest=max(by_day.items(),key=lambda x:x[1]); self.record_values[0].set_text(f"Dakikada {float(fastest['words_per_minute']):.0f} kelime"); self.record_values[1].set_text(f"%{float(accurate['accuracy_percent']):.0f}"); self.record_values[2].set_text(self._duration_text(float(longest["duration_seconds"]))); self.record_values[3].set_text(f"{busiest[0].day} {MONTHS[busiest[0].month-1]}")
+        busiest=max(by_day.items(),key=lambda x:x[1]); self.record_values[0].set_text(f"Dakikada {float(fastest['words_per_minute']):.0f} kelime"); self.record_values[1].set_text(f"%{float(accurate['accuracy_percent']):.0f}"); self.record_values[2].set_text(self._duration_text(float(longest["duration_seconds"]))); self.record_values[3].set_text(f"{busiest[0].day} {translate(MONTHS[busiest[0].month-1], self.language)}")
     def _set_progress(self,history):
         if len(history)<2:
             self.progress_speed.set_subtitle("En az iki çalışma olduğunda karşılaştırma gösterilir"); self.progress_accuracy.set_subtitle("En az iki çalışma olduğunda karşılaştırma gösterilir"); return
@@ -421,6 +434,11 @@ class StatisticsPanel(Gtk.Box):
             for value in (self._date_text(item["completed_at"]),str(item["lesson_title"] or "Ders"),self._duration_text(float(item["duration_seconds"])),f"{int(item['typed_word_count'])} kelime",f"%{float(item['accuracy_percent']):.0f}",f"Dakikada {float(item['words_per_minute']):.0f} kelime"):
                 l=Gtk.Label(label=value); l.set_xalign(0); l.set_hexpand(True); l.set_wrap(True); row.append(l)
             self.history_box.append(row)
+    def set_language(self, language: str) -> None:
+        self.language = language
+        self.activity_heatmap.set_language(language)
+        self.refresh()
+
     def refresh(self):
         stats=self.db.practice_statistics(self.selected_period); practices=int(stats["practices"]); duration=float(stats["duration_seconds"]); accuracy=float(stats["accuracy_percent"]); points=list(stats["speed_points"]); history=list(stats["history"]); avg=sum(float(v) for _,v in points)/len(points) if points else 0
         self.metric_cards[0].set_value(avg,lambda n:f"{n:.0f}"," kelime/dk"); self.metric_cards[1].set_value(accuracy,lambda n:f"%{n:.0f}"); self.metric_cards[2].set_value(duration/60,lambda n:self._duration_text(n*60)); self.metric_cards[3].set_value(practices); self.metric_cards[4].set_value(float(stats["total_words"])); self.metric_cards[5].set_value(float(stats["total_characters"])); self.chart.set_points(points); self.chart_empty.set_visible(not bool(points)); self.accuracy_chart.set_points(list(stats["accuracy_points"]), "%"); self.accuracy_value.set_text(f"%{accuracy:.0f}"); self.accuracy_bar.set_fraction(max(0,min(1,accuracy/100))); self.correct_label.set_text(f"Doğru: {int(stats['correct_words'])}"); self.wrong_label.set_text(f"Yanlış: {int(stats['wrong_words'])}"); self._refresh_activity_years(); self._refresh_activity(); self._set_records(history); self._set_progress(history); self._set_history(history); self._refresh_advanced(history)
