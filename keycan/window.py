@@ -77,7 +77,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         # statistics/status text is translated too.
         statistics_page = getattr(self, "statistics_page", None)
         if statistics_page is not None:
-            statistics_page.refresh()
+            statistics_page.set_language(language)
         profile_page = getattr(self, "profile_page", None)
         if profile_page is not None:
             profile_page.set_language(language)
