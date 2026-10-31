@@ -595,3 +595,17 @@ def test_full_reset_restore_point_survives_database_reopen(tmp_path: Path) -> No
         assert restored.lesson(1)[2] == "son çalışma alanı metni"
     finally:
         restored.close()
+
+
+def test_custom_lesson_in_active_default_group_is_part_of_current_restore_point(tmp_path: Path) -> None:
+    db = make_db(tmp_path / "custom-lesson-in-default.db")
+    try:
+        custom_lesson = db.create_lesson(1, "çalışma alanına eklenen güncel metin")
+        db.reset_all_content()
+        assert db.restore_defaults() == (1, 2)
+        assert db.lesson(custom_lesson)[2] == "çalışma alanına eklenen güncel metin"
+        assert db.conn.execute(
+            "SELECT is_custom FROM lessons WHERE id = ?", (custom_lesson,)
+        ).fetchone() == (1,)
+    finally:
+        db.close()
