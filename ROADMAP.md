@@ -117,7 +117,7 @@ Bu aşamanın amacı mevcut Keycan özelliklerini koruyarak kod tabanını sadel
 - [x] `settings.py` / `settings2.py` kullanımını doğrulamak (aktif modül `settings2.py`; eski dosya korunuyor)
 - [ ] Monkey-patching yerine açık sınıf/metot veya bağımlılık enjeksiyonu kullanmak
 - [ ] Tekrarlanan kodu birleştirmek; kullanılmayan eski modülleri ancak tüm referanslar temizlendikten sonra kaldırmak
-- [ ] Uygulama başlatma sırasını sadeleştirmek
+- [x] Veritabanı runtime kaydını uygulama başlangıcında açıkça ve pencere importundan önce yapmak (runtime içindeki monkey-patching henüz kaldırılmadı)
 
 ### 10.5 — Pencere ve GUI sorumlulukları
 - [ ] `window.py` içindeki sayfa oluşturma, olay yönetimi ve iş mantığını ayırmak
