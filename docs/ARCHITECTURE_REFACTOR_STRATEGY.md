@@ -117,7 +117,7 @@ A mechanical group-name cleanup creates collisions (for example, the F/Q keyboar
 - `main.py` delegates to `keycan.app.main()`.
 - `app.py` imports `KeycanWindow`, then imports `database_runtime` and `statistics_runtime` for side effects. The runtime modules mutate class methods at import time.
 - `KeycanWindow` imports the base `Database` class. Its behavior changes globally only because the app later imports the runtime patch module before the window is instantiated.
-- `tests/test_custom_content.py` also imports `database_runtime` for side effects. This makes test behavior sensitive to import order and hides the real dependency.
+- Tests that require runtime database methods now call `install_database_runtime()` explicitly. A subprocess regression test verifies that importing the module alone does not patch the class and that repeated registration is idempotent.
 - The database constructor first runs the schema migrations in `database.py`; the patched initializer then migrates custom paths, creates/loads default-content snapshots, and reconciles the snapshot with active content.
 - The Flatpak wrapper seeds the user's XDG data database from the packaged database. The Flatpak manifest copies the entire `keycan/` package, so the new JSON resource is included automatically.
 - `window.py` now routes source/lesson reads through `LessonService`; result saving and statistics still use the database. `content_manager2.py` uses the service for group/lesson reads and SQLite for CRUD writes. It still uses the database's private `_display_source_name` helper, which can be removed from the GUI boundary in a later focused change.
@@ -145,3 +145,12 @@ The JSON catalog is ready, but GUI consumers should not read JSON directly. The 
 - Moved the metric-card animation cancellation/reset logic into `MetricCard.set_value`. The former `statistics_runtime.py` file remains as a side-effect-free compatibility import, and the application no longer imports it.
 - The database runtime module still patches `Database` methods at import time. It has not been removed or rewritten; its initializer, snapshot behavior, custom-content CRUD, progression summary, and backup implementation must be migrated carefully before the side effect can be eliminated.
 - `window.py` currently contains a base `KeycanWindow` plus `ConfiguredKeycanWindow`, with overlapping source-loading methods. This is a candidate for a later small refactor, not a reason to rewrite the window in one pass.
+
+
+## 11. Explicit database runtime registration
+
+- Added `install_database_runtime()`; importing `database_runtime.py` no longer modifies `Database`.
+- The application installs the database compatibility methods before importing the window class, making the dependency visible at the composition root.
+- Tests and the repository check script call the registration function explicitly.
+- Registration is idempotent and covered by a subprocess test that starts with an unpatched `Database` class.
+- This is an intermediate safety improvement only. The registration function still assigns methods onto `Database`; the remaining task is to move these implementations into explicit database/repository classes and make the compatibility module a no-op.
