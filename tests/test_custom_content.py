@@ -609,3 +609,32 @@ def test_custom_lesson_in_active_default_group_is_part_of_current_restore_point(
         ).fetchone() == (1,)
     finally:
         db.close()
+
+
+def test_restore_defaults_keeps_only_remaining_default_groups(tmp_path: Path) -> None:
+    path = tmp_path / "remaining-default-groups.db"
+    db = make_db(path)
+    try:
+        db.conn.execute(
+            """INSERT INTO sources(
+                   id, display_name, relative_path, is_custom, is_deleted, custom_key
+               ) VALUES (2, 'İkinci Hazır Grup', 'default://second', 0, 0, '')"""
+        )
+        db.conn.execute(
+            """INSERT INTO lessons(
+                   id, source_id, legacy_metin_id, title, text, is_custom,
+                   is_deleted, custom_order, custom_key
+               ) VALUES (2, 2, 1, 'İkinci Ders', 'ikinci metin', 0, 0, 0, '')"""
+        )
+        db.conn.commit()
+        db.close()
+        db = Database(path)
+        db.delete_group(2)
+
+        assert db.restore_defaults() == (1, 1)
+        assert db.sources() == [(1, "1. Hazır Ders")]
+        assert db.conn.execute(
+            "SELECT is_deleted FROM sources WHERE id = 2"
+        ).fetchone() == (1,)
+    finally:
+        db.close()
