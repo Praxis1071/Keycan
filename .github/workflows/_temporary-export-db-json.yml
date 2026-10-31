@@ -60,7 +60,7 @@ jobs:
           connection.close()
           output = Path("typing_data.json")
           output.write_text(
-              json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False) + "\\n",
+              json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False) + "\n",
               encoding="utf-8"
           )
           print(f"Exported {len(tables)} tables to {output} ({output.stat().st_size} bytes)")
