@@ -2,15 +2,20 @@
 
 from __future__ import annotations
 
+import logging
+
 import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, Gio, Gtk
+from gi.repository import Adw, Gio, GLib, Gtk
 
 from keycan.gui.content_manager2 import ContentManagerWindow
 from keycan.services.i18n import translate
 from keycan.services.preferences import Preferences
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class SettingsPanel(Gtk.Box):
@@ -88,8 +93,16 @@ class SettingsPanel(Gtk.Box):
         if self._db() is None:self.status.set_text(self._t("Veritabanına erişilemedi."));return
         d=Gtk.FileDialog();d.set_title(self._t("Keycan yedeğini seç"));d.open(self.parent_window,None,self._open_finish,None)
     def _open_finish(self,d,result,_data):
-        try:file=d.open_finish(result)
-        except Exception:return
+        try:
+            file = d.open_finish(result)
+        except GLib.Error as exc:
+            if exc.matches(Gio.io_error_quark(), Gio.IOErrorEnum.CANCELLED):
+                return
+            LOGGER.exception("Could not open the Keycan backup file chooser")
+            self.status.set_text(
+                f"{self._t('Yedek dosyası açılamadı:')} {self._t(str(exc))}"
+            )
+            return
         if file is None:return
         try:
             raw,_=file.load_contents(None); imported,skipped=self._db().import_data(raw.decode("utf-8"))
