@@ -23,6 +23,8 @@ def apply_to_widget_tree(root: Gtk.Widget, language: str) -> None:
             _set_text(widget, language)
         elif isinstance(widget, (Gtk.Entry, Gtk.SearchEntry)):
             _set_placeholder(widget, language)
+        elif isinstance(widget, Gtk.DropDown):
+            _translate_string_list(widget.get_model(), language)
         elif isinstance(widget, Gtk.SpinButton):
             _set_tooltip(widget, language)
         elif isinstance(widget, Adw.EntryRow):
