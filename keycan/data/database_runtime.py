@@ -647,7 +647,7 @@ def _import_data(self: Database, raw: str):
             is_custom = bool(group.get("is_custom", True))
             default_id = group.get("default_source_id")
             source_id = None
-            source_identity = str(group.get("identity", "")).strip()
+            source_identity = str(group.get("identity") or "").strip()
             if not is_custom and source_identity:
                 for (candidate_id,) in self.conn.execute(
                     "SELECT id FROM sources WHERE is_custom = 0"
@@ -655,9 +655,11 @@ def _import_data(self: Database, raw: str):
                     if _default_source_identity(self, int(candidate_id)) == source_identity:
                         source_id = int(candidate_id)
                         break
-            elif not is_custom and isinstance(default_id, int):
-                # Legacy backups lack content identities. Reuse a numeric ID
-                # only when its source name also agrees; never trust IDs alone.
+            if source_id is None and not is_custom and isinstance(default_id, int):
+                # Legacy backups lack content identities. If the content
+                # identity is unavailable or no longer matches (for example,
+                # after deleting a lesson), reuse the numeric ID only when
+                # the source name also agrees; never trust IDs alone.
                 found = self.conn.execute(
                     """SELECT id FROM sources
                        WHERE id = ? AND is_custom = 0 AND display_name = ?""",
@@ -710,7 +712,7 @@ def _import_data(self: Database, raw: str):
                 default_lesson_id = item.get("default_lesson_id")
                 lesson_key = str(item.get("key", "")).strip() or uuid.uuid4().hex
                 lesson_id = None
-                lesson_identity = str(item.get("identity", "")).strip()
+                lesson_identity = str(item.get("identity") or "").strip()
                 if not lesson_is_custom and lesson_identity:
                     for (candidate_id,) in self.conn.execute(
                         """SELECT id FROM lessons
@@ -919,7 +921,14 @@ def _import_data(self: Database, raw: str):
         raise
 
 
-def _patch():
+def install_database_runtime() -> None:
+    """Explicitly register the legacy database integration once.
+
+    This is an interim compatibility boundary while the patched methods are
+    moved into the database/repository layer in a later refactor.
+    """
+    if getattr(Database, "_runtime_installed", False):
+        return
     Database.__init__ = _init
     Database.sources = _sources
     Database.lessons = _lessons
@@ -938,6 +947,7 @@ def _patch():
     Database.restore_defaults = _restore_defaults
     Database.export_data = _export_data
     Database.import_data = _import_data
+    Database._runtime_installed = True
 
 
-_patch()
+__all__ = ["install_database_runtime"]
