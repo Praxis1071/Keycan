@@ -19,41 +19,41 @@ with tempfile.TemporaryDirectory() as temp_dir:
     database = Database(database_path)
     connection = database.conn
     try:
-    connection.execute("PRAGMA foreign_keys = ON")
-    assert connection.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
-    sources=connection.execute("SELECT COUNT(*) FROM sources WHERE is_deleted = 0").fetchone()[0]
-    lessons=connection.execute("SELECT COUNT(*) FROM lessons WHERE is_deleted = 0").fetchone()[0]
-    assert connection.execute("SELECT COUNT(*) FROM lessons WHERE is_deleted = 0 AND text = ''").fetchone()[0] == 0
-    assert connection.execute("SELECT COUNT(*) FROM practice_results AS r LEFT JOIN lessons AS l ON l.id=r.lesson_id WHERE l.id IS NULL").fetchone()[0] == 0
-    source_columns={row[1] for row in connection.execute("PRAGMA table_info(sources)")}; lesson_columns={row[1] for row in connection.execute("PRAGMA table_info(lessons)")}
-    assert {"is_custom","is_deleted","custom_key"} <= source_columns
-    assert {"is_custom","is_deleted","custom_order","custom_key"} <= lesson_columns
-    assert connection.execute("SELECT COUNT(*) FROM sources WHERE relative_path IS NULL").fetchone()[0] == 0
-    assert connection.execute("SELECT COUNT(*) FROM sources GROUP BY relative_path HAVING COUNT(*) > 1").fetchone() is None
-    snapshot_sources=connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='default_content_sources'").fetchone()
-    snapshot_lessons=connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='default_content_lessons'").fetchone()
-    restore_state=connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='content_restore_state'").fetchone()
-    assert snapshot_sources and snapshot_lessons and restore_state
-    snapshot_source_count=connection.execute("SELECT COUNT(*) FROM default_content_sources").fetchone()[0]
-    snapshot_lesson_count=connection.execute("SELECT COUNT(*) FROM default_content_lessons").fetchone()[0]
-    snapshot_pending=connection.execute("SELECT snapshot_pending FROM content_restore_state WHERE id=1").fetchone()[0]
-    active_default_sources=connection.execute("SELECT COUNT(*) FROM sources AS s WHERE s.is_custom=0 AND s.is_deleted=0 AND EXISTS (SELECT 1 FROM lessons AS l WHERE l.source_id=s.id AND l.is_deleted=0)").fetchone()[0]
-    active_default_lessons=connection.execute("SELECT COUNT(*) FROM lessons AS l JOIN sources AS s ON s.id=l.source_id WHERE s.is_custom=0 AND s.is_deleted=0 AND l.is_deleted=0").fetchone()[0]
-    if not snapshot_pending:
-        assert snapshot_source_count == active_default_sources
-        assert snapshot_lesson_count == active_default_lessons
-    catalog = load_lesson_catalog()
-    catalog_group_ids = {group.id for group in catalog.groups}
-    catalog_lesson_ids = {lesson.id for group in catalog.groups for lesson in group.lessons}
-    snapshot_group_ids = {row[0] for row in connection.execute("SELECT source_id FROM default_content_sources")}
-    snapshot_lesson_ids = {row[0] for row in connection.execute("SELECT lesson_id FROM default_content_lessons")}
-    assert catalog_group_ids == snapshot_group_ids
-    assert catalog_lesson_ids == snapshot_lesson_ids
-    result_columns={row[1] for row in connection.execute("PRAGMA table_info(practice_results)")}
-    assert {"completed_at","target_word_count","typed_word_count","total_characters","correct_characters","wrong_characters","accuracy_percent"} <= result_columns
-    assert connection.execute("SELECT COUNT(*) FROM practice_results WHERE duration_seconds<0 OR correct_words<0 OR wrong_words<0 OR target_word_count<0 OR typed_word_count<0 OR total_characters<0 OR correct_characters<0 OR wrong_characters<0 OR words_per_minute<0 OR characters_per_minute<0 OR accuracy_percent<0 OR accuracy_percent>100").fetchone()[0] == 0
-    assert connection.execute("SELECT COUNT(*) FROM practice_results WHERE total_characters != correct_characters + wrong_characters").fetchone()[0] == 0
-    print(f"Veri denetimi başarılı: {sources} aktif kaynak, {lessons} aktif metin.")
+        connection.execute("PRAGMA foreign_keys = ON")
+        assert connection.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+        sources=connection.execute("SELECT COUNT(*) FROM sources WHERE is_deleted = 0").fetchone()[0]
+        lessons=connection.execute("SELECT COUNT(*) FROM lessons WHERE is_deleted = 0").fetchone()[0]
+        assert connection.execute("SELECT COUNT(*) FROM lessons WHERE is_deleted = 0 AND text = ''").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM practice_results AS r LEFT JOIN lessons AS l ON l.id=r.lesson_id WHERE l.id IS NULL").fetchone()[0] == 0
+        source_columns={row[1] for row in connection.execute("PRAGMA table_info(sources)")}; lesson_columns={row[1] for row in connection.execute("PRAGMA table_info(lessons)")}
+        assert {"is_custom","is_deleted","custom_key"} <= source_columns
+        assert {"is_custom","is_deleted","custom_order","custom_key"} <= lesson_columns
+        assert connection.execute("SELECT COUNT(*) FROM sources WHERE relative_path IS NULL").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM sources GROUP BY relative_path HAVING COUNT(*) > 1").fetchone() is None
+        snapshot_sources=connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='default_content_sources'").fetchone()
+        snapshot_lessons=connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='default_content_lessons'").fetchone()
+        restore_state=connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='content_restore_state'").fetchone()
+        assert snapshot_sources and snapshot_lessons and restore_state
+        snapshot_source_count=connection.execute("SELECT COUNT(*) FROM default_content_sources").fetchone()[0]
+        snapshot_lesson_count=connection.execute("SELECT COUNT(*) FROM default_content_lessons").fetchone()[0]
+        snapshot_pending=connection.execute("SELECT snapshot_pending FROM content_restore_state WHERE id=1").fetchone()[0]
+        active_default_sources=connection.execute("SELECT COUNT(*) FROM sources AS s WHERE s.is_custom=0 AND s.is_deleted=0 AND EXISTS (SELECT 1 FROM lessons AS l WHERE l.source_id=s.id AND l.is_deleted=0)").fetchone()[0]
+        active_default_lessons=connection.execute("SELECT COUNT(*) FROM lessons AS l JOIN sources AS s ON s.id=l.source_id WHERE s.is_custom=0 AND s.is_deleted=0 AND l.is_deleted=0").fetchone()[0]
+        if not snapshot_pending:
+            assert snapshot_source_count == active_default_sources
+            assert snapshot_lesson_count == active_default_lessons
+        catalog = load_lesson_catalog()
+        catalog_group_ids = {group.id for group in catalog.groups}
+        catalog_lesson_ids = {lesson.id for group in catalog.groups for lesson in group.lessons}
+        snapshot_group_ids = {row[0] for row in connection.execute("SELECT source_id FROM default_content_sources")}
+        snapshot_lesson_ids = {row[0] for row in connection.execute("SELECT lesson_id FROM default_content_lessons")}
+        assert catalog_group_ids == snapshot_group_ids
+        assert catalog_lesson_ids == snapshot_lesson_ids
+        result_columns={row[1] for row in connection.execute("PRAGMA table_info(practice_results)")}
+        assert {"completed_at","target_word_count","typed_word_count","total_characters","correct_characters","wrong_characters","accuracy_percent"} <= result_columns
+        assert connection.execute("SELECT COUNT(*) FROM practice_results WHERE duration_seconds<0 OR correct_words<0 OR wrong_words<0 OR target_word_count<0 OR typed_word_count<0 OR total_characters<0 OR correct_characters<0 OR wrong_characters<0 OR words_per_minute<0 OR characters_per_minute<0 OR accuracy_percent<0 OR accuracy_percent>100").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM practice_results WHERE total_characters != correct_characters + wrong_characters").fetchone()[0] == 0
+        print(f"Veri denetimi başarılı: {sources} aktif kaynak, {lessons} aktif metin.")
     finally:
         database.close()
 PY
