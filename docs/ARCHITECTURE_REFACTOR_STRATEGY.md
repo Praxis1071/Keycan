@@ -101,10 +101,10 @@ A mechanical group-name cleanup creates collisions (for example, the F/Q keyboar
 - Added `keycan/services/lesson_service.py` as a read-only compatibility bridge between the packaged catalog and SQLite.
 - Routed the main typing window and the lesson-content manager's read operations through `LessonService`. Existing SQLite write operations remain unchanged.
 - The service displays cleaned JSON names/text when the database still contains the original bundled content. If a user has renamed a group or edited a lesson, the service keeps the SQLite value instead.
-- Compared all 1,833 catalog lesson texts against the tracked database export. After applying the exact letter-preserving cleanup normalization, every lesson matched: no words were added, lost, or reordered. Turkish and other Unicode letters are preserved.
+- Compared all 1,833 catalog lesson texts against the tracked database export. After applying the exact letter-preserving cleanup normalization, every lesson matched: no words were added, lost, or reordered. The lesson IDs and per-group order also match exactly. Turkish and other Unicode letters are preserved.
 - Compared all 82 group IDs and 1,833 lesson IDs. The catalog covers every bundled default ID. A stale deleted empty source (ID 69) is intentionally not treated as catalog content.
 - Added service tests for full catalog coverage, all lesson-text overlays, unchanged SQLite rows, user renames/edits, and custom groups/lessons.
-- Two pairs of lessons become identical after punctuation/digit cleanup. They were deliberately retained: removing them would change lesson IDs/order and could affect historical references.
+- The catalog already contains many repeated texts across different groups. The cleanup introduces one additional duplicate cluster of four lessons: two legacy labels (YARGITAY 16-A and 18-A) collapse to the same letter-only text, repeated in the current and previous Yargıtay groups. All four lesson IDs and positions are retained; no lesson was removed.
 - Curated unique group names rather than relying on a blind regex. F/Q keyboard variants and other similar groups remain distinguishable without digits or punctuation.
 - Fixed the JSON backup null-identity bug. The tracked database is copied to a temporary location for migration/integrity checks; the repository database is not modified.
 - Latest GitHub Actions run: all four jobs passed (Stage 5, Stage 6, Stage 7, and regression/full checks).
