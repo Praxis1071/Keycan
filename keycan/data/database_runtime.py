@@ -483,15 +483,25 @@ def _export_data(self: Database) -> str:
 
 def _import_data(self: Database, raw: str):
     payload = json.loads(raw)
-    if payload.get("format") != "keycan-backup" or payload.get("version") not in (1, 2):
+    if not isinstance(payload, dict):
+        raise ValueError("Yedek dosyasının kök yapısı geçersiz")
+    if payload.get("format") != "keycan-backup" or payload.get("version") not in (1, 2, 3):
         raise ValueError("Bu dosya Keycan yedeği değil veya desteklenmeyen bir sürüm kullanıyor")
     groups = payload.get("groups", payload.get("custom_groups", []))
     results = payload.get("practice_results", [])
     if not isinstance(groups, list) or not isinstance(results, list):
         raise ValueError("Yedek dosyasının yapısı geçersiz")
+    if any(not isinstance(group, dict) or not isinstance(group.get("lessons", []), list)
+           or any(not isinstance(item, dict) for item in group.get("lessons", []))
+           for group in groups):
+        raise ValueError("Yedek dosyasındaki ders grupları veya metinler geçersiz")
+    if any(not isinstance(item, dict) for item in results):
+        raise ValueError("Yedek dosyasındaki çalışma kayıtları geçersiz")
     lesson_map = {}
     source_map = {}
     source_id_map = {}
+    source_deleted = {}
+    lesson_deleted = {}
     imported = skipped = 0
     self.conn.execute("BEGIN")
     try:
@@ -504,7 +514,7 @@ def _import_data(self: Database, raw: str):
             source_identity = str(group.get("identity", "")).strip()
             if not is_custom and source_identity:
                 for (candidate_id,) in self.conn.execute(
-                    "SELECT id FROM sources WHERE is_custom = 0 AND is_deleted = 0"
+                    "SELECT id FROM sources WHERE is_custom = 0"
                 ).fetchall():
                     if _default_source_identity(self, int(candidate_id)) == source_identity:
                         source_id = int(candidate_id)
@@ -548,8 +558,8 @@ def _import_data(self: Database, raw: str):
                 source_map[source_identity] = source_id
             if not is_custom and isinstance(default_id, int):
                 source_id_map[default_id] = source_id
-            if is_custom:
-                imported += 1
+            source_deleted[source_id] = bool(group.get("is_deleted", False))
+            imported += 1
             for order, item in enumerate(group.get("lessons", [])):
                 text = self._validate_text(str(item.get("text", "")))
                 lesson_is_custom = bool(
@@ -568,7 +578,7 @@ def _import_data(self: Database, raw: str):
                 if not lesson_is_custom and lesson_identity:
                     for (candidate_id,) in self.conn.execute(
                         """SELECT id FROM lessons
-                           WHERE source_id = ? AND is_custom = 0 AND is_deleted = 0""",
+                           WHERE source_id = ? AND is_custom = 0""",
                         (source_id,),
                     ).fetchall():
                         if _default_lesson_identity(self, int(candidate_id)) == lesson_identity:
@@ -602,6 +612,8 @@ def _import_data(self: Database, raw: str):
                 lesson_map[lesson_key] = lesson_id
                 if lesson_identity:
                     lesson_map[lesson_identity] = lesson_id
+                lesson_deleted[lesson_id] = bool(item.get("is_deleted", False))
+                imported += 1
         for result in results:
             try:
                 completed = str(result.get("completed_at", ""))
@@ -678,6 +690,17 @@ def _import_data(self: Database, raw: str):
                 normalized_wrong_letters = self._normalize_wrong_letter_counts(
                     result.get("wrong_letter_counts", {})
                 )
+                session_uuid = str(result.get("session_uuid", "")).strip()
+                if session_uuid:
+                    existing_session = self.conn.execute(
+                        "SELECT 1 FROM practice_results WHERE session_uuid = ?",
+                        (session_uuid,),
+                    ).fetchone()
+                    if existing_session:
+                        skipped += 1
+                        continue
+                else:
+                    session_uuid = uuid.uuid4().hex
                 candidates = self.conn.execute(
                     """SELECT duration_seconds, correct_words, wrong_words,
                               words_per_minute, characters_per_minute,
@@ -689,7 +712,9 @@ def _import_data(self: Database, raw: str):
                     (lesson_id, completed),
                 ).fetchall()
                 duplicate = False
-                for existing in candidates:
+                # V1/V2 backups have no stable session identifier. Retain the
+                # legacy metric-based fallback only for those older records.
+                for existing in candidates if not result.get("session_uuid") else ():
                     try:
                         existing_wrong_letters = self._normalize_wrong_letter_counts(existing[11])
                     except ValueError:
@@ -723,18 +748,32 @@ def _import_data(self: Database, raw: str):
                     correct_characters, wrong_characters,
                     accuracy_percent,
                     json.dumps(normalized_wrong_letters, ensure_ascii=False, sort_keys=True),
+                    session_uuid,
                 )
                 self.conn.execute(
                     """INSERT INTO practice_results(lesson_id, duration_seconds, correct_chars, wrong_chars, wpm,
                        correct_words, wrong_words, words_per_minute, characters_per_minute, completed_at,
                        source_name_snapshot, lesson_title_snapshot, target_word_count, typed_word_count,
-                       total_characters, correct_characters, wrong_characters, accuracy_percent, wrong_letter_counts)
-                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                       total_characters, correct_characters, wrong_characters, accuracy_percent, wrong_letter_counts,
+                       session_uuid)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                     values,
                 )
                 imported += 1
             except (TypeError, ValueError, OverflowError):
                 skipped += 1
+        # Restore deletion state only after sessions have been mapped and
+        # inserted, so history belonging to deleted lessons is not discarded.
+        for source_id, deleted in source_deleted.items():
+            self.conn.execute(
+                "UPDATE sources SET is_deleted = ? WHERE id = ?",
+                (int(deleted), source_id),
+            )
+        for lesson_id, deleted in lesson_deleted.items():
+            self.conn.execute(
+                "UPDATE lessons SET is_deleted = ? WHERE id = ?",
+                (int(deleted), lesson_id),
+            )
         self.conn.commit()
         return imported, skipped
     except Exception:
