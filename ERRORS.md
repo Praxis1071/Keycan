@@ -226,6 +226,7 @@ Aşağıdaki kayıtlar, yukarıdaki hata bölümlerindeki ilk statik inceleme no
 - Gizlilik etiketi oturum tamamlandığında da korunuyor.
 - Doğru/yanlış biçimlendirme etiketleri uygulandıktan sonra gizlilik etiketi yeniden uygulanıyor; sonuç çizimi sırasında kaldırılıp açıkta kalmıyor.
 - Sonuç sayaçlarının arayüzde gösterilmesi veritabanı kaydının başarılı olmasına bağlı olmaktan çıkarıldı.
+- Doğru/yanlış/toplam sayaçları her durumda temel sonuç mesajında gösteriliyor; kayıt, profil yenileme veya sonuç çizimi hatası varsa ek hata bilgisi sayaçların yanına ekleniyor.
 - **Kalan kontrol:** GTK arayüzünde gizlilik açık ve kapalı oturumlar tamamlanarak metnin gizli kaldığı ve sayaçların göründüğü doğrulanmalı.
 
 ### KC-002 – İstatistik kaydı
