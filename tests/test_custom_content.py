@@ -109,7 +109,7 @@ def test_reset_all_then_restore_defaults(tmp_path: Path) -> None:
         restored_groups, restored_lessons = db.restore_defaults()
         assert (restored_groups, restored_lessons) == (1, 1)
         assert db.sources() == [(1, "1. Benim Ders Grubum")]
-        assert db.lesson(1)[2] == "hazır metin"
+        assert db.lesson(1)[2] == "kullanıcının değiştirdiği içerik"
         assert not db.custom_groups()
     finally:
         db.close()
@@ -131,7 +131,7 @@ def test_restore_defaults_keeps_custom_content_out_and_history_intact(tmp_path: 
         restored_groups, restored_lessons = db.restore_defaults()
         assert (restored_groups, restored_lessons) == (1, 1)
         assert db.sources() == [(1, "1. Değişmiş Hazır Grup"), (2, "2. Kendi Grup")]
-        assert db.lesson(1)[2] == "hazır metin"
+        assert db.lesson(1)[2] == "değişmiş hazır metin"
         assert [row[1] for row in db.custom_lessons(custom_group)] == ["kendi metnim"]
         assert db.conn.execute("SELECT COUNT(*) FROM practice_results").fetchone()[0] == 1
     finally:
@@ -546,3 +546,30 @@ def test_version_two_backup_without_session_ids_remains_importable(tmp_path: Pat
         ).fetchone()[0] == 1
     finally:
         target.close()
+
+
+def test_deleted_default_group_is_not_restored_from_an_old_snapshot(tmp_path: Path) -> None:
+    db = make_db(tmp_path / "deleted-default-group.db")
+    try:
+        db.delete_group(1)
+        restored_groups, restored_lessons = db.restore_defaults()
+        assert (restored_groups, restored_lessons) == (0, 0)
+        assert db.sources() == []
+        assert db.conn.execute(
+            "SELECT COUNT(*) FROM default_content_sources"
+        ).fetchone()[0] == 0
+    finally:
+        db.close()
+
+
+def test_deleted_default_lesson_is_not_restored_and_latest_text_is_kept(tmp_path: Path) -> None:
+    db = make_db(tmp_path / "latest-default-content.db")
+    try:
+        db.update_lesson(1, "güncel çalışma alanı metni")
+        db.delete_lesson(1)
+        restored_groups, restored_lessons = db.restore_defaults()
+        assert (restored_groups, restored_lessons) == (1, 0)
+        assert db.sources() == [(1, "1. Hazır Ders")]
+        assert db.lessons(1) == []
+    finally:
+        db.close()
