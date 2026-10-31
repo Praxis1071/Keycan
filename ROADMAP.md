@@ -1,8 +1,8 @@
 # Keycan Geliştirme Yol Haritası
 
-Keycan'ın mevcut durumu ve gelecekteki geliştirme planı.
+Keycan'ın mevcut durumu ve onaylanan mimari iyileştirme planı.
 
-## 🧭 Aşama Durumu
+## 🧭 Tamamlanan Aşamalar
 
 ### ✅ Aşama 0 — Temel Mimari
 - GTK4 + libadwaita tabanlı uygulama yapısı
@@ -32,128 +32,133 @@ Keycan'ın mevcut durumu ve gelecekteki geliştirme planı.
 - Kopyala/yapıştır ve metin aktarımı açıklarının engellenmesi
 
 ### ✅ Aşama 4 — 2.3.x Bakım ve Hata Düzeltmeleri
-Bu aşama yeni bir özellik geliştirme aşaması değildir. 2.2.0 sonrasında kullanıcı tarafından bildirilen kullanım ve kararlılık sorunları giderilmiş, mevcut özelliklerin güvenilirliği artırılmıştır.
-
 - GTK4 widget hiyerarşisi ve yeniden ebeveynleme kaynaklı çökme sorunlarının giderilmesi
 - Ders grubu listesinin güvenli biçimde yenilenmesi
 - Runtime çeviri backreference hatasının giderilmesi
 - Ders grubu yönetiminde yeniden adlandırma akışının iyileştirilmesi
 - Mevcut özelliklerin bozulmasını önleyen bakım çalışmaları
 
-Responsive arayüz ve temel stabilizasyon çalışmaları tamamlanmıştır; ayrı bir gelecek hedefi değildir.
-
----
-
-## ✅ Aşama 5 — Gelişmiş İstatistikler
-
-Keycan'ın mevcut istatistik altyapısını daha ayrıntılı bir performans analiz sistemine dönüştürmek.
-
+### ✅ Aşama 5 — Gelişmiş İstatistikler
 - Günlük / haftalık / aylık / yıllık / tüm zamanlar istatistikleri
-- Uzun dönemli WPM gelişimi
-- Uzun dönemli doğruluk gelişimi
-- Toplam çalışma süresi
-- Toplam kelime / karakter
-- Ders bazlı performans
-- Ayrıntılı dönem filtreleri
+- Uzun dönemli WPM ve doğruluk gelişimi
+- Toplam çalışma süresi, kelime ve karakter
+- Ders bazlı performans ve dönem filtreleri
 - İstatistik ekranının Genel, Gelişim, Dersler ve Rekorlar olarak ayrıştırılması
-- Dönem karşılaştırmaları
-- Rekor geçmişi
-- Ayrıntılı performans analizi
+- Dönem karşılaştırmaları, rekor geçmişi ve performans analizi
 - Otomatik istatistik test altyapısı
 
----
-
-## ✅ Aşama 6 — Kullanıcı Deneyimi
-
+### ✅ Aşama 6 — Kullanıcı Deneyimi
 - Sistem / açık / koyu tema seçenekleri
-- Tema değişikliğinin anında uygulanması
-- Tema tercihinin kalıcı olarak saklanması
+- Tema değişikliğinin anında uygulanması ve kalıcı saklanması
 - Türkçe / İngilizce dil sistemi
-- Dil değişikliğinin uygulama yeniden başlatılmadan anında uygulanması
-- Dil tercihinin kalıcı olarak saklanması
-- Merkezi ve GTK arayüzünden bağımsız çeviri kataloğu
-- Dinamik oluşturulan arayüz metinlerinin çevrilmesi
-- Preferences ve translation servislerinin `main.py` dışında tutulması
-- Stage 6 otomatik testleri ve CI Python modül doğrulaması
-- Atomik preference dosyası yazımı
-- GTK4 widget hiyerarşisi ve ders grubu yönetimi kararlılık düzeltmeleri
+- Dil değişikliğinin yeniden başlatma gerektirmeden uygulanması
+- Merkezi çeviri kataloğu
+- Preferences ve translation servislerinin ana uygulama dosyasından ayrılması
+- Otomatik testler, CI doğrulaması ve atomik preference yazımı
+
+### ✅ Aşama 7 — Profil, XP, Seviye ve Rozet Sistemi
+- Yerel XP ve seviye sistemi
+- Çalışma serilerinin takibi
+- Başarı rozetleri
+- Profil ilerlemesinin SQLite çalışma geçmişinden beslenmesi
+- Türkçe / İngilizce profil arayüzü ve otomatik testler
+
+### ✅ Aşama 8 — Gelişmiş Yerel Profil
+- Kullanıcı adı ve profil fotoğrafı
+- Profil bilgilerinin yerel saklanması
+- Çalışma, süre, hız, doğruluk ve ders ilerleme özeti
+- Son çalışma geçmişi
+- Online hesap veya bulut senkronizasyonu olmadan yerel profil
+
+### ✅ Aşama 9 — Klavye Rehberi
+- On parmak yazma, doğru oturuş ve el pozisyonu
+- Başlangıç sırası ve parmak görevleri
+- Klavye sıraları ve boşluk tuşu kullanımı
+- Klavyeye bakmadan yazma, doğruluk ve hız
+- Yaygın başlangıç hataları ve pratik yönlendirmesi
 
 ---
 
-## ✅ Aşama 7 — Profil, XP, Seviye ve Rozet Sistemi
+## 🚧 Aşama 10 — Mimari İyileştirme ve Ders İçeriği Yenileme
 
-Sidebar'da İstatistikler'den bağımsız, ayrı bir **Profil** bölümü oluşturuldu.
+Bu aşamanın amacı mevcut Keycan özelliklerini koruyarak kod tabanını sadeleştirmek, ders içeriklerini yönetilebilir JSON dosyalarına taşımak ve veri sorumluluklarını netleştirmektir. Büyük çaplı yeniden yazım yapılmayacaktır.
 
-- Yerel ve hesap gerektirmeyen XP sistemi
-- Tamamlanan çalışmalardan deterministik XP hesaplama
-- XP tabanlı seviye sistemi ve ilerleme çubuğu
-- Mevcut ve en uzun çalışma serisinin takibi
-- Çalışma sayısı, XP ve ilerleme özeti
-- 12 kilometre taşından oluşan başarı rozeti sistemi
-- Rozetlerin mevcut çalışma geçmişinden otomatik türetilmesi
-- Profil verilerinin SQLite çalışma geçmişinden beslenmesi
-- İstatistikler ile profil ilerlemesinin ayrı tutulması
-- Türkçe / İngilizce profil arayüzü
-- Mevcut GTK4 + libadwaita tasarımına uyumlu profil ekranı
-- Stage 7 progression ve persistence davranışları için otomatik testler
+### 10.1 — Mimari ve bağımlılık analizi
+- [ ] Tüm modüllerin sorumluluklarını, import ilişkilerini ve çalışma zamanındaki bağımlılıklarını çıkarmak
+- [ ] Uygulama başlangıç akışını ve veritabanı başlatma/migration sırasını belgelemek
+- [ ] GUI, servis, veri erişimi ve yazma motoru sınırlarını belirlemek
+- [ ] Mevcut testleri ve CI kontrollerini başlangıç referansı olarak çalıştırmak
+- [ ] Kullanılmayan, yinelenen veya eski dosyaları import ve davranış kanıtı olmadan silmemek
+- [ ] Yazma motorunu kapsam dışında tutmak; mevcut API ve davranışını değiştirmemek
 
----
+### 10.2 — JSON ders kataloğu ve içerik temizliği
+- [ ] Ders kataloğu için sürümlenmiş, doğrulanabilir bir JSON şeması tanımlamak
+- [ ] Hazır ders gruplarını ve ders metinlerini JSON kaynaklarına taşımak
+- [ ] Uygulama içi erişimi tek bir lesson service üzerinden sağlamak
+- [ ] Grup adlarını Türkçe/İngilizce harfler ve gerekiyorsa kelime boşlukları dışında karakter içermeyecek şekilde sadeleştirmek
+- [ ] Hazır ders metinlerinden sayıları ve noktalama işaretlerini temizlemek; Türkçe karakterleri korumak
+- [ ] Metinleri temizlerken kelime sırasını, anlamı, seviye akışını ve tekrarları kontrol etmek
+- [ ] Boş, yinelenen veya bozulmuş dersleri otomatik doğrulamalarla tespit etmek
+- [ ] Kullanıcı tarafından oluşturulan ders içeriğinin saklama biçimini ayrıca ele almak; mevcut özel içerikleri kayıpsız taşımadan eski kaynağı kaldırmamak
+- [ ] JSON okuma hatalarında uygulamanın çökmesini önlemek ve anlaşılır hata bildirimi sağlamak
 
-## ✅ Aşama 8 — Gelişmiş Yerel Profil
+### 10.3 — JSON yedekleme ve veri geçişi
+- [ ] Ders kataloğu, kullanıcı içeriği ve kullanıcı çalışma verilerinin sınırlarını tanımlamak
+- [ ] JSON dışa aktarma/içe aktarma biçimini sürümlendirmek
+- [ ] Yedeklerde kimlikleri ve çalışma geçmişi bağlantılarını korumak
+- [ ] Tekrarlı içe aktarmanın mükerrer kayıt oluşturmamasını sağlamak
+- [ ] İçe aktarmayı doğrulama ve işlem/geri alma güvenliğiyle gerçekleştirmek
+- [ ] Eski SQLite verileri için geriye dönük, kayıpsız geçiş yolu ve yedek oluşturmak
+- [ ] Eski veri biçimleriyle uyumluluk testleri eklemek
 
-Aşama 7'de oluşturulan temel Profil sisteminin daha kapsamlı ve kişiselleştirilebilir hale getirilmesi.
+### 10.4 — Yinelenen modüller ve runtime müdahaleleri
+- [ ] `database.py` / `database_runtime.py` sorumluluklarını karşılaştırmak
+- [ ] `statistics.py`, `statistics_clean.py` ve `statistics_runtime.py` kullanımını doğrulamak
+- [ ] `settings.py` / `settings2.py` kullanımını doğrulamak
+- [ ] Monkey-patching yerine açık sınıf/metot veya bağımlılık enjeksiyonu kullanmak
+- [ ] Tekrarlanan kodu birleştirmek; kullanılmayan eski modülleri ancak tüm referanslar temizlendikten sonra kaldırmak
+- [ ] Uygulama başlatma sırasını sadeleştirmek
 
-- Kullanıcının kendi ismini girebilmesi
-- Profil fotoğrafı seçebilme ve değiştirebilme
-- Profil bilgilerinin yerel olarak saklanması
-- Profil fotoğrafının yerel olarak saklanması
-- Profil özeti
-  - Toplam çalışma sayısı
-  - Toplam çalışma süresi
-  - Genel yazma hızı
-  - Genel doğruluk
-  - Tamamlanan dersler
-  - Genel ilerleme
-- Profil üzerinden son çalışma geçmişinin görüntülenmesi
-- Profilin mevcut çalışma ve istatistik altyapısıyla bağlantısının genişletilmesi
-- Online hesap veya bulut senkronizasyonu olmadan yerel profil yapısının geliştirilmesi
+### 10.5 — Pencere ve GUI sorumlulukları
+- [ ] `window.py` içindeki sayfa oluşturma, olay yönetimi ve iş mantığını ayırmak
+- [ ] Mevcut sayfa ve widget modüllerini ihtiyaç oldukça düzenlemek
+- [ ] GUI katmanının doğrudan SQL ve JSON ayrıntılarıyla uğraşmasını önlemek
+- [ ] Sadece gerçek sorumluluk ayrımı sağlayan modüller oluşturmak; gereksiz soyutlama eklememek
+- [ ] Görsel tasarımı ve kullanıcı akışını değiştirmeden refactor yapmak
 
----
+### 10.6 — Veritabanı ve servis katmanı
+- [ ] SQLite'ı çalışma geçmişi, istatistik, profil ve diğer ilişkisel kullanıcı verileri için korumak
+- [ ] Veri erişimini GUI'den ayırmak ve sorguları ilgili repository/data katmanında toplamak
+- [ ] Servislerin iş kurallarını yönetmesini, repository katmanının kalıcı veri erişimini yönetmesini sağlamak
+- [ ] Şema migration'larını açık, test edilebilir ve geriye dönük güvenli hale getirmek
+- [ ] Veritabanı açılışında dosyanın varlığına gereksiz bağımlılığı kaldırma seçeneğini incelemek; ilk kurulum davranışını güvenli tasarlamak
 
-## ✅ Aşama 9 — Klavye Rehberi
+### 10.7 — Doğrulama ve tamamlanma kapısı
+- [ ] Her alt aşamadan önce ve sonra otomatik testleri çalıştırmak
+- [ ] Ders seçimi, çalışma başlatma/tamamlama, özel içerik CRUD, istatistik, profil, ayarlar ve çevirileri regresyon testleriyle doğrulamak
+- [ ] JSON şema, içerik temizliği, içe/dışa aktarma ve migration testleri eklemek
+- [ ] Uygulama başlangıcı ve temel GTK arayüz akışını kontrol etmek
+- [ ] Veri kaybı, geçmiş eşleşme bozulması veya yazma motoru davranış farkı varsa aşamayı tamamlanmış saymamak
+- [ ] Her alt aşamayı ayrı ve geri alınabilir commitlerle ilerletmek
+- [ ] Son aşamada eski ve kullanılmayan kodu kaldırmadan önce referans taraması ve tam test yapmak
 
-Sidebar'da İstatistikler ve Profil'den bağımsız, ayrı bir **Klavye Rehberi** bölümü oluşturulacak.
+### Aşama 10 uygulama stratejisi
+1. Önce mevcut davranışın testlerle referansını al; hiçbir dosyayı varsayımla silme.
+2. Önce JSON şeması, katalog okuyucusu ve doğrulama testlerini ekle; ardından içerikleri dönüştür.
+3. JSON ve SQLite arasında geçici uyumluluk katmanı kur; uygulama çalışırken tek seferde veri kaynağını değiştirme.
+4. Kullanıcı içerikleri ve çalışma geçmişini kimlik eşlemesiyle taşı; yedek doğrulanmadan eski veriyi silme.
+5. Yinelenen modülleri küçük adımlarla birleştir; her adımda import ve regresyon testlerini çalıştır.
+6. GUI refactor'ını veri katmanı istikrarlı hale geldikten sonra yap.
+7. Her alt aşama sonunda değişiklik özeti, test sonuçları ve kalan riskleri kaydet.
 
-Kullanıcının 10 parmak yazmayı öğrenmesine yardımcı olan, açıklayıcı ve uygulamaya dönük bir rehber alanı olacak.
-
-- 10 parmak yazma nedir?
-- Doğru oturuş ve el pozisyonu
-- Başlangıç / home row
-- F ve J tuşlarındaki yön bulma çıkıntıları
-- Sol el parmaklarının görevleri
-- Sağ el parmaklarının görevleri
-- Hangi parmağın hangi tuşa bastığı
-- Üst sıra, ana sıra ve alt sıra tuşları
-- Boşluk tuşu ve başparmak kullanımı
-- Klavyeye bakmadan yazma
-- Doğruluk ve hız ilişkisi
-- Yeni başlayanların sık yaptığı hatalar
-- Rehberden öğrenilenleri Çalışma Alanında pratiğe taşıma
-
----
-
-## 🏁 Mevcut Yol Haritasının Durumu
-
-Aşama 0–9 kapsamındaki mevcut geliştirme planı tamamlanmıştır. Bundan sonraki çalışmalar yeni bir roadmap maddesi eklenmeden önce bakım, kullanıcı geri bildirimi, hata düzeltmeleri ve mevcut özelliklerin kalite/stabilite iyileştirmeleri üzerinden ilerleyecektir.
+**Kapsam dışı:** `keycan/core/typing_engine.py` üzerinde özellik, algoritma, performans veya mimari değişikliği yapılmayacaktır. Yalnızca mevcut testleri çalıştırılarak davranışının korunduğu doğrulanacaktır.
 
 ## 📌 Yol Haritasının Sınırları
-
-Bu roadmap, Keycan'ın mevcut hedeflerini ve onaylanan gelecek geliştirmelerini tanımlar. Aşağıdaki fikirler mevcut roadmap'e dahil değildir:
-
 - Katiplik modu
 - Online hesap ve online özellikler
 - Bulut senkronizasyonu
 - Odak / Pomodoro modu
 - Akıllı eğitim / adaptif ders sistemi
+- Gerçek performans darboğazı ölçülmeden Rust veya başka bir dil eklenmesi
 
-Yeni özellikler eklenmeden önce mevcut mimarinin korunması ve kullanıcı geri bildirimlerinin değerlendirilmesi önceliklidir.
+Yeni özelliklerden önce mevcut mimarinin korunması, veri güvenliği ve bakım kolaylığı önceliklidir.
