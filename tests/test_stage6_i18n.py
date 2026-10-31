@@ -14,6 +14,22 @@ def test_stage6_translation_is_reversible_for_theme_labels() -> None:
         assert translate(expected, "tr") == source
 
 
+def test_keyboard_guide_and_statistics_labels_are_translated() -> None:
+    samples = (
+        ("Klavye Rehberi", "Keyboard Guide"),
+        ("Temel teknik", "Basic technique"),
+        ("Ergonomi ve mola", "Ergonomics and breaks"),
+        ("Güvenilir ve okunabilir kaynaklar", "Reliable, readable resources"),
+        ("Şubat", "February"),
+        ("Pzt", "Mon"),
+        ("Toplam süre", "Total time"),
+        ("Gelişmiş analiz", "Advanced analysis"),
+    )
+    for source, expected in samples:
+        assert translate(source, "en") == expected
+        assert translate(expected, "tr") == source
+
+
 def test_stage6_runtime_text_is_fully_translated() -> None:
     samples = {
         "Doğru: 42": "Correct: 42",
