@@ -93,3 +93,15 @@ Content normalization rules:
 The current default catalog contains 82 active groups and 1,833 lessons. A first-pass audit counted approximately 12,963 numeric characters and 23,070 punctuation/symbol characters in default lesson text. Turkish and other Unicode letters account for the remaining letter content; all whitespace should be normalized rather than removed.
 
 A mechanical group-name cleanup creates collisions (for example, the F/Q keyboard variants, groups distinguished by the number of matching initial letters, multiple tekerleme parts, and several date-based KM collections). Therefore group names must be reviewed with a unique-name check; a blind regex cleanup is not acceptable. Preserve group and lesson IDs/order while changing visible names and lesson text.
+
+## 7. Work completed on the refactor branch
+
+- Added `keycan/resources/lessons/tr/catalog.json` with schema version 1, 82 uniquely named groups, and 1,833 lessons.
+- Added `keycan/services/lesson_catalog.py` to load and validate the packaged catalog without GTK or third-party dependencies.
+- Added `tests/test_lesson_catalog.py` for catalog size, unique group names, letter-only visible names/text, and invalid-catalog rejection.
+- Cleaned the default lesson text by replacing digits and punctuation/symbols with word separators, preserving Unicode letters and normalizing whitespace. No lesson became empty.
+- Two pairs of lessons become identical after punctuation/digit cleanup. They were deliberately retained: removing them would change lesson IDs/order and could affect historical references.
+- Curated unique group names rather than relying on a blind regex. F/Q keyboard variants and other similar groups remain distinguishable without digits or punctuation.
+- Fixed the JSON backup null-identity bug. GitHub Actions now passes all four jobs (Stage 5, Stage 6, Stage 7, and full regression).
+
+**Important migration boundary:** The new JSON catalog and loader are prepared and tested, but the running GUI still reads active lesson data through the existing SQLite-backed database API. The runtime switch is intentionally not done yet. Before switching, the service must preserve default-group rename/edit/delete behavior, custom group CRUD, restore/reset semantics, stable lesson IDs, and practice-history references. The old database data is not being deleted.
