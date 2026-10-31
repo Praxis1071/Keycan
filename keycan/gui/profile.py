@@ -76,6 +76,13 @@ class ProfilePanel(Gtk.Box):
         self.photo_button.set_halign(Gtk.Align.START)
         self.photo_button.connect("clicked", self._choose_photo)
         identity.append(self.photo_button)
+
+        self.remove_photo_button = Gtk.Button(label="Profil fotoğrafını kaldır")
+        self.remove_photo_button.add_css_class("pill")
+        self.remove_photo_button.set_halign(Gtk.Align.START)
+        self.remove_photo_button.set_sensitive(False)
+        self.remove_photo_button.connect("clicked", self._remove_photo)
+        identity.append(self.remove_photo_button)
         header.append(identity)
         self.append(header)
 
@@ -283,6 +290,7 @@ class ProfilePanel(Gtk.Box):
             if path.is_file():
                 self._photo_path = path
                 self._set_photo(path)
+                self.remove_photo_button.set_sensitive(True)
 
     def _save_profile(self) -> None:
         self._profile_path.parent.mkdir(parents=True, exist_ok=True)
@@ -342,6 +350,32 @@ class ProfilePanel(Gtk.Box):
         self._photo_path = destination
         self._set_photo(destination)
         self._save_profile()
+        self.remove_photo_button.set_sensitive(True)
+
+    def _remove_photo(self, _button) -> None:
+        old_path = self._photo_path
+        self._photo_path = None
+        try:
+            self._save_profile()
+        except OSError:
+            self._photo_path = old_path
+            return
+
+        self.avatar.set_custom_image(None)
+        self.avatar.set_text(self._profile_name or "Profil")
+        self.remove_photo_button.set_sensitive(False)
+
+        if old_path is not None:
+            try:
+                data_dir = self._data_dir().resolve()
+                if (
+                    old_path.name.startswith("profile-photo.")
+                    and old_path.resolve().parent == data_dir
+                ):
+                    old_path.unlink(missing_ok=True)
+            except OSError:
+                # The reference is already cleared; a leftover file is harmless.
+                pass
 
     def _set_photo(self, path: Path) -> None:
         try:
