@@ -136,7 +136,7 @@ class SettingsPanel(Gtk.Box):
         try:
             raw, _ = file.load_contents(None)
             imported, skipped = self._db().import_data(raw.decode("utf-8-sig"))
-            message=f"{self._t('İçe aktarma tamamlandı:')} {imported} {self._t('kayıt içe aktarıldı')}"
+            message=f"{self._t('İçe aktarma tamamlandı:')} {imported} {self._t('grup, metin veya çalışma kaydı işlendi')}"
             if skipped: message += f", {skipped} {self._t('kayıt atlandı')}."
             else: message += "."
             self.status.set_text(message)
