@@ -6,6 +6,10 @@ import re
 
 TRANSLATIONS = {
     "Ayarlar": "Settings",
+    "Gelişmiş analiz": "Advanced analysis",
+    "Dönem karşılaştırmaları, ders performansı ve hata analizi.": "Period comparisons, lesson performance, and error analysis.",
+    "Dönem karşılaştırması": "Period comparison",
+    "Toplam süre": "Total time",
     "Şubat": "February",
     "Mayıs": "May",
     "Ağustos": "August",
@@ -493,6 +497,7 @@ _RUNTIME_PATTERNS = (
     (r"^(.+) sa (.+) dk$", r"\1 hr \2 min", r"^(.+) hr (.+) min$", r"\1 sa \2 dk"),
     (r"^Sonraki seviye için (.+) XP$", r"\1 XP to the next level", r"^(.+) XP to the next level$", r"Sonraki seviye için \1 XP"),
     (r"^(.+) / (.+) rozet açıldı\.$", r"\1 / \2 badges unlocked.", r"^(.+) / (.+) badges unlocked\.$", r"\1 / \2 rozet açıldı."),
+    (r"^Sonraki seviye için (.+) XP$", r"\1 XP to the next level", r"^(.+) XP to the next level$", r"Sonraki seviye için \1 XP"),
     (r"^(\d+): Henüz çalışma yapılmadı\.$", r"\1: No practice this year.", r"^(\d+): No practice this year\.$", r"\1: Henüz çalışma yapılmadı."),
     (r"^(\d+): (.+) aktif gün · (.+) çalışma · (.+) toplam süre$", r"\1: \2 active days · \3 practice sessions · \4 total time", r"^(\d+): (.+) active days · (.+) practice sessions · (.+) total time$", r"\1: \2 aktif gün · \3 çalışma · \4 toplam süre"),
     (r"^(.+) çalışma · Dakikada (.+) kelime · %(.+) doğruluk$", r"\1 practice sessions · \2 words per minute · \3% accuracy", r"^(.+) practice sessions · (.+) words per minute · (.+)% accuracy$", r"\1 çalışma · Dakikada \2 kelime · %\3 doğruluk"),
