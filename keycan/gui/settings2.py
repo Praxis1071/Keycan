@@ -69,6 +69,7 @@ class SettingsPanel(Gtk.Box):
         self.content_window = ContentManagerWindow(
             self.parent_window, self._db(), self.on_content_changed,
             language=self.preferences.get("language"),
+            lesson_service=getattr(self.parent_window, "lesson_service", None),
         )
         self.content_window.present()
     def _reset(self,_b):
