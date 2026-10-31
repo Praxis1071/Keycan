@@ -498,10 +498,8 @@ _RUNTIME_PATTERNS = (
     (r"^(.+) sa$", r"\1 hr", r"^(.+) hr$", r"\1 sa"),
     (r"^(.+) sa (.+) dk$", r"\1 hr \2 min", r"^(.+) hr (.+) min$", r"\1 sa \2 dk"),
     (r"^(.+) aktif gün$", r"\1 active days", r"^(.+) active days$", r"\1 aktif gün"),
-    (r"^(.+) kelime$", r"\1 words", r"^(.+) words$", r"\1 kelime"),
     (r"^Sonraki seviye için (.+) XP$", r"\1 XP to the next level", r"^(.+) XP to the next level$", r"Sonraki seviye için \1 XP"),
     (r"^(.+) / (.+) rozet açıldı\.$", r"\1 / \2 badges unlocked.", r"^(.+) / (.+) badges unlocked\.$", r"\1 / \2 rozet açıldı."),
-    (r"^Sonraki seviye için (.+) XP$", r"\1 XP to the next level", r"^(.+) XP to the next level$", r"Sonraki seviye için \1 XP"),
     (r"^(\d+): Henüz çalışma yapılmadı\.$", r"\1: No practice this year.", r"^(\d+): No practice this year\.$", r"\1: Henüz çalışma yapılmadı."),
     (r"^(\d+): (.+) aktif gün · (.+) çalışma · (.+) toplam süre$", r"\1: \2 active days · \3 practice sessions · \4 total time", r"^(\d+): (.+) active days · (.+) practice sessions · (.+) total time$", r"\1: \2 aktif gün · \3 çalışma · \4 toplam süre"),
     (r"^(.+) çalışma · Dakikada (.+) kelime · %(.+) doğruluk$", r"\1 practice sessions · \2 words per minute · \3% accuracy", r"^(.+) practice sessions · (.+) words per minute · (.+)% accuracy$", r"\1 çalışma · Dakikada \2 kelime · %\3 doğruluk"),
@@ -525,6 +523,7 @@ _RUNTIME_PATTERNS = (
     (r"^Henüz yeterli veri yok\.$", r"Not enough data yet.", r"^Not enough data yet\.$", r"Henüz yeterli veri yok."),
     (r"^Yeterli veri olduğunda gösterilir$", r"Shown when enough data is available", r"^Shown when enough data is available$", r"Yeterli veri olduğunda gösterilir"),
     (r"^En az iki çalışma olduğunda karşılaştırma gösterilir$", r"Comparison is shown after at least two practice sessions", r"^Comparison is shown after at least two practice sessions$", r"En az iki çalışma olduğunda karşılaştırma gösterilir"),
+    (r"^(.+) kelime$", r"\1 words", r"^(.+) words$", r"\1 kelime"),
 )
 
 
