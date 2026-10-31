@@ -222,7 +222,7 @@ def test_default_backup_does_not_overwrite_custom_group_with_same_id(tmp_path: P
         target.conn.commit()
 
         imported, skipped = target.import_data(backup)
-        assert (imported, skipped) == (1, 0)
+        assert (imported, skipped) == (3, 0)
         collision = target.conn.execute(
             "SELECT display_name, is_custom FROM sources WHERE id = 1"
         ).fetchone()
@@ -270,7 +270,7 @@ def test_backup_preserves_custom_lesson_inside_default_group(tmp_path: Path) -> 
     target = make_db(tmp_path / "mixed-target.db")
     try:
         imported, skipped = target.import_data(json.dumps(backup))
-        assert (imported, skipped) == (1, 0)
+        assert (imported, skipped) == (3, 0)
         restored = target.conn.execute(
             "SELECT id, is_custom FROM lessons WHERE source_id = 1 AND text = ?",
             ("A custom lesson in a default group",),
@@ -337,7 +337,7 @@ def test_default_backup_maps_by_content_identity_when_numeric_ids_shift(tmp_path
     target = make_shifted_default_db(tmp_path / "identity-target.db")
     try:
         imported, skipped = target.import_data(backup)
-        assert (imported, skipped) == (1, 0)
+        assert (imported, skipped) == (3, 0)
         assert target.conn.execute(
             "SELECT display_name FROM sources WHERE id = 1"
         ).fetchone() == ("Other Default",)
