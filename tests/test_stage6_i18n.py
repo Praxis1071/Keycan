@@ -127,3 +127,20 @@ def test_shared_translation_catalog_covers_profile_and_reset_actions() -> None:
     for source, expected in samples.items():
         assert shared_translate(source, "en") == expected
         assert shared_translate(expected, "tr") == source
+
+def test_stage6_ambiguous_catalog_entries_round_trip_without_losing_source_text() -> None:
+    samples = (
+        ("Sonraki seviye için bir sonraki kilometre taşı.", "Your next level milestone."),
+        ("Çalışma Alanı", "Workspace"),
+        ("Çalışma alanı", "Typing workspace"),
+        ("Bir ders grubu seçin", "Select a lesson group"),
+        ("Ders grubu seçin", "Choose a lesson group"),
+        ("Çalışma sayısı", "Practice count"),
+        ("Çalışmalar", "Practice sessions"),
+        ("rozet açıldı.", "badge unlocked."),
+        ("rozetler açıldı.", "badges unlocked."),
+    )
+    for source, expected in samples:
+        assert translate(source, "en") == expected
+        assert translate(expected, "tr") == source
+
