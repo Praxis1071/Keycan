@@ -21,6 +21,7 @@ Bu dosya, 31 Ekim 2026 tarihinde yapılan kullanıcı testleri ve kod incelemesi
 | KC-002 | Gizlilik modu – sonuçların istatistiklere kaydedilmesi | Kullanıcı tarafından doğrulandı; çalışma zamanı kök nedeni henüz kesin değil | Kritik |
 | KC-003 | Yedek/istatistik içe aktarma | Kullanıcı tarafından doğrulandı; varsayılan ders kimlik eşleştirmesinde kod kusuru adayı bulundu | Yüksek |
 | KC-004 | İngilizce arayüzde eksik çeviriler | Kullanıcı tarafından doğrulandı; çeviri mimarisinde eksiklikler bulundu | Orta |
+| KC-005 | Profil fotoğrafını kaldırma ve profili sıfırlama seçenekleri | Kullanıcı tarafından doğrulandı; arayüzde seçenekler eksik | Orta |
 
 ---
 
@@ -174,6 +175,45 @@ Bu dosya, 31 Ekim 2026 tarihinde yapılan kullanıcı testleri ve kod incelemesi
 - Türkçe → İngilizce → Türkçe geçişi.
 - Kullanıcı tarafından oluşturulmuş ders/grup/metin adlarının değişmeden kalması.
 
+
+---
+
+## KC-005 – Profil fotoğrafını kaldırma ve profili sıfırlama seçeneklerinin eksikliği
+
+**Durum:** Kullanıcı tarafından gerçek kullanımda doğrulandı; kod incelemesi arayüzdeki eksikliği destekliyor.
+
+**Belirti:**
+- Profil sekmesinde daha önce seçilmiş profil fotoğrafı görüntülenmeye devam ediyor.
+- Profil fotoğrafını kaldırmak için bir seçenek bulunmuyor.
+- Kullanıcı profilini varsayılan/boş duruma döndürebileceği bir işlem de bulamıyor.
+
+**Beklenen davranış:**
+- Profil bölümünde “Profil fotoğrafı seç” düğmesinin yanında veya yakınında “Profil fotoğrafını kaldır” seçeneği bulunmalı.
+- Fotoğraf kaldırıldığında kayıtlı fotoğraf dosyası ve profil fotoğrafı referansı güvenli biçimde temizlenmeli; avatar varsayılan görünümüne dönmeli.
+- Ayarlar bölümüne “Profili sıfırla” gibi ayrı ve açıkça tanımlanmış bir seçenek eklenmeli.
+- Profil sıfırlama işlemi öncesinde, hangi profil verilerinin silineceğini açıklayan onay istenmeli.
+- Profil sıfırlama yalnızca profil verilerini (en azından profil adı ve fotoğrafı; kapsamı uygulamadaki profil alanlarına göre netleştirilecek) etkilemeli. İstatistikler, çalışma geçmişi, ders grupları ve metinler korunmalı.
+- Fotoğraf kaldırma ile tüm profili sıfırlama birbirinden bağımsız işlemler olmalı.
+
+**Kod incelemesinde görülen noktalar:**
+- `keycan/gui/profile.py` içinde “Profil fotoğrafı seç” düğmesi ve fotoğraf seçme/kopyalama akışı bulunuyor.
+- Profil fotoğrafı uygulamanın veri dizininde `profile-photo.*` adıyla saklanıyor.
+- İncelenen profil arayüzünde fotoğrafı kaldıran bir düğme/işlem görünmüyor.
+- `keycan/gui/settings2.py` içinde istatistikleri sıfırlama ve ders içeriklerini sıfırlama işlemleri mevcut; profil sıfırlama seçeneği bulunmuyor.
+
+**Henüz netleştirilecekler:**
+- “Profili sıfırla” işleminin profil adı, fotoğrafı ve ileride eklenecek diğer kişisel profil tercihleri üzerindeki kesin kapsamı.
+- Profil fotoğrafı dosyası silinemediğinde arayüzün ve profil kaydının tutarlı kalması.
+- Fotoğraf kaldırma veya profil sıfırlama sonrasında profil sekmesinin anında yenilenmesi.
+- Profil sıfırlamanın istatistikleri ve ders verilerini kesinlikle değiştirmediğinin test edilmesi.
+
+**İlgili regresyon kontrolleri:**
+- Fotoğraf seçme ve uygulamayı yeniden başlatınca fotoğrafın yüklenmesi.
+- Fotoğrafı kaldırınca varsayılan avatarın görünmesi ve yeniden başlatma sonrasında fotoğrafın geri gelmemesi.
+- Profili sıfırlayınca profil alanlarının varsayılan hâle dönmesi.
+- Profil sıfırlama sonrasında istatistiklerin, çalışma geçmişinin, ders gruplarının ve metinlerin aynen korunması.
+- İptal edilen onay penceresinde hiçbir profil verisinin silinmemesi.
+
 ---
 
 ## Kullanıcı tarafından sorunsuz olduğu doğrulanan alanlar
@@ -201,3 +241,4 @@ Her hata için kök neden doğrulanmadan kod değiştirilmeyecek. Düzeltmelerde
 ## Değişiklik geçmişi
 
 - 2026-10-31: Kullanıcı testleri ve statik kod incelemesi temel alınarak ilk hata envanteri oluşturuldu. Bu kayıt sırasında uygulama kodunda değişiklik yapılmadı.
+- 2026-10-31: Profil fotoğrafını kaldırma ve profili sıfırlama seçeneklerinin eksikliği KC-005 olarak eklendi. Yalnızca hata kaydı güncellendi.
