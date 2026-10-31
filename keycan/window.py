@@ -534,27 +534,28 @@ class KeycanWindow(Adw.ApplicationWindow):
                 if render_error is None:
                     render_error = exc
 
+        base_message = f"Süre doldu. Doğru: {result.correct}  |  Yanlış: {result.wrong}  |  Toplam: {typed_word_count}"
+        base_message = translate(base_message, self.preferences.get("language"))
         if save_error is not None:
             message = translate(
-                "Çalışma tamamlandı ancak istatistiklere kaydedilemedi.",
+                "İstatistiklere kaydedilemedi:",
                 self.preferences.get("language"),
             )
-            self.status.set_text(f"{message} ({save_error})")
+            self.status.set_text(f"{base_message} · {message} {save_error}")
         elif render_error is not None:
             message = translate(
                 "Çalışma kaydedildi ancak sonuç görünümü güncellenemedi.",
                 self.preferences.get("language"),
             )
-            self.status.set_text(f"{message} ({render_error})")
+            self.status.set_text(f"{base_message} · {message} ({render_error})")
         elif profile_error is not None:
             message = translate(
                 "Çalışma kaydedildi ancak profil görünümü güncellenemedi.",
                 self.preferences.get("language"),
             )
-            self.status.set_text(f"{message} ({profile_error})")
+            self.status.set_text(f"{base_message} · {message} ({profile_error})")
         else:
-            message = f"Süre doldu. Doğru: {result.correct}  |  Yanlış: {result.wrong}  |  Toplam: {typed_word_count}"
-            self.status.set_text(translate(message, self.preferences.get("language")))
+            self.status.set_text(base_message)
 
     def _render_target_results(self, matched: set[int]) -> None:
         buffer = self.target_view.get_buffer()
