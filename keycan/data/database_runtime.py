@@ -65,6 +65,15 @@ def _ensure_default_snapshot(self: Database) -> None:
                custom_key TEXT NOT NULL DEFAULT ''
            )"""
     )
+    self.conn.execute(
+        """CREATE TABLE IF NOT EXISTS content_restore_state (
+               id INTEGER PRIMARY KEY CHECK (id = 1),
+               snapshot_pending INTEGER NOT NULL DEFAULT 0
+           )"""
+    )
+    self.conn.execute(
+        "INSERT OR IGNORE INTO content_restore_state(id, snapshot_pending) VALUES (1, 0)"
+    )
     columns = {
         row[1] for row in self.conn.execute(
             "PRAGMA table_info(default_content_lessons)"
@@ -128,6 +137,9 @@ def _sync_default_snapshot(self: Database) -> None:
                    custom_order, is_custom, custom_key
                ) VALUES (?,?,?,?,?,?,?,?)""", lesson_rows
         )
+        self.conn.execute(
+            "UPDATE content_restore_state SET snapshot_pending = 0 WHERE id = 1"
+        )
         self.conn.commit()
     except Exception:
         self.conn.rollback()
@@ -137,12 +149,12 @@ def _sync_default_snapshot(self: Database) -> None:
 def _init(self: Database, path):
     _ORIGINAL_INIT(self, path)
     _ensure_default_snapshot(self)
-    # Upgrade older databases whose snapshots still contain individually
-    # deleted groups, while preserving the snapshot after a full reset
-    # (when no built-in group remains active).
-    if self.conn.execute(
-        "SELECT 1 FROM sources WHERE is_custom = 0 AND is_deleted = 0 LIMIT 1"
-    ).fetchone():
+    snapshot_pending = self.conn.execute(
+        "SELECT snapshot_pending FROM content_restore_state WHERE id = 1"
+    ).fetchone()[0]
+    if not snapshot_pending:
+        # Reconcile legacy snapshots against the actual active workspace.
+        # A full reset explicitly marks its restore point as pending.
         _sync_default_snapshot(self)
 
 
@@ -197,18 +209,28 @@ def _managed_lessons(self: Database, source_id: int):
 
 def _rename_group(self: Database, source_id: int, name: str) -> None:
     name = self._validate_group_name(name)
-    if self.conn.execute("UPDATE sources SET display_name = ? WHERE id = ? AND is_deleted = 0", (name, source_id)).rowcount != 1:
+    row = self.conn.execute(
+        "SELECT is_custom FROM sources WHERE id = ? AND is_deleted = 0", (source_id,)
+    ).fetchone()
+    if not row:
         raise ValueError("Ders grubu bulunamadı")
+    self.conn.execute("UPDATE sources SET display_name = ? WHERE id = ?", (name, source_id))
     self.conn.commit()
-    _sync_default_snapshot(self)
+    if not row[0]:
+        _sync_default_snapshot(self)
 
 
 def _delete_group(self: Database, source_id: int) -> None:
-    if self.conn.execute("UPDATE sources SET is_deleted = 1 WHERE id = ? AND is_deleted = 0", (source_id,)).rowcount != 1:
+    row = self.conn.execute(
+        "SELECT is_custom FROM sources WHERE id = ? AND is_deleted = 0", (source_id,)
+    ).fetchone()
+    if not row:
         raise ValueError("Ders grubu bulunamadı")
+    self.conn.execute("UPDATE sources SET is_deleted = 1 WHERE id = ?", (source_id,))
     self.conn.execute("UPDATE lessons SET is_deleted = 1 WHERE source_id = ?", (source_id,))
     self.conn.commit()
-    _sync_default_snapshot(self)
+    if not row[0]:
+        _sync_default_snapshot(self)
 
 
 def _create_custom_group(self: Database, name: str) -> int:
@@ -225,7 +247,10 @@ def _create_custom_group(self: Database, name: str) -> int:
 
 def _create_lesson(self: Database, source_id: int, text: str) -> int:
     text = self._validate_text(text)
-    if not self.conn.execute("SELECT 1 FROM sources WHERE id = ? AND is_deleted = 0", (source_id,)).fetchone():
+    source = self.conn.execute(
+        "SELECT is_custom FROM sources WHERE id = ? AND is_deleted = 0", (source_id,)
+    ).fetchone()
+    if not source:
         raise ValueError("Ders grubu bulunamadı")
     order = self.conn.execute(
         "SELECT COALESCE(MAX(custom_order), -1) + 1 FROM lessons WHERE source_id = ? AND is_deleted = 0", (source_id,)
@@ -237,32 +262,52 @@ def _create_lesson(self: Database, source_id: int, text: str) -> int:
         (source_id, text, order, key),
     ).lastrowid)
     self.conn.commit()
-    _sync_default_snapshot(self)
+    if not source[0]:
+        _sync_default_snapshot(self)
     return lesson_id
 
 
 def _update_lesson(self: Database, lesson_id: int, text: str) -> None:
     text = self._validate_text(text)
-    if self.conn.execute("UPDATE lessons SET text = ? WHERE id = ? AND is_deleted = 0", (text, lesson_id)).rowcount != 1:
+    source = self.conn.execute(
+        """SELECT s.is_custom FROM lessons AS l
+           JOIN sources AS s ON s.id = l.source_id
+           WHERE l.id = ? AND l.is_deleted = 0 AND s.is_deleted = 0""",
+        (lesson_id,),
+    ).fetchone()
+    if not source:
         raise ValueError("Metin bulunamadı")
+    self.conn.execute("UPDATE lessons SET text = ? WHERE id = ?", (text, lesson_id))
     self.conn.commit()
-    _sync_default_snapshot(self)
+    if not source[0]:
+        _sync_default_snapshot(self)
 
 
 def _delete_lesson(self: Database, lesson_id: int) -> None:
-    row = self.conn.execute("SELECT source_id FROM lessons WHERE id = ? AND is_deleted = 0", (lesson_id,)).fetchone()
+    row = self.conn.execute(
+        """SELECT l.source_id, s.is_custom FROM lessons AS l
+           JOIN sources AS s ON s.id = l.source_id
+           WHERE l.id = ? AND l.is_deleted = 0 AND s.is_deleted = 0""",
+        (lesson_id,),
+    ).fetchone()
     if not row:
         raise ValueError("Metin bulunamadı")
     self.conn.execute("UPDATE lessons SET is_deleted = 1 WHERE id = ?", (lesson_id,))
     self.conn.commit()
     _normalize_order(self, int(row[0]))
-    _sync_default_snapshot(self)
+    if not row[1]:
+        _sync_default_snapshot(self)
 
 
 def _move_lesson(self: Database, lesson_id: int, direction: int) -> None:
     if direction not in (-1, 1):
         raise ValueError("Geçersiz sıralama yönü")
-    row = self.conn.execute("SELECT source_id FROM lessons WHERE id = ? AND is_deleted = 0", (lesson_id,)).fetchone()
+    row = self.conn.execute(
+        """SELECT l.source_id, s.is_custom FROM lessons AS l
+           JOIN sources AS s ON s.id = l.source_id
+           WHERE l.id = ? AND l.is_deleted = 0 AND s.is_deleted = 0""",
+        (lesson_id,),
+    ).fetchone()
     if not row:
         raise ValueError("Metin bulunamadı")
     source_id = int(row[0])
@@ -282,7 +327,8 @@ def _move_lesson(self: Database, lesson_id: int, direction: int) -> None:
     except Exception:
         self.conn.rollback()
         raise
-    _sync_default_snapshot(self)
+    if not row[1]:
+        _sync_default_snapshot(self)
 
 
 def _normalize_order(self: Database, source_id: int) -> None:
@@ -371,13 +417,20 @@ def _progression_summary(self: Database):
 
 def _reset_all_content(self: Database):
     _ensure_default_snapshot(self)
-    # Capture the latest active workspace before hiding everything. Previously
-    # deleted groups/lessons are excluded from this new restore point.
-    _sync_default_snapshot(self)
+    pending = self.conn.execute(
+        "SELECT snapshot_pending FROM content_restore_state WHERE id = 1"
+    ).fetchone()[0]
+    # Capture the latest active workspace before hiding everything, unless a
+    # full reset already has a valid restore point waiting to be used.
+    if not pending:
+        _sync_default_snapshot(self)
     groups = int(self.conn.execute("SELECT COUNT(*) FROM sources WHERE is_deleted = 0").fetchone()[0])
     lessons = int(self.conn.execute("SELECT COUNT(*) FROM lessons WHERE is_deleted = 0").fetchone()[0])
     self.conn.execute("UPDATE lessons SET is_deleted = 1 WHERE is_deleted = 0")
     self.conn.execute("UPDATE sources SET is_deleted = 1 WHERE is_deleted = 0")
+    self.conn.execute(
+        "UPDATE content_restore_state SET snapshot_pending = 1 WHERE id = 1"
+    )
     self.conn.commit()
     return groups, lessons
 
