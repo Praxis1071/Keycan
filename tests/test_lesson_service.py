@@ -84,12 +84,22 @@ def test_service_preserves_custom_groups_and_lessons(database: Database) -> None
 def test_service_resolves_all_built_in_texts_to_catalog(database: Database) -> None:
     service = LessonService(database)
     for group in service.catalog.groups:
-        resolved = {
-            row[0]: row[1]
-            for row in service.managed_lessons(group.id)
-        }
+        rows = service.managed_lessons(group.id)
+        resolved = {row[0]: row[1] for row in rows}
+        default_order = [row[0] for row in rows if not row[4]]
+        assert default_order == [lesson.id for lesson in group.lessons]
         for lesson in group.lessons:
             assert resolved[lesson.id] == lesson.text
+
+
+def test_service_preserves_catalog_group_order(database: Database) -> None:
+    service = LessonService(database)
+    catalog_ids = {group.id for group in service.catalog.groups}
+    visible_default_ids = [
+        group_id for group_id, _name in service.sources() if group_id in catalog_ids
+    ]
+    expected = [group.id for group in service.catalog.groups]
+    assert visible_default_ids == expected
 
 
 
