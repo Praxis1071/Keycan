@@ -714,7 +714,8 @@ def _import_data(self: Database, raw: str):
                 duplicate = False
                 # V1/V2 backups have no stable session identifier. Retain the
                 # legacy metric-based fallback only for those older records.
-                for existing in candidates if not result.get("session_uuid") else ():
+                legacy_candidates = candidates if not result.get("session_uuid") else ()
+                for existing in legacy_candidates:
                     try:
                         existing_wrong_letters = self._normalize_wrong_letter_counts(existing[11])
                     except ValueError:
