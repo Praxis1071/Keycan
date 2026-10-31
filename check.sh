@@ -2,41 +2,61 @@
 set -euo pipefail
 project_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 cd "$project_dir"
-python -m py_compile main.py keycan/__init__.py keycan/app.py keycan/window.py keycan/core/__init__.py keycan/core/typing_engine.py keycan/data/__init__.py keycan/data/database.py keycan/data/database_runtime.py keycan/gui/content_manager2.py keycan/gui/settings2.py keycan/gui/statistics_clean.py keycan/gui/statistics_runtime.py keycan/gui/search.py keycan/gui/workspace.py keycan/gui/profile.py keycan/services/preferences.py keycan/services/progression.py keycan/services/translations.py keycan/services/i18n.py tests/test_stage1_database.py tests/test_stage3_database.py tests/test_custom_content.py
+python -m py_compile main.py keycan/__init__.py keycan/app.py keycan/window.py keycan/core/__init__.py keycan/core/typing_engine.py keycan/data/__init__.py keycan/data/database.py keycan/data/database_runtime.py keycan/gui/content_manager2.py keycan/gui/settings2.py keycan/gui/statistics_clean.py keycan/gui/statistics_runtime.py keycan/gui/search.py keycan/gui/workspace.py keycan/gui/profile.py keycan/services/preferences.py keycan/services/lesson_catalog.py keycan/services/lesson_service.py keycan/services/progression.py keycan/services/translations.py keycan/services/i18n.py tests/test_stage1_database.py tests/test_stage3_database.py tests/test_custom_content.py tests/test_lesson_catalog.py tests/test_lesson_service.py tests/test_database_runtime.py
 python - <<'PY'
+import shutil
 import sqlite3
-connection=sqlite3.connect("typing_data.db")
-try:
-    connection.execute("PRAGMA foreign_keys = ON")
-    assert connection.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
-    sources=connection.execute("SELECT COUNT(*) FROM sources WHERE is_deleted = 0").fetchone()[0]
-    lessons=connection.execute("SELECT COUNT(*) FROM lessons WHERE is_deleted = 0").fetchone()[0]
-    assert connection.execute("SELECT COUNT(*) FROM lessons WHERE is_deleted = 0 AND text = ''").fetchone()[0] == 0
-    assert connection.execute("SELECT COUNT(*) FROM practice_results AS r LEFT JOIN lessons AS l ON l.id=r.lesson_id WHERE l.id IS NULL").fetchone()[0] == 0
-    source_columns={row[1] for row in connection.execute("PRAGMA table_info(sources)")}; lesson_columns={row[1] for row in connection.execute("PRAGMA table_info(lessons)")}
-    assert {"is_custom","is_deleted","custom_key"} <= source_columns
-    assert {"is_custom","is_deleted","custom_order","custom_key"} <= lesson_columns
-    assert connection.execute("SELECT COUNT(*) FROM sources WHERE relative_path IS NULL").fetchone()[0] == 0
-    assert connection.execute("SELECT COUNT(*) FROM sources GROUP BY relative_path HAVING COUNT(*) > 1").fetchone() is None
-    snapshot_sources=connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='default_content_sources'").fetchone()
-    snapshot_lessons=connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='default_content_lessons'").fetchone()
-    restore_state=connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='content_restore_state'").fetchone()
-    assert snapshot_sources and snapshot_lessons and restore_state
-    snapshot_source_count=connection.execute("SELECT COUNT(*) FROM default_content_sources").fetchone()[0]
-    snapshot_lesson_count=connection.execute("SELECT COUNT(*) FROM default_content_lessons").fetchone()[0]
-    snapshot_pending=connection.execute("SELECT snapshot_pending FROM content_restore_state WHERE id=1").fetchone()[0]
-    active_default_sources=connection.execute("SELECT COUNT(*) FROM sources AS s WHERE s.is_custom=0 AND s.is_deleted=0 AND EXISTS (SELECT 1 FROM lessons AS l WHERE l.source_id=s.id AND l.is_deleted=0)").fetchone()[0]
-    active_default_lessons=connection.execute("SELECT COUNT(*) FROM lessons AS l JOIN sources AS s ON s.id=l.source_id WHERE s.is_custom=0 AND s.is_deleted=0 AND l.is_deleted=0").fetchone()[0]
-    if not snapshot_pending:
-        assert snapshot_source_count == active_default_sources
-        assert snapshot_lesson_count == active_default_lessons
-    result_columns={row[1] for row in connection.execute("PRAGMA table_info(practice_results)")}
-    assert {"completed_at","target_word_count","typed_word_count","total_characters","correct_characters","wrong_characters","accuracy_percent"} <= result_columns
-    assert connection.execute("SELECT COUNT(*) FROM practice_results WHERE duration_seconds<0 OR correct_words<0 OR wrong_words<0 OR target_word_count<0 OR typed_word_count<0 OR total_characters<0 OR correct_characters<0 OR wrong_characters<0 OR words_per_minute<0 OR characters_per_minute<0 OR accuracy_percent<0 OR accuracy_percent>100").fetchone()[0] == 0
-    assert connection.execute("SELECT COUNT(*) FROM practice_results WHERE total_characters != correct_characters + wrong_characters").fetchone()[0] == 0
-    print(f"Veri denetimi başarılı: {sources} aktif kaynak, {lessons} aktif metin.")
-finally:
-    connection.close()
+import tempfile
+from pathlib import Path
+
+from keycan.data.database import Database
+from keycan.services.lesson_catalog import load_lesson_catalog
+from keycan.data.database_runtime import install_database_runtime
+install_database_runtime()
+
+with tempfile.TemporaryDirectory() as temp_dir:
+    database_path = Path(temp_dir) / "typing_data.db"
+    shutil.copy2("typing_data.db", database_path)
+    database = Database(database_path)
+    connection = database.conn
+    try:
+        connection.execute("PRAGMA foreign_keys = ON")
+        assert connection.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+        sources=connection.execute("SELECT COUNT(*) FROM sources WHERE is_deleted = 0").fetchone()[0]
+        lessons=connection.execute("SELECT COUNT(*) FROM lessons WHERE is_deleted = 0").fetchone()[0]
+        assert connection.execute("SELECT COUNT(*) FROM lessons WHERE is_deleted = 0 AND text = ''").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM practice_results AS r LEFT JOIN lessons AS l ON l.id=r.lesson_id WHERE l.id IS NULL").fetchone()[0] == 0
+        source_columns={row[1] for row in connection.execute("PRAGMA table_info(sources)")}; lesson_columns={row[1] for row in connection.execute("PRAGMA table_info(lessons)")}
+        assert {"is_custom","is_deleted","custom_key"} <= source_columns
+        assert {"is_custom","is_deleted","custom_order","custom_key"} <= lesson_columns
+        assert connection.execute("SELECT COUNT(*) FROM sources WHERE relative_path IS NULL").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM sources GROUP BY relative_path HAVING COUNT(*) > 1").fetchone() is None
+        snapshot_sources=connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='default_content_sources'").fetchone()
+        snapshot_lessons=connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='default_content_lessons'").fetchone()
+        restore_state=connection.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='content_restore_state'").fetchone()
+        assert snapshot_sources and snapshot_lessons and restore_state
+        snapshot_source_count=connection.execute("SELECT COUNT(*) FROM default_content_sources").fetchone()[0]
+        snapshot_lesson_count=connection.execute("SELECT COUNT(*) FROM default_content_lessons").fetchone()[0]
+        snapshot_pending=connection.execute("SELECT snapshot_pending FROM content_restore_state WHERE id=1").fetchone()[0]
+        active_default_sources=connection.execute("SELECT COUNT(*) FROM sources AS s WHERE s.is_custom=0 AND s.is_deleted=0 AND EXISTS (SELECT 1 FROM lessons AS l WHERE l.source_id=s.id AND l.is_deleted=0)").fetchone()[0]
+        active_default_lessons=connection.execute("SELECT COUNT(*) FROM lessons AS l JOIN sources AS s ON s.id=l.source_id WHERE s.is_custom=0 AND s.is_deleted=0 AND l.is_deleted=0").fetchone()[0]
+        if not snapshot_pending:
+            assert snapshot_source_count == active_default_sources
+            assert snapshot_lesson_count == active_default_lessons
+        catalog = load_lesson_catalog()
+        catalog_group_ids = {group.id for group in catalog.groups}
+        catalog_lesson_ids = {lesson.id for group in catalog.groups for lesson in group.lessons}
+        snapshot_group_ids = {row[0] for row in connection.execute("SELECT source_id FROM default_content_sources")}
+        snapshot_lesson_ids = {row[0] for row in connection.execute("SELECT lesson_id FROM default_content_lessons")}
+        assert catalog_group_ids == snapshot_group_ids
+        assert catalog_lesson_ids == snapshot_lesson_ids
+        result_columns={row[1] for row in connection.execute("PRAGMA table_info(practice_results)")}
+        assert {"completed_at","target_word_count","typed_word_count","total_characters","correct_characters","wrong_characters","accuracy_percent"} <= result_columns
+        assert connection.execute("SELECT COUNT(*) FROM practice_results WHERE duration_seconds<0 OR correct_words<0 OR wrong_words<0 OR target_word_count<0 OR typed_word_count<0 OR total_characters<0 OR correct_characters<0 OR wrong_characters<0 OR words_per_minute<0 OR characters_per_minute<0 OR accuracy_percent<0 OR accuracy_percent>100").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM practice_results WHERE total_characters != correct_characters + wrong_characters").fetchone()[0] == 0
+        print(f"Veri denetimi başarılı: {sources} aktif kaynak, {lessons} aktif metin.")
+    finally:
+        database.close()
 PY
-python -m pytest -q tests/test_stage1_database.py tests/test_stage3_database.py tests/test_custom_content.py tests/test_stage6_preferences.py tests/test_stage6_i18n.py
+python -m pytest -q tests/test_stage1_database.py tests/test_stage3_database.py tests/test_custom_content.py tests/test_stage6_preferences.py tests/test_stage6_i18n.py tests/test_lesson_catalog.py tests/test_lesson_service.py tests/test_database_runtime.py
 echo "Keycan sözdizimi, veritabanı, içerik yönetimi, güncel varsayılan geri yükleme ve istatistik kontrolleri hazır."

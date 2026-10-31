@@ -5,7 +5,9 @@ from datetime import date, timedelta
 from pathlib import Path
 
 from keycan.data.database import Database
-import keycan.data.database_runtime  # noqa: F401
+from keycan.data.database_runtime import install_database_runtime
+
+install_database_runtime()
 from keycan.services.progression import (
     badge_keys,
     level_for_xp,

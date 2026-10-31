@@ -12,9 +12,9 @@ from keycan.services.translations import translate
 
 
 class ContentManagerWindow(Adw.Window):
-    def __init__(self, parent: Gtk.Widget, database, on_changed=None, language="tr") -> None:
+    def __init__(self, parent: Gtk.Widget, database, on_changed=None, language="tr", lesson_service=None) -> None:
         super().__init__(transient_for=parent, modal=True, title=translate("Ders Gruplarını Yönet", language))
-        self.db=database; self.on_changed=on_changed; self.language=language; self.selected_group_id=None; self.selected_lesson_id=None
+        self.db=database; self.lesson_service=lesson_service or database; self.on_changed=on_changed; self.language=language; self.selected_group_id=None; self.selected_lesson_id=None
         self.set_default_size(900,620); self.set_size_request(480,360); self._build(); self._refresh_groups(); self.set_language(language)
     @staticmethod
     def _rows(list_box):
@@ -78,8 +78,8 @@ class ContentManagerWindow(Adw.Window):
 
     def _refresh_groups(self):
         selected=self.selected_group_id; self._clear(self.group_list)
-        for number,(group_id,name,_key,_is_custom) in enumerate(self.db.managed_groups(),1):
-            row=Gtk.ListBoxRow(); row.group_id=group_id; l=Gtk.Label(label=self.db._display_source_name(name,number)); l.set_xalign(0); l.set_margin_top(10); l.set_margin_bottom(10); l.set_margin_start(10); l.set_margin_end(10); row.set_child(l); self.group_list.append(row)
+        for number,(group_id,name,_key,_is_custom) in enumerate(self.lesson_service.managed_groups(),1):
+            row=Gtk.ListBoxRow(); row.group_id=group_id; l=Gtk.Label(label=self.lesson_service.display_group_name(name,number)); l.set_xalign(0); l.set_margin_top(10); l.set_margin_bottom(10); l.set_margin_start(10); l.set_margin_end(10); row.set_child(l); self.group_list.append(row)
             if group_id==selected:self.group_list.select_row(row)
         if self.group_list.get_selected_row() is None:self._clear_lessons()
     def _group_selected(self,_list,row):
@@ -89,7 +89,7 @@ class ContentManagerWindow(Adw.Window):
     def _refresh_lessons(self):
         self._clear(self.lesson_list); self.selected_lesson_id=None
         if self.selected_group_id is None:self._set_lesson_controls(False);return
-        lessons=self.db.managed_lessons(self.selected_group_id)
+        lessons=self.lesson_service.managed_lessons(self.selected_group_id)
         for number,(lesson_id,_text,_key,_order,_is_custom) in enumerate(lessons,1):
             row=Gtk.ListBoxRow(); row.lesson_id=lesson_id; l=Gtk.Label(label=str(number)); l.set_xalign(0); l.set_margin_top(9); l.set_margin_bottom(9); l.set_margin_start(12); l.set_margin_end(12); row.set_child(l); self.lesson_list.append(row)
         if lessons:self.lesson_list.select_row(self.lesson_list.get_row_at_index(0))
@@ -99,7 +99,7 @@ class ContentManagerWindow(Adw.Window):
     def _lesson_selected(self,_list,row):
         self.selected_lesson_id=getattr(row,"lesson_id",None) if row else None
         if self.selected_lesson_id is None:self.text_view.get_buffer().set_text(""); self._set_lesson_controls(False); return
-        _id,_title,text=self.db.lesson(self.selected_lesson_id); self.text_view.get_buffer().set_text(text); self._set_lesson_controls(True)
+        _id,_title,text=self.lesson_service.lesson(self.selected_lesson_id); self.text_view.get_buffer().set_text(text); self._set_lesson_controls(True)
     def _set_group_controls(self,enabled): self.rename_button.set_sensitive(enabled); self.delete_button.set_sensitive(enabled)
     def _set_lesson_controls(self,enabled): self.save_button.set_sensitive(enabled); self.delete_text_button.set_sensitive(enabled); self.up_button.set_sensitive(enabled); self.down_button.set_sensitive(enabled); self.add_button.set_sensitive(self.selected_group_id is not None)
     def _message(self,msg): self.status.set_text(translate(msg, self.language))

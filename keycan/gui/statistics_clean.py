@@ -102,19 +102,43 @@ class MetricCard(Gtk.Box):
         self.value.set_margin_start(14); self.value.set_margin_end(14); self.value.set_margin_bottom(14)
         self.append(self.value)
         self._target = 0.0
+        self._metric_animation_source = 0
 
     def set_value(self, value: float, formatter=None, suffix: str = "") -> None:
-        self._target = max(0.0, value)
-        formatter = formatter or (lambda n: f"{n:.0f}")
-        self.value.set_text(f"{formatter(0)}{suffix}")
+        source_id = self._metric_animation_source
+        if source_id:
+            try:
+                GLib.source_remove(source_id)
+            except (TypeError, ValueError):
+                pass
+            self._metric_animation_source = 0
+
+        target = max(0.0, float(value))
+        formatter = formatter or (lambda number: f"{number:.0f}")
+        self._target = target
+        if target == 0.0:
+            self.value.set_text(f"{formatter(0)}{suffix}")
+            return
+
         current = 0.0
+        self.value.set_text(f"{formatter(0)}{suffix}")
+
         def tick() -> bool:
             nonlocal current
-            current += max(0.5, (self._target - current) * 0.18)
-            if abs(self._target - current) < 0.5: current = self._target
+            if self._metric_animation_source != source_holder[0]:
+                return False
+            current += max(0.5, (target - current) * 0.18)
+            if abs(target - current) < 0.5:
+                current = target
             self.value.set_text(f"{formatter(current)}{suffix}")
-            return current != self._target
-        GLib.timeout_add(16, tick)
+            if current == target:
+                self._metric_animation_source = 0
+                return False
+            return True
+
+        source_holder = [0]
+        source_holder[0] = GLib.timeout_add(16, tick)
+        self._metric_animation_source = source_holder[0]
 
 
 class ActivityHeatmap(Gtk.DrawingArea):
