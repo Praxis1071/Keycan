@@ -72,6 +72,9 @@ class ContentManagerWindow(Adw.Window):
         self.delete_text_button.set_label(translate("Metni sil", language))
         if self.selected_group_id is None:
             self.group_header.set_text(translate("Bir ders grubu seçin", language))
+        status_text = self.status.get_text()
+        if status_text:
+            self.status.set_text(translate(status_text, language))
 
     def _refresh_groups(self):
         selected=self.selected_group_id; self._clear(self.group_list)
