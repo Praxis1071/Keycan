@@ -300,3 +300,41 @@ Her hata için kök neden doğrulanmadan kod değiştirilmeyecek. Düzeltmelerde
 - 2026-10-31: Kullanıcı testleri ve statik kod incelemesi temel alınarak ilk hata envanteri oluşturuldu. Bu kayıt sırasında uygulama kodunda değişiklik yapılmadı.
 - 2026-10-31: Profil fotoğrafını kaldırma ve sıfırlama seçeneğinin kapsamı KC-005 olarak kaydedildi. Kullanıcı kararı doğrultusunda ayrı bir “Profili sıfırla” işlemi yerine mevcut sıfırlama seçeneğinin adı “İstatistikleri ve profili sıfırla” olarak değiştirilecek; fotoğraf kaldırma ayrı tutulacak.
 - 2026-10-31: KC-001–KC-005 düzeltmeleri ayrı dalda uygulandı. Varsayılan yedek eşleştirmesi ve çeviri kapsamı için regresyon testleri eklendi; GitHub Actions Stage 5/6/7 ve tam test paketi başarılı. GTK arayüzüyle ilgili kullanıcı doğrulamaları bekleniyor.
+
+
+---
+
+## 2026-10-31 – Yeni kullanıcı sorunları ve main dalı düzeltmeleri
+
+Bu bölüm, kullanıcının 31 Ekim 2026 tarihinde bildirdiği üç yeni soruna yönelik doğrudan **main** dalında yapılan değişiklikleri kaydeder. Önceki fix/stabilization-kc-001-005 dalı bu çalışmaların temeli olarak kullanılmadı.
+
+### Varsayılan ders grubu adlarının korunması
+
+- Varsayılan içerik geri yüklenirken mevcut ders grubunun display_name alanı artık snapshot'taki eski adla ezilmiyor.
+- Varsayılan ders metinleri ilk kurulumdaki snapshot içeriğine döndürülüyor.
+- Kullanıcının değiştirdiği ders grubu adı, özel gruplar ve çalışma geçmişi korunuyor.
+- Kaynak satırı fiziksel olarak eksikse snapshot adıyla yeniden oluşturuluyor.
+
+### Yedek dışa/içe aktarma
+
+- Yeni yedek biçimi sürüm 3 olarak düzenlendi; sürüm 1 ve 2 içe aktarma desteği korundu.
+- Çalışma kayıtlarına kalıcı session_uuid eklendi. Eski kayıtlar veritabanı migration'ında kimlik alıyor; aynı UUID ile tekrar kaydetme/aktarma çift kayıt oluşturmuyor.
+- Dışa aktarma artık silinmiş ders gruplarını ve dersleri de yedekliyor. Böylece bu derslere bağlı çalışma geçmişi başka bir veritabanına taşınırken eşleştirilebiliyor.
+- İçe aktarma, grup/metin/çalışma kayıtlarını ayrı ayrı sayıyor ve silinme durumlarını aktarım sonunda geri uyguluyor.
+- Dosya seçicide kullanıcı iptali gerçek dosya/işlem hatalarından ayrılıyor; dışa/içe aktarma hataları loglanıp arayüzde gösteriliyor.
+- Round-trip, farklı kimlik sırası, silinmiş ders geçmişi, aynı zaman damgasındaki özdeş ama farklı oturumlar, tekrarlı import ve eski veritabanı migration senaryoları için regresyon testleri eklendi.
+
+### Gizlilik açıkken istatistik kaydının güvenilirliği
+
+- Oturum bitiminde yazım alanı doğrudan Gtk.TextBuffer.get_text(..., True) ile tekrar okunuyor. Görünmez etiket yalnızca görüntüyü etkiliyor; kayıt için kullanılan metni silmiyor.
+- Her oturum sabit UUID ile kaydediliyor. Kayıt hatası oluşursa aynı oturum kimliğiyle güvenli tekrar deneme yapılabiliyor.
+- Çalışma alanına “Tekrar kaydet” kontrolü eklendi; başarısız kayıtlar kuyrukta tutuluyor.
+- Bekleyen kayıtlar varken uygulama kapatılırsa kayıtların kaybolabileceği konusunda kullanıcı uyarılıyor.
+- Başarılı kayıt sonrasında istatistik ve profil görünümleri yenileniyor.
+
+### Doğrulama durumu
+
+- Değişiklikler doğrudan main dalına commit edildi.
+- İlgili regresyon testleri ve CI derleme kapsamı güncellendi.
+- Bu oturumda test paketini yerel ortamda çalıştırmak mümkün olmadı; GitHub Actions çalışma sonuçları da mevcut bağlantı üzerinden doğrulanamadı. Bu nedenle otomatik testlerin başarılı olduğu henüz iddia edilmiyor.
+- GTK çalışma zamanı davranışı (gizlilik modu, yeniden deneme düğmesi, dosya seçiciler ve kapatma uyarısı) ayrıca gerçek masaüstü oturumunda kontrol edilmeli.
