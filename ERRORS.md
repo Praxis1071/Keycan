@@ -19,7 +19,7 @@ Bu dosya, 31 Ekim 2026 tarihinde yapılan kullanıcı testleri ve kod incelemesi
 |---|---|---|---|
 | KC-001 | Gizlilik modu – oturum sonuçlarının gösterilmesi | Kod düzeltmesi uygulandı; GTK çalışma zamanı testi bekleniyor | Yüksek |
 | KC-002 | Gizlilik modu – sonuçların istatistiklere kaydedilmesi | Kayıt hata yönetimi ve transaction güvenliği düzeltildi; kullanıcı testi bekleniyor | Kritik |
-| KC-003 | Yedek/istatistik içe aktarma | Kod düzeltildi; varsayılan ders ve kimlik çakışması regresyon testleri geçti | Yüksek |
+| KC-003 | Yedek/istatistik içe aktarma | Kullanıcı isteğiyle Ayarlar arayüzünden kaldırıldı; veritabanı API'si korundu | Tamamlandı |
 | KC-004 | İngilizce arayüzde eksik çeviriler | Tek çeviri kaynağı ve widget kapsamı düzeltildi; CI testleri geçti | Orta |
 | KC-005 | İstatistik/profil ilerlemesi sıfırlama adı ve fotoğraf kaldırma seçeneği | Arayüz ve fotoğraf işlemleri uygulandı; GTK çalışma zamanı testi bekleniyor | Orta |
 
@@ -97,7 +97,7 @@ Bu dosya, 31 Ekim 2026 tarihinde yapılan kullanıcı testleri ve kod incelemesi
 
 ## KC-003 – İstatistikleri/yedeği içe aktarma işleminin çalışmaması
 
-**Durum:** Kullanıcı testiyle doğrulandı; veri eşleştirmesinde somut risk bulundu.
+**Durum:** Kullanıcı isteğiyle Ayarlar arayüzünden kaldırıldı. Veritabanı yedek API'si geriye dönük uyumluluk için korundu.
 
 **Belirti:**
 - Ayarlar bölümünden istatistikleri dışa aktarma ve sıfırlama çalışıyor.
@@ -279,7 +279,7 @@ Aşağıdaki alanlarda kullanıcı testi başarılıdır. Bu özellikler düzelt
 1. İstatistik paneli normal kullanımda doğru çalışıyor.
 2. Ders gruplarını yönetme: grup silme, metin silme ve grup yeniden adlandırma çalışıyor.
 3. İstatistikleri sıfırlama çalışıyor.
-4. İstatistikleri dışa aktarma çalışıyor.
+4. İstatistikleri dışa/içe aktarma seçenekleri kullanıcı isteğiyle Ayarlar'dan kaldırıldı.
 5. Tüm ders gruplarını ve metinleri sıfırlama çalışıyor.
 6. Varsayılan ders gruplarını ve metinleri geri yükleme çalışıyor.
 7. Türkçe ve İngilizce dil seçenekleri seçilebiliyor; sorun eksik çeviri kapsamıyla sınırlı.
@@ -289,7 +289,7 @@ Aşağıdaki alanlarda kullanıcı testi başarılıdır. Bu özellikler düzelt
 ## Stabilizasyon sıralaması
 
 1. **KC-001 ve KC-002:** Gizlilik modunun sonuç gösterimi ve kayıt akışı birlikte incelenecek. Aynı oturum akışını etkileyebilecekleri için ortak kök neden araştırılacak.
-2. **KC-003:** İçe aktarma zinciri dosya okuma aşamasından veritabanı transaction'ına kadar izlenecek; varsayılan/özel ders kimlik eşleştirmesi test edilecek.
+2. **KC-003:** Kullanıcı isteğiyle Ayarlar'daki yedekleme arayüzü kaldırıldı; veritabanı katmanındaki uyumluluk kodu korundu.
 3. **KC-004:** Çeviri kaynakları ve widget kapsamı tek tek envanterlenecek; eksik metinler belirlenecek.
 4. **KC-005:** Sıfırlama seçeneğinin adı “İstatistikleri ve profili sıfırla” olarak güncellenecek; profil fotoğrafını kaldırma seçeneği eklenecek. İki işlemin birbirinden bağımsız olduğu ve ilgili verileri doğru koruduğu doğrulanacak.
 
