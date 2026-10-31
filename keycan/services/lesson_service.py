@@ -7,10 +7,12 @@ user edits, deletions, ordering, custom content, and practice history.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 from typing import TYPE_CHECKING
 
 from keycan.services.lesson_catalog import (
     LessonCatalog,
+    LessonCatalogError,
     load_lesson_catalog,
 )
 from keycan.utils.text import natural_sort_key
@@ -36,6 +38,9 @@ class CatalogCoverage:
         )
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 class LessonService:
     """Resolve built-in lesson content without changing the database."""
 
@@ -45,7 +50,18 @@ class LessonService:
         catalog: LessonCatalog | None = None,
     ) -> None:
         self.database = database
-        self.catalog = catalog or load_lesson_catalog()
+        self.catalog_error: str | None = None
+        if catalog is not None:
+            self.catalog = catalog
+        else:
+            try:
+                self.catalog = load_lesson_catalog()
+            except LessonCatalogError as exc:
+                # Keep the application usable with its existing SQLite content
+                # if a packaged resource is missing or malformed.
+                self.catalog_error = str(exc)
+                self.catalog = LessonCatalog(language="tr", groups=())
+                LOGGER.exception("Lesson catalog unavailable; using SQLite content")
         self._groups = {group.id: group for group in self.catalog.groups}
         self._lessons = {
             lesson.id: lesson
