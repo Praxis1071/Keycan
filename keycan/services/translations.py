@@ -155,6 +155,7 @@ TRANSLATIONS = {
     "Profil fotoğrafını kaldır": "Remove profile photo",
     "Ders grubunu silmek istiyor musun?": "Delete this lesson group?",
     "Grup ve içindeki metinler çalışma alanından kaldırılır. Çalışma geçmişi korunur.": "The group and its texts will be removed from the workspace. Practice history will be kept.",
+    "Ders grubunu silmek istiyor musun?": "Delete this lesson group?",
     "Seçili metni silmek istiyor musun?": "Delete the selected text?",
     "Metin bu ders grubundan kaldırılır. Çalışma geçmişi korunur.": "The text will be removed from this lesson group. Practice history will be kept.",
     "Ders grubu oluşturuldu.": "Lesson group created.",
@@ -492,11 +493,11 @@ def translate(text: str, language: str) -> str:
 
 
 _RUNTIME_PATTERNS = (
+    (r"^(.+) dk (.+) sn$", r"\1 min \2 sec", r"^(.+) min (.+) sec$", r"\1 dk \2 sn"),
+    (r"^(.+) sa (.+) dk$", r"\1 hr \2 min", r"^(.+) hr (.+) min$", r"\1 sa \2 dk"),
     (r"^(.+) sn$", r"\1 sec", r"^(.+) sec$", r"\1 sn"),
     (r"^(.+) dk$", r"\1 min", r"^(.+) min$", r"\1 dk"),
-    (r"^(.+) dk (.+) sn$", r"\1 min \2 sec", r"^(.+) min (.+) sec$", r"\1 dk \2 sn"),
     (r"^(.+) sa$", r"\1 hr", r"^(.+) hr$", r"\1 sa"),
-    (r"^(.+) sa (.+) dk$", r"\1 hr \2 min", r"^(.+) hr (.+) min$", r"\1 sa \2 dk"),
     (r"^(.+) aktif gün$", r"\1 active days", r"^(.+) active days$", r"\1 aktif gün"),
     (r"^Sonraki seviye için (.+) XP$", r"\1 XP to the next level", r"^(.+) XP to the next level$", r"Sonraki seviye için \1 XP"),
     (r"^(.+) / (.+) rozet açıldı\.$", r"\1 / \2 badges unlocked.", r"^(.+) / (.+) badges unlocked\.$", r"\1 / \2 rozet açıldı."),
