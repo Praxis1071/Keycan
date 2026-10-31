@@ -79,7 +79,7 @@ class ContentManagerWindow(Adw.Window):
     def _refresh_groups(self):
         selected=self.selected_group_id; self._clear(self.group_list)
         for number,(group_id,name,_key,_is_custom) in enumerate(self.lesson_service.managed_groups(),1):
-            row=Gtk.ListBoxRow(); row.group_id=group_id; l=Gtk.Label(label=self.db._display_source_name(name,number)); l.set_xalign(0); l.set_margin_top(10); l.set_margin_bottom(10); l.set_margin_start(10); l.set_margin_end(10); row.set_child(l); self.group_list.append(row)
+            row=Gtk.ListBoxRow(); row.group_id=group_id; l=Gtk.Label(label=self.lesson_service.display_group_name(name,number)); l.set_xalign(0); l.set_margin_top(10); l.set_margin_bottom(10); l.set_margin_start(10); l.set_margin_end(10); row.set_child(l); self.group_list.append(row)
             if group_id==selected:self.group_list.select_row(row)
         if self.group_list.get_selected_row() is None:self._clear_lessons()
     def _group_selected(self,_list,row):
