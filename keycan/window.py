@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
+import uuid
 from pathlib import Path
 from collections import Counter
 import gi
@@ -49,6 +50,8 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.current_lesson_id: int | None = None
         self.current_text = ""
         self.typed = ""
+        self.session_uuid = uuid.uuid4().hex
+        self.pending_saves: list[dict[str, object]] = []
         self.finished = False
         self.started_at: float | None = None
         self.updating_input = False
@@ -212,6 +215,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         input_key_controller.connect("key-pressed", self._on_input_key_pressed)
         self.input_view.add_controller(input_key_controller)
         self.status = self.workspace.status
+        self.workspace.retry_save_button.connect("clicked", self._retry_save_results)
         self.size_spin = self.workspace.size_spin
         self.workspace.preferences_button.connect("clicked", self._toggle_preferences)
         self.input_view.get_buffer().connect("changed", self._on_input_changed)
@@ -320,6 +324,7 @@ class KeycanWindow(Adw.ApplicationWindow):
 
     def _restart(self, _button: Gtk.Button | None = None) -> None:
         self.typed = ""
+        self.session_uuid = uuid.uuid4().hex
         self.finished = False
         self.finish_pending = False
         self.started_at = None
@@ -462,23 +467,37 @@ class KeycanWindow(Adw.ApplicationWindow):
     def _finish_now(self) -> None:
         if self.finished or self.current_lesson_id is None:
             return
-        self.finished = True
+
+        # Read the authoritative buffer at completion time. GTK keeps invisible
+        # tagged characters in the buffer; include_hidden_chars=True is
+        # intentional so privacy affects presentation, never the result data.
+        buffer = self.input_view.get_buffer()
+        self.typed = buffer.get_text(
+            buffer.get_start_iter(), buffer.get_end_iter(), True
+        )
+
         self.countdown.set_text("00:00")
         self.input_view.set_editable(False)
         self.duration_spin.set_sensitive(True)
-        elapsed = 0.0 if self.started_at is None else min(time.monotonic() - self.started_at, self._duration_seconds())
+        elapsed = 0.0 if self.started_at is None else min(
+            time.monotonic() - self.started_at, self._duration_seconds()
+        )
         result = self.engine.match_words(self.current_text, self.typed)
 
         target_word_count = len(WORD_PATTERN.findall(self.current_text))
         typed_word_count = len(WORD_PATTERN.findall(self.typed))
         total_characters = len(self.typed)
-        character_correctness = self.engine.character_correctness(self.current_text, self.typed)
+        character_correctness = self.engine.character_correctness(
+            self.current_text, self.typed
+        )
         correct_characters = sum(character_correctness)
         wrong_characters = total_characters - correct_characters
         minutes = elapsed / 60.0 if elapsed > 0 else 0.0
         words_per_minute = typed_word_count / minutes if minutes else 0.0
         characters_per_minute = total_characters / minutes if minutes else 0.0
-        accuracy_percent = result.correct / typed_word_count * 100.0 if typed_word_count else 0.0
+        accuracy_percent = (
+            result.correct / typed_word_count * 100.0 if typed_word_count else 0.0
+        )
         wrong_letters = Counter()
         for index, typed_char in enumerate(self.typed):
             if index < len(self.current_text) and not character_correctness[index]:
@@ -492,39 +511,55 @@ class KeycanWindow(Adw.ApplicationWindow):
                 if typed_char.isalpha():
                     wrong_letters[typed_char.lower()] += 1
 
+        save_payload = {
+            "lesson_id": self.current_lesson_id,
+            "duration": elapsed,
+            "correct": result.correct,
+            "wrong": result.wrong,
+            "target_word_count": target_word_count,
+            "typed_word_count": typed_word_count,
+            "total_characters": total_characters,
+            "correct_characters": correct_characters,
+            "wrong_characters": wrong_characters,
+            "words_per_minute": words_per_minute,
+            "characters_per_minute": characters_per_minute,
+            "accuracy_percent": accuracy_percent,
+            "wrong_letter_counts": dict(wrong_letters),
+            "session_uuid": self.session_uuid,
+        }
+
         save_error = None
         profile_error = None
+        statistics_error = None
         try:
-            self.db.save_result(
-                self.current_lesson_id,
-                elapsed,
-                result.correct,
-                result.wrong,
-                target_word_count=target_word_count,
-                typed_word_count=typed_word_count,
-                total_characters=total_characters,
-                correct_characters=correct_characters,
-                wrong_characters=wrong_characters,
-                words_per_minute=words_per_minute,
-                characters_per_minute=characters_per_minute,
-                accuracy_percent=accuracy_percent,
-                wrong_letter_counts=dict(wrong_letters),
-            )
+            self.db.save_result(**save_payload)
         except Exception as exc:
             save_error = exc
-            # Keep a traceback in the application log without recording the
-            # user's typed text or any other session content.
+            # Retrying uses the same UUID, so an ambiguous commit outcome can
+            # never create a duplicate statistics row.
+            self.pending_saves.append(save_payload)
+            self.workspace.retry_save_button.set_label(
+                translate("Tekrar kaydet", self.preferences.get("language"))
+            )
+            self.workspace.retry_save_button.set_visible(True)
             LOGGER.exception(
                 "Failed to save practice result for lesson_id=%s",
                 self.current_lesson_id,
             )
         else:
+            try:
+                self.statistics_page.refresh()
+            except Exception as exc:
+                statistics_error = exc
+                LOGGER.exception("Practice saved but statistics view refresh failed")
             if getattr(self, "profile_page", None) is not None:
                 try:
                     self.profile_page.refresh()
                 except Exception as exc:
                     profile_error = exc
+                    LOGGER.exception("Practice saved but profile view refresh failed")
 
+        self.finished = True
         render_error = None
         try:
             self._render_target_results(result.matched_target_indices)
@@ -544,7 +579,10 @@ class KeycanWindow(Adw.ApplicationWindow):
                 if render_error is None:
                     render_error = exc
 
-        base_message = f"Süre doldu. Doğru: {result.correct}  |  Yanlış: {result.wrong}  |  Toplam: {typed_word_count}"
+        base_message = (
+            f"Süre doldu. Doğru: {result.correct}  |  Yanlış: {result.wrong}  |  "
+            f"Toplam: {typed_word_count}"
+        )
         base_message = translate(base_message, self.preferences.get("language"))
         if save_error is not None:
             message = translate(
@@ -558,6 +596,10 @@ class KeycanWindow(Adw.ApplicationWindow):
                 self.preferences.get("language"),
             )
             self.status.set_text(f"{base_message} · {message} ({render_error})")
+        elif statistics_error is not None:
+            self.status.set_text(
+                f"{base_message} · İstatistik görünümü yenilenemedi: {statistics_error}"
+            )
         elif profile_error is not None:
             message = translate(
                 "Çalışma kaydedildi ancak profil görünümü güncellenemedi.",
@@ -566,6 +608,54 @@ class KeycanWindow(Adw.ApplicationWindow):
             self.status.set_text(f"{base_message} · {message} ({profile_error})")
         else:
             self.status.set_text(base_message)
+
+    def _retry_save_results(self, _button: Gtk.Button) -> None:
+        if not self.pending_saves:
+            self.workspace.retry_save_button.set_visible(False)
+            return
+
+        remaining = []
+        for payload in self.pending_saves:
+            try:
+                self.db.save_result(**payload)
+            except Exception:
+                remaining.append(payload)
+                LOGGER.exception(
+                    "Retrying practice result save failed for lesson_id=%s",
+                    payload.get("lesson_id"),
+                )
+
+        self.pending_saves = remaining
+        self.workspace.retry_save_button.set_visible(bool(remaining))
+        if remaining:
+            self.status.set_text(
+                translate(
+                    "Bazı çalışma kayıtları hâlâ kaydedilemedi. Yeniden deneyebilirsin.",
+                    self.preferences.get("language"),
+                )
+            )
+            return
+
+        errors = []
+        for page_name in ("statistics_page", "profile_page"):
+            page = getattr(self, page_name, None)
+            if page is not None:
+                try:
+                    page.refresh()
+                except Exception as exc:
+                    errors.append(exc)
+                    LOGGER.exception("Saved practice view refresh failed: %s", page_name)
+        if errors:
+            self.status.set_text(
+                f"Çalışma kaydı başarıyla tamamlandı; görünüm yenilenemedi: {errors[0]}"
+            )
+        else:
+            self.status.set_text(
+                translate(
+                    "Bekleyen çalışma kayıtları başarıyla kaydedildi.",
+                    self.preferences.get("language"),
+                )
+            )
 
     def _render_target_results(self, matched: set[int]) -> None:
         buffer = self.target_view.get_buffer()
