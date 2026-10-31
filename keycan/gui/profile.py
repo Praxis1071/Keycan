@@ -305,7 +305,7 @@ class ProfilePanel(Gtk.Box):
     def _save_name(self, row) -> None:
         self._profile_name = row.get_text().strip()[:80]
         row.set_text(self._profile_name)
-        self.avatar.set_text(self._profile_name or "Profil")
+        self.avatar.set_text(self._profile_name or translate("Profil", self.language))
         self._save_profile()
         self.refresh()
 
@@ -449,7 +449,7 @@ class ProfilePanel(Gtk.Box):
         )
         profile_title = self._profile_name or translate("Profil", self.language)
         self.title.set_text(profile_title)
-        self.avatar.set_text(self._profile_name or "Profil")
+        self.avatar.set_text(self._profile_name or translate("Profil", self.language))
 
     def _refresh_history(self, sessions) -> None:
         for row in self._history_rows:
