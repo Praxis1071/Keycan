@@ -191,6 +191,7 @@ TRANSLATIONS = {
     "Dışa aktarma hazırlanamadı:": "Could not prepare export:",
     "Yedek kaydedildi:": "Backup saved:",
     "Yedek kaydedilemedi:": "Could not save backup:",
+    "Yedek dosyası açılamadı:": "Could not open backup file:",
     "Yedek içe aktarılamadı:": "Could not import the backup:",
     "İçe aktarma tamamlandı:": "Import completed:",
     "grup/metin kaydı işlendi": "group/text records processed",
