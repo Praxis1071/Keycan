@@ -98,7 +98,7 @@ Bu aşamanın amacı mevcut Keycan özelliklerini koruyarak kod tabanını sadel
 - [x] Grup adlarını Türkçe/İngilizce harfler ve kelime boşlukları dışında karakter içermeyecek şekilde sadeleştirmek
 - [x] Hazır ders metinlerinden sayıları ve noktalama işaretlerini temizlemek; Türkçe karakterleri korumak
 - [x] Tüm 1.833 metinde kelime sırasını ve kelime çokluğunu temizleme öncesiyle karşılaştırmak; anlam/zorluk akışı için içerik incelemesini ayrıca sürdürmek
-- [x] Boş, yinelenen veya bozulmuş dersleri otomatik doğrulamalarla tespit etmek (boş ders yok; temizleme sonrası iki tekrar korunarak raporlandı)
+- [x] Boş, yinelenen veya bozulmuş dersleri otomatik doğrulamalarla tespit etmek (boş ders yok; temizleme bir dört-ders kümesini aynı metne dönüştürüyor, kimlikler ve dersler korundu)
 - [ ] Kullanıcı tarafından oluşturulan ders içeriğinin saklama biçimini ayrıca ele almak; mevcut özel içerikleri kayıpsız taşımadan eski kaynağı kaldırmamak
 - [ ] JSON okuma hatalarında uygulamanın çökmesini önlemek ve anlaşılır hata bildirimi sağlamak
 
