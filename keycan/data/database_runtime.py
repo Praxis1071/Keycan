@@ -87,10 +87,13 @@ def _ensure_default_snapshot(self: Database) -> None:
         self.conn.execute(
             "ALTER TABLE default_content_lessons ADD COLUMN custom_key TEXT NOT NULL DEFAULT ''"
         )
+    self.conn.commit()
     if self.conn.execute("SELECT COUNT(*) FROM default_content_sources").fetchone()[0] == 0:
         source_rows = self.conn.execute(
             """SELECT id, display_name, relative_path, custom_key
-               FROM sources WHERE is_custom = 0 AND is_deleted = 0 ORDER BY id"""
+               FROM sources WHERE is_custom = 0 AND is_deleted = 0
+                 AND EXISTS (SELECT 1 FROM lessons WHERE lessons.source_id = sources.id AND lessons.is_deleted = 0)
+               ORDER BY id"""
         ).fetchall()
         lesson_rows = self.conn.execute(
             """SELECT l.id, l.source_id, l.legacy_metin_id, l.title, l.text,
@@ -115,7 +118,9 @@ def _sync_default_snapshot(self: Database) -> None:
     """Mirror the currently active built-in workspace content for later restore."""
     source_rows = self.conn.execute(
         """SELECT id, display_name, relative_path, COALESCE(custom_key, '')
-           FROM sources WHERE is_custom = 0 AND is_deleted = 0 ORDER BY id"""
+           FROM sources WHERE is_custom = 0 AND is_deleted = 0
+                 AND EXISTS (SELECT 1 FROM lessons WHERE lessons.source_id = sources.id AND lessons.is_deleted = 0)
+               ORDER BY id"""
     ).fetchall()
     lesson_rows = self.conn.execute(
         """SELECT l.id, l.source_id, l.legacy_metin_id, l.title, l.text,
