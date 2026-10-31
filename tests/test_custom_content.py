@@ -549,9 +549,12 @@ def test_version_two_backup_without_session_ids_remains_importable(tmp_path: Pat
 
 
 def test_deleted_default_group_is_not_restored_from_an_old_snapshot(tmp_path: Path) -> None:
-    db = make_db(tmp_path / "deleted-default-group.db")
+    path = tmp_path / "deleted-default-group.db"
+    db = make_db(path)
     try:
         db.delete_group(1)
+        db.close()
+        db = Database(path)
         restored_groups, restored_lessons = db.restore_defaults()
         assert (restored_groups, restored_lessons) == (0, 0)
         assert db.sources() == []
@@ -568,8 +571,27 @@ def test_deleted_default_lesson_is_not_restored_and_latest_text_is_kept(tmp_path
         db.update_lesson(1, "güncel çalışma alanı metni")
         db.delete_lesson(1)
         restored_groups, restored_lessons = db.restore_defaults()
-        assert (restored_groups, restored_lessons) == (1, 0)
-        assert db.sources() == [(1, "1. Hazır Ders")]
-        assert db.lessons(1) == []
+        assert (restored_groups, restored_lessons) == (0, 0)
+        assert db.sources() == []
+        assert db.conn.execute(
+            "SELECT is_deleted FROM sources WHERE id = 1"
+        ).fetchone() == (0,)
     finally:
         db.close()
+
+
+def test_full_reset_restore_point_survives_database_reopen(tmp_path: Path) -> None:
+    path = tmp_path / "reset-reopen.db"
+    db = make_db(path)
+    try:
+        db.update_lesson(1, "son çalışma alanı metni")
+        db.reset_all_content()
+    finally:
+        db.close()
+
+    restored = Database(path)
+    try:
+        assert restored.restore_defaults() == (1, 1)
+        assert restored.lesson(1)[2] == "son çalışma alanı metni"
+    finally:
+        restored.close()
