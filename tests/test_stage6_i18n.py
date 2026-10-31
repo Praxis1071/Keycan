@@ -112,6 +112,7 @@ def test_shared_translation_catalog_covers_profile_and_reset_actions() -> None:
         "Çalışma kaydedildi ancak profil görünümü güncellenemedi.": (
             "Practice was saved, but the profile view could not be refreshed."
         ),
+        "İstatistiklere kaydedilemedi:": "Could not save to statistics:",
         "Çalışma tamamlandı ancak istatistiklere kaydedilemedi.": (
             "Practice finished, but the result could not be saved to statistics."
         ),
