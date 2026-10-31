@@ -73,6 +73,10 @@ def test_shared_translation_catalog_covers_profile_and_reset_actions() -> None:
         "Çalışma tamamlandı ancak istatistiklere kaydedilemedi.": (
             "Practice finished, but the result could not be saved to statistics."
         ),
+        "Ders gruplarını silmek istiyor musun?": "Delete this lesson group?",
+        "Seçili metni silmek istiyor musun?": "Delete the selected text?",
+        "Veritabanına erişilemedi.": "The database is unavailable.",
+        "Varsayılan ders grupları ve metinleri geri yüklensin mi?": "Restore the default lesson groups and texts?",
     }
     for source, expected in samples.items():
         assert shared_translate(source, "en") == expected
