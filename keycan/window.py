@@ -68,6 +68,11 @@ class KeycanWindow(Adw.ApplicationWindow):
         self._install_css()
         self.apply_theme()
         self._build_ui()
+        if self.lesson_service.catalog_error:
+            self.status.set_text(translate(
+                "Ders kataloğu yüklenemedi; mevcut SQLite dersleri kullanılmaya devam ediyor.",
+                self.preferences.get("language"),
+            ))
         self._load_sources()
         self.apply_language()
         self.connect("close-request", self._on_close_request)
