@@ -480,14 +480,16 @@ def test_legacy_sessions_receive_stable_ids_during_migration(tmp_path: Path) -> 
     finally:
         db.close()
 
-    migrated = make_db(path)
+    migrated = Database(path)
     try:
         session_uuid = migrated.conn.execute(
             "SELECT session_uuid FROM practice_results"
         ).fetchone()[0]
         assert isinstance(session_uuid, str) and session_uuid
-        assert migrated.conn.execute(
-            "PRAGMA index_list(practice_results)"
-        ).fetchall()
+        indexes = {
+            row[1]: row[2]
+            for row in migrated.conn.execute("PRAGMA index_list(practice_results)")
+        }
+        assert indexes.get("idx_practice_results_session_uuid") == 1
     finally:
         migrated.close()
