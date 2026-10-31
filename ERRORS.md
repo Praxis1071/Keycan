@@ -17,11 +17,11 @@ Bu dosya, 31 Ekim 2026 tarihinde yapılan kullanıcı testleri ve kod incelemesi
 
 | ID | Alan | Durum | Öncelik |
 |---|---|---|---|
-| KC-001 | Gizlilik modu – oturum sonuçlarının gösterilmesi | Kullanıcı tarafından doğrulandı; kodda kuvvetli neden adayı bulundu | Yüksek |
-| KC-002 | Gizlilik modu – sonuçların istatistiklere kaydedilmesi | Kullanıcı tarafından doğrulandı; çalışma zamanı kök nedeni henüz kesin değil | Kritik |
-| KC-003 | Yedek/istatistik içe aktarma | Kullanıcı tarafından doğrulandı; varsayılan ders kimlik eşleştirmesinde kod kusuru adayı bulundu | Yüksek |
-| KC-004 | İngilizce arayüzde eksik çeviriler | Kullanıcı tarafından doğrulandı; çeviri mimarisinde eksiklikler bulundu | Orta |
-| KC-005 | İstatistik/profil ilerlemesi sıfırlama adı ve fotoğraf kaldırma seçeneği | Kullanıcı tarafından doğrulandı; arayüzde düzenleme gerekiyor | Orta |
+| KC-001 | Gizlilik modu – oturum sonuçlarının gösterilmesi | Kod düzeltmesi uygulandı; GTK çalışma zamanı testi bekleniyor | Yüksek |
+| KC-002 | Gizlilik modu – sonuçların istatistiklere kaydedilmesi | Kayıt hata yönetimi ve transaction güvenliği düzeltildi; kullanıcı testi bekleniyor | Kritik |
+| KC-003 | Yedek/istatistik içe aktarma | Kod düzeltildi; varsayılan ders ve kimlik çakışması regresyon testleri geçti | Yüksek |
+| KC-004 | İngilizce arayüzde eksik çeviriler | Tek çeviri kaynağı ve widget kapsamı düzeltildi; CI testleri geçti | Orta |
+| KC-005 | İstatistik/profil ilerlemesi sıfırlama adı ve fotoğraf kaldırma seçeneği | Arayüz ve fotoğraf işlemleri uygulandı; GTK çalışma zamanı testi bekleniyor | Orta |
 
 ---
 
@@ -217,6 +217,57 @@ Bu dosya, 31 Ekim 2026 tarihinde yapılan kullanıcı testleri ve kod incelemesi
 
 ---
 
+## Uygulanan düzeltmeler ve doğrulama durumu
+
+Aşağıdaki kayıtlar, yukarıdaki hata bölümlerindeki ilk statik inceleme notlarının ardından yapılan düzeltmeleri gösterir.
+
+### KC-001 – Sonuç gösterimi
+
+- Gizlilik etiketi oturum tamamlandığında da korunuyor.
+- Doğru/yanlış biçimlendirme etiketleri uygulandıktan sonra gizlilik etiketi yeniden uygulanıyor; sonuç çizimi sırasında kaldırılıp açıkta kalmıyor.
+- Sonuç sayaçlarının arayüzde gösterilmesi veritabanı kaydının başarılı olmasına bağlı olmaktan çıkarıldı.
+- **Kalan kontrol:** GTK arayüzünde gizlilik açık ve kapalı oturumlar tamamlanarak metnin gizli kaldığı ve sayaçların göründüğü doğrulanmalı.
+
+### KC-002 – İstatistik kaydı
+
+- Oturum sonucu kaydedilirken oluşan hatalar artık sessizce kaybolmuyor; kullanıcıya hata metni gösteriliyor.
+- Veritabanı INSERT/COMMIT işlemi başarısız olursa açık transaction rollback ediliyor.
+- GTK4 belgelerine göre get_text(..., True) gizli karakterleri de döndürür; uygulama bu parametreyi zaten kullanıyordu. Gizlilik modunun metni boşalttığına dair kanıt bulunmadı.
+- **Kalan kontrol:** Gizlilik açık ve kapalı iki ayrı oturum tamamlanmalı ve her ikisinin de istatistik geçmişine kaydedildiği doğrulanmalı. Kayıt başarısızsa gösterilen hata mesajı kök nedeni belirlemek için kullanılmalı. Bu nedenle KC-002 henüz tamamen kapatılmadı.
+
+### KC-003 – Yedek içe aktarma
+
+- Varsayılan grup ve derslerin anahtarları çalışma geçmişi kayıtlarına da yazılıyor.
+- Varsayılan grup/ders kimlikleri artık yalnızca ID varlığına göre değil, varsayılan/özel niteliği ve grup ilişkisi kontrol edilerek eşleştiriliyor.
+- Varsayılan grup içindeki özel derslerin niteliği yedekte ayrıca korunuyor.
+- Eski yedeklerde boş anahtar bulunan sonuçlar için kaynak grup ID eşleştirmesi eklendi.
+- Varsayılan ders geçmişinin round-trip aktarımı ve aynı ID'ye sahip özel grubun ezilmemesi için regresyon testleri eklendi.
+- **Doğrulama:** GitHub Actions tam test paketi başarılı.
+
+### KC-004 – İngilizce çeviriler
+
+- Yinelenen çeviri sözlüğü ve fonksiyon kaldırıldı; widget çevirisi ile dinamik metinler ortak çeviri kataloğunu kullanıyor.
+- Adw.EntryRow, Adw.SwitchRow, Gtk.SearchEntry ve Gtk.SpinButton için çeviri kapsamı tamamlandı; mevcut widget desteği korundu.
+- Yeni profil fotoğrafı ve sıfırlama metinleri ortak kataloğa eklendi.
+- **Doğrulama:** Çeviri round-trip testleri ve GitHub Actions tam test paketi başarılı. Tüm ekranların İngilizce/Türkçe görsel kontrolü hâlâ gerekli.
+
+### KC-005 – Profil ve fotoğraf
+
+- Ayarlardaki seçenek adı “İstatistikleri ve profili sıfırla” olarak değiştirildi; açıklama ve onay penceresi silinen/korunan verileri belirtiyor.
+- Profil fotoğrafı seçme ve kaldırma düğmeleri yan yana yerleştirildi.
+- Fotoğraf kaldırma profil dosyasındaki referansı temizliyor, avatarı varsayılan görünüme döndürüyor ve yalnızca uygulamanın kendi fotoğraf dosyasını silmeyi deniyor.
+- Fotoğraf kaldırma istatistikleri, profil adını veya ders içeriklerini etkilemiyor.
+- **Kalan kontrol:** Fotoğraf seçme/kaldırma ve uygulama yeniden başlatıldıktan sonraki kalıcılık GTK arayüzünde doğrulanmalı.
+
+### Dal ve otomatik test durumu
+
+- Değişiklikler ayrı bir dalda tutuluyor: fix/stabilization-kc-001-005.
+- İnceleme PR'si: https://github.com/Praxis1071/Keycan/pull/2
+- GitHub Actions Stage 5, Stage 6, Stage 7 ve tam regresyon testi başarılı.
+- Bu değişiklikler henüz main dalına alınmadı; GTK arayüzüne bağlı manuel kullanıcı testleri bekleniyor.
+
+---
+
 ## Kullanıcı tarafından sorunsuz olduğu doğrulanan alanlar
 
 Aşağıdaki alanlarda kullanıcı testi başarılıdır. Bu özellikler düzeltmeler sırasında regresyon kontrolü olarak korunmalıdır.
@@ -244,3 +295,4 @@ Her hata için kök neden doğrulanmadan kod değiştirilmeyecek. Düzeltmelerde
 
 - 2026-10-31: Kullanıcı testleri ve statik kod incelemesi temel alınarak ilk hata envanteri oluşturuldu. Bu kayıt sırasında uygulama kodunda değişiklik yapılmadı.
 - 2026-10-31: Profil fotoğrafını kaldırma ve sıfırlama seçeneğinin kapsamı KC-005 olarak kaydedildi. Kullanıcı kararı doğrultusunda ayrı bir “Profili sıfırla” işlemi yerine mevcut sıfırlama seçeneğinin adı “İstatistikleri ve profili sıfırla” olarak değiştirilecek; fotoğraf kaldırma ayrı tutulacak.
+- 2026-10-31: KC-001–KC-005 düzeltmeleri ayrı dalda uygulandı. Varsayılan yedek eşleştirmesi ve çeviri kapsamı için regresyon testleri eklendi; GitHub Actions Stage 5/6/7 ve tam test paketi başarılı. GTK arayüzüyle ilgili kullanıcı doğrulamaları bekleniyor.
