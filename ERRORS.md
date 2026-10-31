@@ -21,7 +21,7 @@ Bu dosya, 31 Ekim 2026 tarihinde yapılan kullanıcı testleri ve kod incelemesi
 | KC-002 | Gizlilik modu – sonuçların istatistiklere kaydedilmesi | Kullanıcı tarafından doğrulandı; çalışma zamanı kök nedeni henüz kesin değil | Kritik |
 | KC-003 | Yedek/istatistik içe aktarma | Kullanıcı tarafından doğrulandı; varsayılan ders kimlik eşleştirmesinde kod kusuru adayı bulundu | Yüksek |
 | KC-004 | İngilizce arayüzde eksik çeviriler | Kullanıcı tarafından doğrulandı; çeviri mimarisinde eksiklikler bulundu | Orta |
-| KC-005 | Profil fotoğrafını kaldırma ve profili sıfırlama seçenekleri | Kullanıcı tarafından doğrulandı; arayüzde seçenekler eksik | Orta |
+| KC-005 | İstatistik/profil ilerlemesi sıfırlama adı ve fotoğraf kaldırma seçeneği | Kullanıcı tarafından doğrulandı; arayüzde düzenleme gerekiyor | Orta |
 
 ---
 
@@ -178,41 +178,42 @@ Bu dosya, 31 Ekim 2026 tarihinde yapılan kullanıcı testleri ve kod incelemesi
 
 ---
 
-## KC-005 – Profil fotoğrafını kaldırma ve profili sıfırlama seçeneklerinin eksikliği
+## KC-005 – İstatistikleri/profil ilerlemesini sıfırlama adının ve fotoğraf kaldırma seçeneğinin eksikliği
 
-**Durum:** Kullanıcı tarafından gerçek kullanımda doğrulandı; kod incelemesi arayüzdeki eksikliği destekliyor.
+**Durum:** Kullanıcı tarafından gerçek kullanımda doğrulandı; kod incelemesi mevcut davranışı destekliyor.
 
 **Belirti:**
-- Profil sekmesinde daha önce seçilmiş profil fotoğrafı görüntülenmeye devam ediyor.
-- Profil fotoğrafını kaldırmak için bir seçenek bulunmuyor.
-- Kullanıcı profilini varsayılan/boş duruma döndürebileceği bir işlem de bulamıyor.
+- Ayarlardaki “İstatistikleri sıfırla” işlemi çalışma geçmişini temizliyor. Profilde çalışma geçmişinden hesaplanan seviye, XP, rozet ve ilerleme bilgileri de doğal olarak sıfırlanıyor.
+- Bu nedenle mevcut işlem adının kapsamı tam anlatması için “İstatistikleri ve profili sıfırla” olarak değiştirilmesi gerekiyor.
+- Profil sekmesinde daha önce seçilmiş fotoğraf görüntülenmeye devam ediyor ve fotoğrafı kaldırmak için ayrı bir seçenek bulunmuyor.
 
 **Beklenen davranış:**
-- Profil bölümünde “Profil fotoğrafı seç” düğmesinin yanında veya yakınında “Profil fotoğrafını kaldır” seçeneği bulunmalı.
+- Ayarlar bölümündeki “İstatistikleri sıfırla” seçeneğinin adı **“İstatistikleri ve profili sıfırla”** olarak değiştirilmeli.
+- Bu işlem istatistik/çalışma geçmişini temizlemeli; bu geçmişten hesaplanan profil seviye, XP, rozet ve ilerleme bilgileri de sıfırlanmalı.
+- Bu işlem profil adı veya profil fotoğrafını silmemeli. Profil fotoğrafını kaldırmak ayrı ve bağımsız bir işlem olmalı.
+- Profil bölümünde “Profil fotoğrafı seç” düğmesinin yanında veya yakınında **“Profil fotoğrafını kaldır”** seçeneği bulunmalı.
 - Fotoğraf kaldırıldığında kayıtlı fotoğraf dosyası ve profil fotoğrafı referansı güvenli biçimde temizlenmeli; avatar varsayılan görünümüne dönmeli.
-- Ayarlar bölümüne “Profili sıfırla” gibi ayrı ve açıkça tanımlanmış bir seçenek eklenmeli.
-- Profil sıfırlama işlemi öncesinde, hangi profil verilerinin silineceğini açıklayan onay istenmeli.
-- Profil sıfırlama yalnızca profil verilerini (en azından profil adı ve fotoğrafı; kapsamı uygulamadaki profil alanlarına göre netleştirilecek) etkilemeli. İstatistikler, çalışma geçmişi, ders grupları ve metinler korunmalı.
-- Fotoğraf kaldırma ile tüm profili sıfırlama birbirinden bağımsız işlemler olmalı.
+- Fotoğraf kaldırma işlemi istatistikleri, çalışma geçmişini, profil adını, ders gruplarını veya metinleri etkilememeli.
 
 **Kod incelemesinde görülen noktalar:**
 - `keycan/gui/profile.py` içinde “Profil fotoğrafı seç” düğmesi ve fotoğraf seçme/kopyalama akışı bulunuyor.
 - Profil fotoğrafı uygulamanın veri dizininde `profile-photo.*` adıyla saklanıyor.
 - İncelenen profil arayüzünde fotoğrafı kaldıran bir düğme/işlem görünmüyor.
-- `keycan/gui/settings2.py` içinde istatistikleri sıfırlama ve ders içeriklerini sıfırlama işlemleri mevcut; profil sıfırlama seçeneği bulunmuyor.
+- `keycan/gui/settings2.py` içinde istatistikleri sıfırlama işlemi mevcut.
+- `keycan/data/database.py` içindeki `reset_statistics()` metodu `practice_results` kayıtlarını siliyor. Profildeki seviye, XP, rozet ve ilerleme bilgileri bu çalışma kayıtlarından hesaplandığı için onlar da sıfırlanıyor.
+- Profil adı ve fotoğrafı ayrı bir `profile.json` dosyasında saklanıyor; istatistikleri sıfırlama işlemi bunları silmiyor.
 
 **Henüz netleştirilecekler:**
-- “Profili sıfırla” işleminin profil adı, fotoğrafı ve ileride eklenecek diğer kişisel profil tercihleri üzerindeki kesin kapsamı.
-- Profil fotoğrafı dosyası silinemediğinde arayüzün ve profil kaydının tutarlı kalması.
-- Fotoğraf kaldırma veya profil sıfırlama sonrasında profil sekmesinin anında yenilenmesi.
-- Profil sıfırlamanın istatistikleri ve ders verilerini kesinlikle değiştirmediğinin test edilmesi.
+- Fotoğraf dosyası silinemediğinde profil kaydının ve arayüzün tutarlı kalması.
+- Fotoğraf kaldırma sonrasında profil sekmesinin anında yenilenmesi.
+- Fotoğraf kaldırma işleminin uygulama yeniden başlatıldıktan sonra da kalıcı olması.
 
 **İlgili regresyon kontrolleri:**
-- Fotoğraf seçme ve uygulamayı yeniden başlatınca fotoğrafın yüklenmesi.
+- “İstatistikleri ve profili sıfırla” işlemi sonrasında istatistikler ile bunlardan hesaplanan profil ilerleme bilgilerinin sıfırlanması.
+- Bu işlem sonrasında profil adının ve profil fotoğrafının korunması.
 - Fotoğrafı kaldırınca varsayılan avatarın görünmesi ve yeniden başlatma sonrasında fotoğrafın geri gelmemesi.
-- Profili sıfırlayınca profil alanlarının varsayılan hâle dönmesi.
-- Profil sıfırlama sonrasında istatistiklerin, çalışma geçmişinin, ders gruplarının ve metinlerin aynen korunması.
-- İptal edilen onay penceresinde hiçbir profil verisinin silinmemesi.
+- Fotoğraf kaldırma işlemi sonrasında istatistiklerin, çalışma geçmişinin, profil adının, ders gruplarının ve metinlerin aynen korunması.
+- Fotoğraf seçme işleminin ve seçilen fotoğrafın uygulama yeniden başlatıldığında yüklenmesinin çalışmaya devam etmesi.
 
 ---
 
@@ -235,11 +236,11 @@ Aşağıdaki alanlarda kullanıcı testi başarılıdır. Bu özellikler düzelt
 1. **KC-001 ve KC-002:** Gizlilik modunun sonuç gösterimi ve kayıt akışı birlikte incelenecek. Aynı oturum akışını etkileyebilecekleri için ortak kök neden araştırılacak.
 2. **KC-003:** İçe aktarma zinciri dosya okuma aşamasından veritabanı transaction'ına kadar izlenecek; varsayılan/özel ders kimlik eşleştirmesi test edilecek.
 3. **KC-004:** Çeviri kaynakları ve widget kapsamı tek tek envanterlenecek; eksik metinler belirlenecek.
-4. **KC-005:** Profil fotoğrafını kaldırma ve profili sıfırlama akışları tasarlanıp, profil dışındaki verilerin korunması doğrulanacak.
+4. **KC-005:** Sıfırlama seçeneğinin adı “İstatistikleri ve profili sıfırla” olarak güncellenecek; profil fotoğrafını kaldırma seçeneği eklenecek. İki işlemin birbirinden bağımsız olduğu ve ilgili verileri doğru koruduğu doğrulanacak.
 
 Her hata için kök neden doğrulanmadan kod değiştirilmeyecek. Düzeltmelerden sonra ilgili otomatik testler ve yukarıdaki başarılı kullanıcı senaryoları tekrar çalıştırılacak.
 
 ## Değişiklik geçmişi
 
 - 2026-10-31: Kullanıcı testleri ve statik kod incelemesi temel alınarak ilk hata envanteri oluşturuldu. Bu kayıt sırasında uygulama kodunda değişiklik yapılmadı.
-- 2026-10-31: Profil fotoğrafını kaldırma ve profili sıfırlama seçeneklerinin eksikliği KC-005 olarak eklendi. Yalnızca hata kaydı güncellendi.
+- 2026-10-31: Profil fotoğrafını kaldırma ve sıfırlama seçeneğinin kapsamı KC-005 olarak kaydedildi. Kullanıcı kararı doğrultusunda ayrı bir “Profili sıfırla” işlemi yerine mevcut sıfırlama seçeneğinin adı “İstatistikleri ve profili sıfırla” olarak değiştirilecek; fotoğraf kaldırma ayrı tutulacak.
