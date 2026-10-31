@@ -105,6 +105,8 @@ class LessonService:
         return current_text
 
     def sources(self) -> list[tuple[int, str]]:
+        if not self._groups:
+            return self.database.sources()
         visible = self.database.sources()
         managed = {
             int(group_id): (str(name), bool(is_custom))
@@ -128,6 +130,8 @@ class LessonService:
         return self.database.lessons(group_id)
 
     def lesson(self, lesson_id: int) -> tuple[int, str, str]:
+        if not self._groups:
+            return self.database.lesson(lesson_id)
         row_id, title, current_text = self.database.lesson(lesson_id)
         return (
             row_id,
@@ -136,6 +140,8 @@ class LessonService:
         )
 
     def managed_groups(self) -> list[tuple[int, str, str, int]]:
+        if not self._groups:
+            return self.database.managed_groups()
         rows = self.database.managed_groups()
         resolved = [
             (
@@ -153,6 +159,8 @@ class LessonService:
         self,
         group_id: int,
     ) -> list[tuple[int, str, str, int, int]]:
+        if not self._groups:
+            return self.database.managed_lessons(group_id)
         rows = self.database.managed_lessons(group_id)
         return [
             (
