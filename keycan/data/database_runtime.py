@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import uuid
@@ -337,21 +338,75 @@ def _restore_defaults(self: Database):
     return len(source_rows), len(lesson_rows)
 
 
+def _default_source_identity(self: Database, source_id: int) -> str:
+    source = self.conn.execute(
+        "SELECT display_name FROM default_content_sources WHERE source_id = ?",
+        (source_id,),
+    ).fetchone()
+    if not source:
+        return ""
+    lessons = self.conn.execute(
+        """SELECT legacy_metin_id, title, text
+           FROM default_content_lessons
+           WHERE source_id = ?
+           ORDER BY custom_order, legacy_metin_id, title""",
+        (source_id,),
+    ).fetchall()
+    payload = json.dumps(
+        {"name": source[0], "lessons": lessons},
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    return "default-source:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _default_lesson_identity(self: Database, lesson_id: int) -> str:
+    row = self.conn.execute(
+        """SELECT source_id, legacy_metin_id, title, text
+           FROM default_content_lessons WHERE lesson_id = ?""",
+        (lesson_id,),
+    ).fetchone()
+    if not row:
+        return ""
+    source_id, legacy_id, title, text = row
+    source_identity = _default_source_identity(self, int(source_id))
+    if not source_identity:
+        return ""
+    payload = json.dumps(
+        [source_identity, int(legacy_id), str(title), str(text)],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    return "default-lesson:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
 def _export_data(self: Database) -> str:
     groups = []
     for source_id, name, key, is_custom in self.managed_groups():
         group_key = key or f"default:{source_id}"
+        source_identity = "" if is_custom else _default_source_identity(self, source_id)
         lessons = []
         for lesson_id, text, lesson_key, order, lesson_custom in self.managed_lessons(source_id):
+            lesson_identity = (
+                "" if lesson_custom else _default_lesson_identity(self, lesson_id)
+            )
+            lesson_row = self.conn.execute(
+                "SELECT title, legacy_metin_id FROM lessons WHERE id = ?",
+                (lesson_id,),
+            ).fetchone()
             lessons.append({
                 "key": lesson_key or f"default:{lesson_id}",
+                "identity": lesson_identity or None,
                 "text": text,
+                "title": lesson_row[0] if lesson_row else "Ders",
+                "legacy_metin_id": lesson_row[1] if lesson_row else 0,
                 "order": order,
                 "is_custom": bool(lesson_custom),
                 "default_lesson_id": None if lesson_custom else lesson_id,
             })
         groups.append({
             "key": group_key,
+            "identity": source_identity or None,
             "name": name,
             "lessons": lessons,
             "is_custom": bool(is_custom),
@@ -372,6 +427,8 @@ def _export_data(self: Database) -> str:
         item = dict(zip(fields, row))
         item["source_key"] = item["source_key"] or f"default:{item['source_id']}"
         item["lesson_key"] = item["lesson_key"] or f"default:{item['lesson_id']}"
+        item["source_identity"] = _default_source_identity(self, int(item["source_id"])) or None
+        item["lesson_identity"] = _default_lesson_identity(self, int(item["lesson_id"])) or None
         practice_results.append(item)
     return json.dumps({"format": "keycan-backup", "version": 2, "exported_at": datetime.now().astimezone().isoformat(), "groups": groups, "practice_results": practice_results}, ensure_ascii=False, indent=2)
 
@@ -396,10 +453,21 @@ def _import_data(self: Database, raw: str):
             is_custom = bool(group.get("is_custom", True))
             default_id = group.get("default_source_id")
             source_id = None
-            if not is_custom and isinstance(default_id, int):
+            source_identity = str(group.get("identity", "")).strip()
+            if not is_custom and source_identity:
+                for (candidate_id,) in self.conn.execute(
+                    "SELECT id FROM sources WHERE is_custom = 0 AND is_deleted = 0"
+                ).fetchall():
+                    if _default_source_identity(self, int(candidate_id)) == source_identity:
+                        source_id = int(candidate_id)
+                        break
+            elif not is_custom and isinstance(default_id, int):
+                # Legacy backups lack content identities. Reuse a numeric ID
+                # only when its source name also agrees; never trust IDs alone.
                 found = self.conn.execute(
-                    "SELECT id FROM sources WHERE id = ? AND is_custom = 0",
-                    (default_id,),
+                    """SELECT id FROM sources
+                       WHERE id = ? AND is_custom = 0 AND display_name = ?""",
+                    (default_id, name),
                 ).fetchone()
                 if found:
                     source_id = int(found[0])
@@ -421,6 +489,8 @@ def _import_data(self: Database, raw: str):
             self.conn.execute("UPDATE sources SET display_name = ?, is_deleted = 0, is_custom = ? WHERE id = ?", (name, int(is_custom), source_id))
             if key:
                 source_map[key] = source_id
+            if source_identity:
+                source_map[source_identity] = source_id
             if not is_custom and isinstance(default_id, int):
                 source_id_map[default_id] = source_id
             if is_custom:
@@ -439,10 +509,22 @@ def _import_data(self: Database, raw: str):
                 default_lesson_id = item.get("default_lesson_id")
                 lesson_key = str(item.get("key", "")).strip() or uuid.uuid4().hex
                 lesson_id = None
-                if not lesson_is_custom and isinstance(default_lesson_id, int):
+                lesson_identity = str(item.get("identity", "")).strip()
+                if not lesson_is_custom and lesson_identity:
+                    for (candidate_id,) in self.conn.execute(
+                        """SELECT id FROM lessons
+                           WHERE source_id = ? AND is_custom = 0 AND is_deleted = 0""",
+                        (source_id,),
+                    ).fetchall():
+                        if _default_lesson_identity(self, int(candidate_id)) == lesson_identity:
+                            lesson_id = int(candidate_id)
+                            break
+                elif not lesson_is_custom and isinstance(default_lesson_id, int):
                     found = self.conn.execute(
-                        "SELECT id FROM lessons WHERE id = ? AND source_id = ? AND is_custom = 0",
-                        (default_lesson_id, source_id),
+                        """SELECT id FROM lessons
+                           WHERE id = ? AND source_id = ? AND is_custom = 0
+                             AND text = ?""",
+                        (default_lesson_id, source_id, text),
                     ).fetchone()
                     if found:
                         lesson_id = int(found[0])
@@ -462,6 +544,8 @@ def _import_data(self: Database, raw: str):
                         (source_id, text, int(lesson_is_custom), order, lesson_key),
                     ).lastrowid)
                 lesson_map[lesson_key] = lesson_id
+                if lesson_identity:
+                    lesson_map[lesson_identity] = lesson_id
         for result in results:
             try:
                 completed = str(result.get("completed_at", ""))
@@ -472,25 +556,28 @@ def _import_data(self: Database, raw: str):
                 source_name = str(result.get("source_name", result.get("source_name_snapshot", "")))
                 lesson_title = str(result.get("lesson_title", result.get("lesson_title_snapshot", "")))
                 lesson_key = str(result.get("lesson_key", "")).strip()
+                lesson_identity = str(result.get("lesson_identity", "")).strip()
                 source_key = str(result.get("source_key", "")).strip()
-                lesson_id = lesson_map.get(lesson_key) if lesson_key else None
+                source_identity = str(result.get("source_identity", "")).strip()
+                lesson_id = (
+                    lesson_map.get(lesson_identity)
+                    if lesson_identity
+                    else lesson_map.get(lesson_key) if lesson_key else None
+                )
                 mapped_source_id = (
                     source_map.get(source_key)
-                    if source_key
-                    else source_id_map.get(result.get("source_id"))
+                    or source_map.get(source_identity)
+                    or source_id_map.get(result.get("source_id"))
                 )
                 if lesson_id is None and isinstance(result.get("lesson_id"), int):
+                    # Numeric lesson IDs are only meaningful inside a source
+                    # that has already been resolved safely.
                     if mapped_source_id is not None:
                         found = self.conn.execute(
                             "SELECT id FROM lessons WHERE id = ? AND source_id = ? AND is_deleted = 0",
                             (int(result["lesson_id"]), mapped_source_id),
                         ).fetchone()
-                    else:
-                        found = self.conn.execute(
-                            "SELECT id FROM lessons WHERE id = ? AND is_deleted = 0",
-                            (int(result["lesson_id"]),),
-                        ).fetchone()
-                    lesson_id = int(found[0]) if found else None
+                        lesson_id = int(found[0]) if found else None
                 if lesson_id is None:
                     query = """SELECT l.id FROM lessons l JOIN sources s ON s.id = l.source_id
                                WHERE l.is_deleted = 0 AND s.is_deleted = 0
@@ -499,9 +586,11 @@ def _import_data(self: Database, raw: str):
                     if mapped_source_id is not None:
                         query += " AND s.id = ?"
                         params.append(mapped_source_id)
-                    query += " LIMIT 1"
-                    row = self.conn.execute(query, tuple(params)).fetchone()
-                    lesson_id = int(row[0]) if row else None
+                    rows_found = self.conn.execute(query, tuple(params)).fetchall()
+                    # Ambiguous legacy matches must never attach history to
+                    # an arbitrary same-named lesson.
+                    if len(rows_found) == 1:
+                        lesson_id = int(rows_found[0][0])
                 if lesson_id is None:
                     skipped += 1
                     continue
