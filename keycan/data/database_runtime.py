@@ -921,7 +921,14 @@ def _import_data(self: Database, raw: str):
         raise
 
 
-def _patch():
+def install_database_runtime() -> None:
+    """Explicitly register the legacy database integration once.
+
+    This is an interim compatibility boundary while the patched methods are
+    moved into the database/repository layer in a later refactor.
+    """
+    if getattr(Database, "_runtime_installed", False):
+        return
     Database.__init__ = _init
     Database.sources = _sources
     Database.lessons = _lessons
@@ -940,6 +947,7 @@ def _patch():
     Database.restore_defaults = _restore_defaults
     Database.export_data = _export_data
     Database.import_data = _import_data
+    Database._runtime_installed = True
 
 
-_patch()
+__all__ = ["install_database_runtime"]
