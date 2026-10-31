@@ -52,6 +52,8 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.typed = ""
         self.session_uuid = uuid.uuid4().hex
         self.pending_saves: list[dict[str, object]] = []
+        self._pending_close_dialog = None
+        self._allow_close_with_pending_saves = False
         self.finished = False
         self.started_at: float | None = None
         self.updating_input = False
@@ -701,6 +703,30 @@ class KeycanWindow(Adw.ApplicationWindow):
         return GLib.SOURCE_CONTINUE
 
     def _on_close_request(self, _window: Adw.ApplicationWindow) -> bool:
+        if self.pending_saves and not self._allow_close_with_pending_saves:
+            if self._pending_close_dialog is None:
+                dialog = Gtk.AlertDialog(
+                    message=translate(
+                        "Kaydedilmemiş çalışma kayıtların var.",
+                        self.preferences.get("language"),
+                    ),
+                    detail=translate(
+                        "Uygulamadan çıkarsan bu kayıtlar kaybolur. Önce çalışma alanındaki Tekrar kaydet düğmesini kullanabilir veya yine de çıkabilirsin.",
+                        self.preferences.get("language"),
+                    ),
+                )
+                dialog.set_buttons([
+                    translate("Geri dön", self.preferences.get("language")),
+                    translate("Yine de çık", self.preferences.get("language")),
+                ])
+                dialog.set_default_button(0)
+                dialog.set_cancel_button(0)
+                self._pending_close_dialog = dialog
+                dialog.choose(
+                    self, None, self._pending_save_close_finish, None
+                )
+            return True
+
         if self.tick_id is not None:
             GLib.source_remove(self.tick_id)
             self.tick_id = None
@@ -710,6 +736,16 @@ class KeycanWindow(Adw.ApplicationWindow):
             self.preferences_popover = None
         self.db.close()
         return False
+
+    def _pending_save_close_finish(self, dialog, result, _data) -> None:
+        self._pending_close_dialog = None
+        try:
+            response = dialog.choose_finish(result)
+        except Exception:
+            return
+        if response == 1:
+            self._allow_close_with_pending_saves = True
+            self.close()
 
 
 class ConfiguredKeycanWindow(KeycanWindow):
