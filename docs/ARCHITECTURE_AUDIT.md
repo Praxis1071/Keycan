@@ -42,7 +42,10 @@ Bu rapor, mevcut kaynak kodunda görülen somut sorumluluk ve bağımlılıklar�
 - `check.sh` sözdizimi derlemesi, canlı `typing_data.db` bütünlük kontrolleri ve seçili testleri çalıştırıyor.
 - GitHub Actions; Stage 5, Stage 6, Stage 7 ve tüm testler için regresyon işi içeriyor.
 - Bazı CI sözdizimi listeleri yeni/eskimiş dosya adlarına doğrudan bağlı. Modül taşıma veya silme sırasında `check.sh` ve workflow listeleri aynı değişiklikte güncellenmeli.
-- Bu inceleme ortamında depo yerel çalışma kopyası olarak mevcut olmadığından Python testleri ve GTK uygulama açılışı henüz çalıştırılmadı. Bu rapordaki bulgular statik incelemeye dayanıyor; dinamik test sonucu gibi yorumlanmamalı.
+- GitHub Actions üzerindeki mevcut regresyon paketi çalıştırıldı: **54 test geçti, 1 test başarısız oldu.** Stage 5, Stage 6 ve Stage 7 işleri başarılı.
+- Başarısız test: `tests/test_custom_content.py::test_backup_round_trip_preserves_deleted_lesson_history`. JSON yedeği içe aktarıldığında silinmiş dersin `is_deleted` durumu hedef veritabanında korunmuyor (`0` beklenen `1`). Aynı hata, bu çalışma dalından önceki `main` commit'inde de mevcut; dolayısıyla dokümantasyon değişikliklerinden kaynaklanmıyor.
+- Bu hata yedekleme ve veri migrasyonu için doğrudan risk oluşturuyor. JSON ders migrasyonuna geçmeden önce `_import_data` kimlik eşleştirme/silme durumu geri yükleme akışı incelenip düzeltilecek ve bu test regresyon kapısı yapılacak.
+- GitHub Actions ortamında testler çalışıyor; yerel GTK açılış testi ise bu inceleme oturumunda yapılamadı. Bu rapordaki kaynak bulguları statik incelemeye dayanıyor; GTK çalışma zamanı doğrulaması olarak yorumlanmamalı.
 
 ## 6. Dokümantasyon tutarsızlıkları
 
