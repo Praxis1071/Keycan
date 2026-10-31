@@ -231,6 +231,7 @@ Aşağıdaki kayıtlar, yukarıdaki hata bölümlerindeki ilk statik inceleme no
 ### KC-002 – İstatistik kaydı
 
 - Oturum sonucu kaydedilirken oluşan hatalar artık sessizce kaybolmuyor; kullanıcıya hata metni gösteriliyor.
+- Veritabanına kayıt, sonuç etiketleri çizilmeden önce yapılıyor. Böylece arayüzdeki etiket/renk çizimi hatası istatistik kaydını engelleyemiyor.
 - Veritabanı INSERT/COMMIT işlemi başarısız olursa açık transaction rollback ediliyor.
 - GTK4 belgelerine göre get_text(..., True) gizli karakterleri de döndürür; uygulama bu parametreyi zaten kullanıyordu. Gizlilik modunun metni boşalttığına dair kanıt bulunmadı.
 - **Kalan kontrol:** Gizlilik açık ve kapalı iki ayrı oturum tamamlanmalı ve her ikisinin de istatistik geçmişine kaydedildiği doğrulanmalı. Kayıt başarısızsa gösterilen hata mesajı kök nedeni belirlemek için kullanılmalı. Bu nedenle KC-002 henüz tamamen kapatılmadı.
