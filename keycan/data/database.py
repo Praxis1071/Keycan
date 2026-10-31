@@ -646,7 +646,7 @@ class Database:
         source_name, lesson_title = self.lesson_context(lesson_id)
         try:
             self.conn.execute(
-                """INSERT OR IGNORE INTO practice_results(
+                """INSERT INTO practice_results(
                     lesson_id, duration_seconds, correct_chars, wrong_chars, wpm,
                     correct_words, wrong_words, words_per_minute, characters_per_minute,
                     completed_at, source_name_snapshot, lesson_title_snapshot,
@@ -670,6 +670,17 @@ class Database:
                 ),
             )
             self.conn.commit()
+        except sqlite3.IntegrityError:
+            self.conn.rollback()
+            # A concurrent retry may have committed this UUID first. Treat
+            # only that specific uniqueness collision as an idempotent save;
+            # propagate all other integrity failures to the caller.
+            if self.conn.execute(
+                "SELECT 1 FROM practice_results WHERE session_uuid = ?",
+                (session_uuid,),
+            ).fetchone():
+                return
+            raise
         except Exception:
             self.conn.rollback()
             raise
