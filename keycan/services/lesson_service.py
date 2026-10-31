@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import logging
+import re
 from typing import TYPE_CHECKING
 
 from keycan.services.lesson_catalog import (
@@ -70,6 +71,13 @@ class LessonService:
         }
 
     @staticmethod
+    def display_group_name(name: str, number: int) -> str:
+        match = re.match(r"^\\s*\\d+\\.\\s*(.*)$", name)
+        if match:
+            return f"{number}. {match.group(1)}"
+        return f"{number}. {name}"
+
+    @staticmethod
     def _normalized_text(value: str) -> str:
         """Remove legacy numbers/punctuation while preserving every letter and its order."""
         return " ".join(
@@ -122,7 +130,7 @@ class LessonService:
             resolved.append((int(group_id), name))
         resolved.sort(key=lambda row: natural_sort_key(row[1]))
         return [
-            (group_id, self.database._display_source_name(name, index))
+            (group_id, self.display_group_name(name, index))
             for index, (group_id, name) in enumerate(resolved, 1)
         ]
 
