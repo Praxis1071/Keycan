@@ -273,6 +273,11 @@ class ProfilePanel(Gtk.Box):
         self.language = language
         from keycan.services.i18n import apply_to_widget_tree
         apply_to_widget_tree(self, language)
+        # Adw.Avatar exposes text rather than a widget label, so translate
+        # its fallback explicitly while preserving user-entered profile names.
+        self.avatar.set_text(
+            self._profile_name or translate("Profil", self.language)
+        )
         self.refresh()
 
     def _load_profile(self) -> None:
