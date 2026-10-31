@@ -655,9 +655,11 @@ def _import_data(self: Database, raw: str):
                     if _default_source_identity(self, int(candidate_id)) == source_identity:
                         source_id = int(candidate_id)
                         break
-            elif not is_custom and isinstance(default_id, int):
-                # Legacy backups lack content identities. Reuse a numeric ID
-                # only when its source name also agrees; never trust IDs alone.
+            if source_id is None and not is_custom and isinstance(default_id, int):
+                # Legacy backups lack content identities. If the content
+                # identity is unavailable or no longer matches (for example,
+                # after deleting a lesson), reuse the numeric ID only when
+                # the source name also agrees; never trust IDs alone.
                 found = self.conn.execute(
                     """SELECT id FROM sources
                        WHERE id = ? AND is_custom = 0 AND display_name = ?""",
