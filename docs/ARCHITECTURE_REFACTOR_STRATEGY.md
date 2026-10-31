@@ -105,3 +105,20 @@ A mechanical group-name cleanup creates collisions (for example, the F/Q keyboar
 - Fixed the JSON backup null-identity bug. GitHub Actions now passes all four jobs (Stage 5, Stage 6, Stage 7, and full regression).
 
 **Important migration boundary:** The new JSON catalog and loader are prepared and tested, but the running GUI still reads active lesson data through the existing SQLite-backed database API. The runtime switch is intentionally not done yet. Before switching, the service must preserve default-group rename/edit/delete behavior, custom group CRUD, restore/reset semantics, stable lesson IDs, and practice-history references. The old database data is not being deleted.
+
+## 8. Dependency and runtime map
+
+- `main.py` delegates to `keycan.app.main()`.
+- `app.py` imports `KeycanWindow`, then imports `database_runtime` and `statistics_runtime` for side effects. The runtime modules mutate class methods at import time.
+- `KeycanWindow` imports the base `Database` class. Its behavior changes globally only because the app later imports the runtime patch module before the window is instantiated.
+- `tests/test_custom_content.py` also imports `database_runtime` for side effects. This makes test behavior sensitive to import order and hides the real dependency.
+- The database constructor first runs the schema migrations in `database.py`; the patched initializer then migrates custom paths, creates/loads default-content snapshots, and reconciles the snapshot with active content.
+- The Flatpak wrapper seeds the user's XDG data database from the packaged database. The Flatpak manifest copies the entire `keycan/` package, so the new JSON resource is included automatically.
+- `window.py` directly calls database source/lesson lookup and result-save methods. `content_manager2.py` directly calls database CRUD methods and even the private `_display_source_name` helper. These are the key call sites to redirect through a lesson/content service.
+- The active GUI modules are `settings2.py` and `statistics_clean.py`. The older `settings.py` and `statistics.py` have no current direct import references; confirm packaging, tests, and indirect imports before removing them.
+- `statistics_runtime.py` only replaces `MetricCard.set_value` to cancel stale GLib animation timers on refresh/reset. The same behavior can live directly in `MetricCard`, removing this runtime side effect.
+- `database.py` already defines CRUD and backup methods that are shadowed by the runtime module's different implementations. The runtime patch adds snapshot management, progression summary, and content reset/restore. Consolidation must choose one authoritative implementation per operation; simply deleting the runtime file would remove active behavior.
+
+### Consequence for the next implementation step
+
+The JSON catalog is ready, but GUI consumers should not read JSON directly. Introduce one content-facing service that combines packaged default lessons with the existing SQLite-backed custom workspace, and route both `window.py` and `content_manager2.py` through it. Preserve the current edit, rename, delete, reorder, reset, restore, and history behavior. Only after this boundary is tested should the database source of truth be switched.
