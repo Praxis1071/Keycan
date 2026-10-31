@@ -249,6 +249,7 @@ Aşağıdaki kayıtlar, yukarıdaki hata bölümlerindeki ilk statik inceleme no
 - Yinelenen çeviri sözlüğü ve fonksiyon kaldırıldı; widget çevirisi ile dinamik metinler ortak çeviri kataloğunu kullanıyor.
 - Adw.EntryRow, Adw.SwitchRow, Gtk.SearchEntry ve Gtk.SpinButton için çeviri kapsamı tamamlandı; mevcut widget desteği korundu.
 - Yeni profil fotoğrafı ve sıfırlama metinleri ortak kataloğa eklendi.
+- Ayarlar ve ders içerik yönetimi pencerelerindeki dosya seçme başlıkları, onay pencereleri ve işlem durumları çevriliyor; ana penceredeki dil değişikliği açık içerik yöneticisine de aktarılıyor.
 - **Doğrulama:** Çeviri round-trip testleri ve GitHub Actions tam test paketi başarılı. Tüm ekranların İngilizce/Türkçe görsel kontrolü hâlâ gerekli.
 
 ### KC-005 – Profil ve fotoğraf
