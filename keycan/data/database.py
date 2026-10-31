@@ -625,29 +625,33 @@ class Database:
             raise ValueError("Doğruluk yüzdesi 100'ü aşamaz")
 
         source_name, lesson_title = self.lesson_context(lesson_id)
-        self.conn.execute(
-            """INSERT INTO practice_results(
-                lesson_id, duration_seconds, correct_chars, wrong_chars, wpm,
-                correct_words, wrong_words, words_per_minute, characters_per_minute,
-                completed_at, source_name_snapshot, lesson_title_snapshot,
-                target_word_count, typed_word_count, total_characters,
-                correct_characters, wrong_characters, accuracy_percent, wrong_letter_counts
-            ) VALUES (
-                ?, ?, ?, ?, ?,
-                ?, ?, ?, ?,
-                CURRENT_TIMESTAMP, ?, ?,
-                ?, ?, ?,
-                ?, ?, ?, ?
-            )""",
-            (
-                lesson_id, duration, correct_characters, wrong_characters, words_per_minute,
-                correct, wrong, words_per_minute, characters_per_minute,
-                source_name, lesson_title, target_word_count, typed_word_count,
-                total_characters, correct_characters, wrong_characters, accuracy_percent,
-                json.dumps(metrics["wrong_letter_counts"], ensure_ascii=False),
-            ),
-        )
-        self.conn.commit()
+        try:
+            self.conn.execute(
+                """INSERT INTO practice_results(
+                    lesson_id, duration_seconds, correct_chars, wrong_chars, wpm,
+                    correct_words, wrong_words, words_per_minute, characters_per_minute,
+                    completed_at, source_name_snapshot, lesson_title_snapshot,
+                    target_word_count, typed_word_count, total_characters,
+                    correct_characters, wrong_characters, accuracy_percent, wrong_letter_counts
+                ) VALUES (
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?,
+                    CURRENT_TIMESTAMP, ?, ?,
+                    ?, ?, ?,
+                    ?, ?, ?, ?
+                )""",
+                (
+                    lesson_id, duration, correct_characters, wrong_characters, words_per_minute,
+                    correct, wrong, words_per_minute, characters_per_minute,
+                    source_name, lesson_title, target_word_count, typed_word_count,
+                    total_characters, correct_characters, wrong_characters, accuracy_percent,
+                    json.dumps(metrics["wrong_letter_counts"], ensure_ascii=False),
+                ),
+            )
+            self.conn.commit()
+        except Exception:
+            self.conn.rollback()
+            raise
 
     @staticmethod
     def _period_start(period: str, now_local: datetime) -> datetime | None:
