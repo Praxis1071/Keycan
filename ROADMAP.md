@@ -85,7 +85,7 @@ Bu aşamanın amacı mevcut Keycan özelliklerini koruyarak kod tabanını sadel
 
 ### 10.1 — Mimari ve bağımlılık analizi
 - [ ] Tüm modüllerin sorumluluklarını, import ilişkilerini ve çalışma zamanındaki bağımlılıklarını çıkarmak
-- [ ] Uygulama başlangıç akışını ve veritabanı başlatma/migration sırasını belgelemek
+- [x] Uygulama başlangıç akışını ve veritabanı başlatma/migration sırasını belgelemek
 - [ ] GUI, servis, veri erişimi ve yazma motoru sınırlarını belirlemek
 - [x] Mevcut testleri ve CI kontrollerini başlangıç referansı olarak çalıştırmak (yedek geri yükleme regresyonu düzeltildi; tam CI paketi geçti)
 - [ ] Kullanılmayan, yinelenen veya eski dosyaları import ve davranış kanıtı olmadan silmemek
