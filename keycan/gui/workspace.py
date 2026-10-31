@@ -173,9 +173,18 @@ class TypingWorkspace(Gtk.Box):
 
         self.status = Gtk.Label(label="Bir ders ve metin seçin.")
         self.status.set_xalign(0)
+        self.status.set_hexpand(True)
         self.status.set_margin_start(12)
         self.status.add_css_class("keycan-status")
-        bottom.set_start_widget(self.status)
+        self.status_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.status_box.set_hexpand(True)
+        self.status_box.append(self.status)
+        self.retry_save_button = Gtk.Button(label="Tekrar kaydet")
+        self.retry_save_button.add_css_class("flat")
+        self.retry_save_button.set_valign(Gtk.Align.CENTER)
+        self.retry_save_button.set_visible(False)
+        self.status_box.append(self.retry_save_button)
+        bottom.set_start_widget(self.status_box)
 
         bottom.set_center_widget(self.preferences_button)
 
