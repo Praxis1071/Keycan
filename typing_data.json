@@ -2,7 +2,7 @@
   "format": "keycan-database-export",
   "version": 1,
   "source": "typing_data.db",
-  "exported_at": "2026-10-31T14:26:19.909626+00:00",
+  "exported_at": "2026-10-31T14:26:50.634763+00:00",
   "tables": {
     "default_content_lessons": {
       "schema": "CREATE TABLE default_content_lessons (\n               lesson_id INTEGER PRIMARY KEY,\n               source_id INTEGER NOT NULL,\n               legacy_metin_id INTEGER NOT NULL DEFAULT 0,\n               title TEXT NOT NULL,\n               text TEXT NOT NULL,\n               custom_order INTEGER NOT NULL DEFAULT 0\n           )",
@@ -127606,4 +127606,4 @@
       ]
     }
   }
-}\n
+}
