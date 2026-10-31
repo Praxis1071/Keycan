@@ -8,11 +8,12 @@ import gi
 gi.require_version("Adw", "1")
 from gi.repository import Adw
 
-from keycan.window import KeycanWindow
+from keycan.data.database_runtime import install_database_runtime
 
-# Runtime modules register database/statistics integrations explicitly.
-import keycan.data.database_runtime  # noqa: F401
-import keycan.gui.statistics_runtime  # noqa: F401
+# Register database compatibility methods before the window is imported.
+install_database_runtime()
+
+from keycan.window import KeycanWindow
 
 APP_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_DB = APP_DIR / "typing_data.db"
