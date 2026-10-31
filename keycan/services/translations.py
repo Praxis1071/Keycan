@@ -214,6 +214,7 @@ TRANSLATIONS = {
     "Varsayılanları ekle": "Restore defaults",
     "Tümünü sıfırla": "Reset all",
     "Çalışma tamamlandı ancak istatistiklere kaydedilemedi.": "Practice finished, but the result could not be saved to statistics.",
+    "Çalışma kaydedildi ancak profil görünümü güncellenemedi.": "Practice was saved, but the profile view could not be refreshed.",
     "Tamamlanan tüm çalışma geçmişini kalıcı olarak sil.": "Permanently delete all completed practice history.",
     "Sıfırla": "Reset",
     "Tüm ders gruplarını ve metinleri sıfırla": "Reset all lesson groups and texts",
