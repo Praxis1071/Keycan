@@ -6,6 +6,8 @@ import re
 
 TRANSLATIONS = {
     "Ayarlar": "Settings",
+    "Sonraki seviye için {remaining} XP": "{remaining} XP to the next level",
+    "{len(unlocked)} / {len(BADGES)} rozet açıldı.": "{len(unlocked)} / {len(BADGES)} badges unlocked.",
     "Gelişmiş analiz": "Advanced analysis",
     "Dönem karşılaştırmaları, ders performansı ve hata analizi.": "Period comparisons, lesson performance, and error analysis.",
     "Dönem karşılaştırması": "Period comparison",
@@ -495,6 +497,8 @@ _RUNTIME_PATTERNS = (
     (r"^(.+) dk (.+) sn$", r"\1 min \2 sec", r"^(.+) min (.+) sec$", r"\1 dk \2 sn"),
     (r"^(.+) sa$", r"\1 hr", r"^(.+) hr$", r"\1 sa"),
     (r"^(.+) sa (.+) dk$", r"\1 hr \2 min", r"^(.+) hr (.+) min$", r"\1 sa \2 dk"),
+    (r"^(.+) aktif gün$", r"\1 active days", r"^(.+) active days$", r"\1 aktif gün"),
+    (r"^(.+) kelime$", r"\1 words", r"^(.+) words$", r"\1 kelime"),
     (r"^Sonraki seviye için (.+) XP$", r"\1 XP to the next level", r"^(.+) XP to the next level$", r"Sonraki seviye için \1 XP"),
     (r"^(.+) / (.+) rozet açıldı\.$", r"\1 / \2 badges unlocked.", r"^(.+) / (.+) badges unlocked\.$", r"\1 / \2 rozet açıldı."),
     (r"^Sonraki seviye için (.+) XP$", r"\1 XP to the next level", r"^(.+) XP to the next level$", r"Sonraki seviye için \1 XP"),
