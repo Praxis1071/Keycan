@@ -83,12 +83,41 @@ class SettingsPanel(Gtk.Box):
         try:self._pending_export=self._db().export_data()
         except Exception as exc:self.status.set_text(f"{self._t('Dışa aktarma hazırlanamadı:')} {self._t(str(exc))}");return
         d=Gtk.FileDialog(); d.set_title(self._t("Keycan yedeğini kaydet")); d.set_initial_name("keycan-yedek.json"); d.save(self.parent_window,None,self._save_finish,None)
-    def _save_finish(self,d,result,_data):
-        try:file=d.save_finish(result)
-        except Exception:return
-        if file is None:return
-        try:file.replace_contents(self._pending_export.encode("utf-8"),None,False,Gio.FileCreateFlags.REPLACE_DESTINATION,None);self.status.set_text(f"{self._t('Yedek kaydedildi:')} {file.get_basename()}")
-        except Exception as exc:self.status.set_text(f"{self._t('Yedek kaydedilemedi:')} {self._t(str(exc))}")
+    def _save_finish(self, d, result, _data):
+        try:
+            file = d.save_finish(result)
+        except GLib.Error as exc:
+            if exc.matches(Gtk.dialog_error_quark(), Gtk.DialogError.DISMISSED):
+                return
+            LOGGER.exception("Could not complete the Keycan backup save dialog")
+            self.status.set_text(
+                f"{self._t('Yedek kaydedilemedi:')} {self._t(str(exc))}"
+            )
+            return
+        except Exception as exc:
+            LOGGER.exception("Unexpected error in Keycan backup save dialog")
+            self.status.set_text(
+                f"{self._t('Yedek kaydedilemedi:')} {self._t(str(exc))}"
+            )
+            return
+        if file is None:
+            return
+        try:
+            file.replace_contents(
+                self._pending_export.encode("utf-8"),
+                None,
+                False,
+                Gio.FileCreateFlags.REPLACE_DESTINATION,
+                None,
+            )
+            self.status.set_text(
+                f"{self._t('Yedek kaydedildi:')} {file.get_basename()}"
+            )
+        except Exception as exc:
+            LOGGER.exception("Failed to write the Keycan backup file")
+            self.status.set_text(
+                f"{self._t('Yedek kaydedilemedi:')} {self._t(str(exc))}"
+            )
     def _import(self,_b):
         if self._db() is None:self.status.set_text(self._t("Veritabanına erişilemedi."));return
         d=Gtk.FileDialog();d.set_title(self._t("Keycan yedeğini seç"));d.open(self.parent_window,None,self._open_finish,None)
@@ -96,7 +125,7 @@ class SettingsPanel(Gtk.Box):
         try:
             file = d.open_finish(result)
         except GLib.Error as exc:
-            if exc.matches(Gio.io_error_quark(), Gio.IOErrorEnum.CANCELLED):
+            if exc.matches(Gtk.dialog_error_quark(), Gtk.DialogError.DISMISSED):
                 return
             LOGGER.exception("Could not open the Keycan backup file chooser")
             self.status.set_text(
@@ -105,8 +134,9 @@ class SettingsPanel(Gtk.Box):
             return
         if file is None:return
         try:
-            raw,_=file.load_contents(None); imported,skipped=self._db().import_data(raw.decode("utf-8"))
-            message=f"{self._t('İçe aktarma tamamlandı:')} {imported} {self._t('grup/metin kaydı işlendi')}"
+            raw, _ = file.load_contents(None)
+            imported, skipped = self._db().import_data(raw.decode("utf-8-sig"))
+            message=f"{self._t('İçe aktarma tamamlandı:')} {imported} {self._t('kayıt içe aktarıldı')}"
             if skipped: message += f", {skipped} {self._t('kayıt atlandı')}."
             else: message += "."
             self.status.set_text(message)
@@ -137,7 +167,7 @@ class SettingsPanel(Gtk.Box):
         except Exception as exc:self.status.set_text(f"{self._t('Ders içeriği sıfırlanamadı:')} {self._t(str(exc))}");return
         if self.on_content_changed:self.on_content_changed()
     def _restore_defaults(self,_b):
-        d=Gtk.AlertDialog(message=self._t("Varsayılan ders grupları ve metinleri geri yüklensin mi?"),detail=self._t("Keycan'ın ilk kurulumdaki hazır ders grupları ve metinleri geri getirilir. Çalışma geçmişin ve istatistiklerin korunur. Varsayılan gruplarda yaptığın değişiklikler geri alınır."));d.set_buttons([self._t("İptal"),self._t("Varsayılanları ekle")]);d.set_default_button(0);d.set_cancel_button(0);d.choose(self.parent_window,None,self._restore_defaults_finish,None)
+        d=Gtk.AlertDialog(message=self._t("Varsayılan ders grupları ve metinleri geri yüklensin mi?"),detail=self._t("Keycan'ın ilk kurulumdaki varsayılan ders metinleri geri yüklenir. Ders grubu adların, çalışma geçmişin ve istatistiklerin korunur. Varsayılan ders metinlerinde yaptığın değişiklikler ilk haline döner."));d.set_buttons([self._t("İptal"),self._t("Varsayılanları ekle")]);d.set_default_button(0);d.set_cancel_button(0);d.choose(self.parent_window,None,self._restore_defaults_finish,None)
     def _restore_defaults_finish(self,d,result,_data):
         try:response=d.choose_finish(result)
         except Exception:return
