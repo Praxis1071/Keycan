@@ -87,7 +87,7 @@ Bu aşamanın amacı mevcut Keycan özelliklerini koruyarak kod tabanını sadel
 - [ ] Tüm modüllerin sorumluluklarını, import ilişkilerini ve çalışma zamanındaki bağımlılıklarını çıkarmak
 - [ ] Uygulama başlangıç akışını ve veritabanı başlatma/migration sırasını belgelemek
 - [ ] GUI, servis, veri erişimi ve yazma motoru sınırlarını belirlemek
-- [ ] Mevcut testleri ve CI kontrollerini başlangıç referansı olarak çalıştırmak
+- [x] Mevcut testleri ve CI kontrollerini başlangıç referansı olarak çalıştırmak (yedek geri yükleme regresyonu düzeltildi; tam CI paketi geçti)
 - [ ] Kullanılmayan, yinelenen veya eski dosyaları import ve davranış kanıtı olmadan silmemek
 - [ ] Yazma motorunu kapsam dışında tutmak; mevcut API ve davranışını değiştirmemek
 
