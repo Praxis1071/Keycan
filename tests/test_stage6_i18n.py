@@ -75,7 +75,7 @@ def test_shared_translation_catalog_covers_profile_and_reset_actions() -> None:
         ),
         "Ders gruplarını silmek istiyor musun?": "Delete this lesson group?",
         "Seçili metni silmek istiyor musun?": "Delete the selected text?",
-        "Veritabanına erişilemedi.": "The database is unavailable.",
+        "Veritabanına erişilemedi.": "Database could not be accessed.",
         "Varsayılan ders grupları ve metinleri geri yüklensin mi?": "Restore the default lesson groups and texts?",
     }
     for source, expected in samples.items():
