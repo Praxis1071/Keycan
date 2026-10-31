@@ -100,7 +100,7 @@ Bu aşamanın amacı mevcut Keycan özelliklerini koruyarak kod tabanını sadel
 - [x] Tüm 1.833 metinde kelime sırasını ve kelime çokluğunu temizleme öncesiyle karşılaştırmak; anlam/zorluk akışı için içerik incelemesini ayrıca sürdürmek
 - [x] Boş, yinelenen veya bozulmuş dersleri otomatik doğrulamalarla tespit etmek (boş ders yok; temizleme bir dört-ders kümesini aynı metne dönüştürüyor, kimlikler ve dersler korundu)
 - [ ] Kullanıcı tarafından oluşturulan ders içeriğinin saklama biçimini ayrıca ele almak; mevcut özel içerikleri kayıpsız taşımadan eski kaynağı kaldırmamak
-- [ ] JSON okuma hatalarında uygulamanın çökmesini önlemek ve anlaşılır hata bildirimi sağlamak
+- [x] JSON okuma hatalarında uygulamanın çökmesini önlemek ve anlaşılır hata bildirimi sağlamak (SQLite okuma fallback'i ve çalışma alanı uyarısı)
 
 ### 10.3 — JSON yedekleme ve veri geçişi
 - [ ] Ders kataloğu, kullanıcı içeriği ve kullanıcı çalışma verilerinin sınırlarını tanımlamak
