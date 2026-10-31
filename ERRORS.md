@@ -304,37 +304,34 @@ Her hata için kök neden doğrulanmadan kod değiştirilmeyecek. Düzeltmelerde
 
 ---
 
-## 2026-10-31 – Yeni kullanıcı sorunları ve main dalı düzeltmeleri
+## 2026-10-31 – Kullanıcı geri bildirimi ve main dalı güncellemeleri
 
-Bu bölüm, kullanıcının 31 Ekim 2026 tarihinde bildirdiği üç yeni soruna yönelik doğrudan **main** dalında yapılan değişiklikleri kaydeder. Önceki fix/stabilization-kc-001-005 dalı bu çalışmaların temeli olarak kullanılmadı.
+Bu bölümdeki değişiklikler doğrudan **main** dalına uygulanmıştır.
 
-### Varsayılan ders grubu adlarının korunması
+### 1. Varsayılan içeriklerin güncel çalışma alanıyla eşitlenmesi
 
-- Varsayılan içerik geri yüklenirken mevcut ders grubunun display_name alanı artık snapshot'taki eski adla ezilmiyor.
-- Varsayılan ders metinleri ilk kurulumdaki snapshot içeriğine döndürülüyor.
-- Kullanıcının değiştirdiği ders grubu adı, özel gruplar ve çalışma geçmişi korunuyor.
-- Kaynak satırı fiziksel olarak eksikse snapshot adıyla yeniden oluşturuluyor.
+- [x] Varsayılan geri yükleme kaynağı, ilk kurulumdan kalmış sabit/eski kopya olmaktan çıkarıldı.
+- [x] Yerleşik ders grubu veya dersi silindiğinde geri yükleme kopyası da güncelleniyor; silinen içerik yeniden eklenmiyor.
+- [x] Yerleşik ders metni düzenlendiğinde, yeni metin güncel geri yükleme noktası olarak saklanıyor.
+- [x] Yerleşik gruplardaki kullanıcı tarafından eklenen metinler de güncel geri yükleme noktasına dahil ediliyor.
+- [x] Tüm içerik sıfırlanmadan hemen önce yalnızca o anda çalışma alanında bulunan yerleşik gruplar ve metinler saklanıyor.
+- [x] Tam sıfırlama sonrasında uygulama yeniden başlatılsa bile geri yükleme noktası korunuyor.
+- [x] Eski veritabanları için snapshot şema geçişi eklendi; grup adları, istatistikler ve çalışma geçmişi korunuyor.
+- [x] Silinmiş grup, silinmiş metin, güncel metin ve uygulama yeniden başlatıldıktan sonra geri yükleme senaryoları için regresyon testleri eklendi.
 
-### Yedek dışa/içe aktarma
+### 2. Yazım metnini karartma
 
-- Yeni yedek biçimi sürüm 3 olarak düzenlendi; sürüm 1 ve 2 içe aktarma desteği korundu.
-- Çalışma kayıtlarına kalıcı session_uuid eklendi. Eski kayıtlar veritabanı migration'ında kimlik alıyor; aynı UUID ile tekrar kaydetme/aktarma çift kayıt oluşturmuyor.
-- Dışa aktarma artık silinmiş ders gruplarını ve dersleri de yedekliyor. Böylece bu derslere bağlı çalışma geçmişi başka bir veritabanına taşınırken eşleştirilebiliyor.
-- İçe aktarma, grup/metin/çalışma kayıtlarını ayrı ayrı sayıyor ve silinme durumlarını aktarım sonunda geri uyguluyor.
-- Dosya seçicide kullanıcı iptali gerçek dosya/işlem hatalarından ayrılıyor; dışa/içe aktarma hataları loglanıp arayüzde gösteriliyor.
-- Round-trip, farklı kimlik sırası, silinmiş ders geçmişi, aynı zaman damgasındaki özdeş ama farklı oturumlar, tekrarlı import ve eski veritabanı migration senaryoları için regresyon testleri eklendi.
+- [x] Kullanıcı, önceki düzeltmenin kendi kullanımında çalıştığını doğruladı.
+- [x] Bu görevde gizlilik/kayıt mekanizmasına gereksiz değişiklik yapılmadı.
 
-### Gizlilik açıkken istatistik kaydının güvenilirliği
+### 3. İstatistik yedekleme seçenekleri
 
-- Oturum bitiminde yazım alanı doğrudan Gtk.TextBuffer.get_text(..., True) ile tekrar okunuyor. Görünmez etiket yalnızca görüntüyü etkiliyor; kayıt için kullanılan metni silmiyor.
-- Her oturum sabit UUID ile kaydediliyor. Kayıt hatası oluşursa aynı oturum kimliğiyle güvenli tekrar deneme yapılabiliyor.
-- Çalışma alanına “Tekrar kaydet” kontrolü eklendi; başarısız kayıtlar kuyrukta tutuluyor.
-- Bekleyen kayıtlar varken uygulama kapatılırsa kayıtların kaybolabileceği konusunda kullanıcı uyarılıyor.
-- Başarılı kayıt sonrasında istatistik ve profil görünümleri yenileniyor.
+- [x] İstatistikleri dışa aktarma ve içe aktarma satırları Ayarlar ekranından kaldırıldı.
+- [x] Bu seçeneklere ait dosya seçici, dışa aktarma ve içe aktarma arayüz kodu Ayarlar modülünden kaldırıldı.
+- [x] Mevcut veritabanı ve çalışma geçmişi silinmedi. Yedekleme veritabanı API'si geriye dönük uyumluluk ve mevcut testler için korundu; artık Ayarlar'da kullanıcıya sunulmuyor.
 
-### Doğrulama durumu
+### Doğrulama
 
-- Değişiklikler doğrudan main dalına commit edildi.
-- İlgili regresyon testleri ve CI derleme kapsamı güncellendi.
-- Bu oturumda test paketini yerel ortamda çalıştırmak mümkün olmadı; GitHub Actions çalışma sonuçları da mevcut bağlantı üzerinden doğrulanamadı. Bu nedenle otomatik testlerin başarılı olduğu henüz iddia edilmiyor.
-- GTK çalışma zamanı davranışı (gizlilik modu, yeniden deneme düğmesi, dosya seçiciler ve kapatma uyarısı) ayrıca gerçek masaüstü oturumunda kontrol edilmeli.
+- [x] Değişiklikler doğrudan main dalına commit edildi.
+- [x] İlgili regresyon testleri eklendi/güncellendi.
+- [ ] GitHub Actions test sonuçları ve gerçek GTK masaüstü akışı ayrıca doğrulanmalı. Bu nedenle henüz testlerin tamamının geçtiği iddia edilmiyor.
