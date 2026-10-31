@@ -34,10 +34,10 @@ def test_catalog_rejects_duplicate_group_names(tmp_path: Path) -> None:
         "catalog_id": "test",
         "language": "tr",
         "groups": [
-            {"id": 1, "name": "Temel Ders", "order": 0, "lessons": [
+            {"id": 1, "name": "Temel Ders", "legacy_name": "Eski Temel Ders", "order": 0, "lessons": [
                 {"id": 1, "legacy_metin_id": 1, "legacy_title": "1", "order": 0, "text": "temel ders"}
             ]},
-            {"id": 2, "name": "Temel Ders", "order": 1, "lessons": [
+            {"id": 2, "name": "Temel Ders", "legacy_name": "Eski Temel Ders", "order": 1, "lessons": [
                 {"id": 2, "legacy_metin_id": 2, "legacy_title": "2", "order": 0, "text": "ikinci ders"}
             ]},
         ],
@@ -54,7 +54,7 @@ def test_catalog_rejects_numbers_and_punctuation_in_lesson_text(tmp_path: Path) 
         "catalog_id": "test",
         "language": "tr",
         "groups": [
-            {"id": 1, "name": "Temel Ders", "order": 0, "lessons": [
+            {"id": 1, "name": "Temel Ders", "legacy_name": "Eski Temel Ders", "order": 0, "lessons": [
                 {"id": 1, "legacy_metin_id": 1, "legacy_title": "1", "order": 0, "text": "merhaba 2026!"}
             ]},
         ],
