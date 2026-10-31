@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import time
 from pathlib import Path
 from collections import Counter
@@ -21,6 +22,9 @@ from keycan.services.i18n import apply_to_widget_tree
 from keycan.services.translations import translate
 from keycan.services.preferences import Preferences
 from keycan.utils.text import WORD_PATTERN, format_remaining
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 CSS = """
@@ -508,6 +512,12 @@ class KeycanWindow(Adw.ApplicationWindow):
             )
         except Exception as exc:
             save_error = exc
+            # Keep a traceback in the application log without recording the
+            # user's typed text or any other session content.
+            LOGGER.exception(
+                "Failed to save practice result for lesson_id=%s",
+                self.current_lesson_id,
+            )
         else:
             if getattr(self, "profile_page", None) is not None:
                 try:
