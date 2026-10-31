@@ -528,9 +528,25 @@ def _translate_runtime_patterns(text: str, language: str) -> str:
     if language == "en":
         for tr_pattern, en_replacement, _en_pattern, _tr_replacement in _RUNTIME_PATTERNS:
             if re.match(tr_pattern, text):
-                return re.sub(tr_pattern, en_replacement, text)
+                def expand(match):
+                    return re.sub(
+                        r"\\([1-9][0-9]*)",
+                        lambda group: _translate_runtime_patterns(
+                            match.group(int(group.group(1))), language
+                        ),
+                        en_replacement,
+                    )
+                return re.sub(tr_pattern, expand, text)
         return text
     for _tr_pattern, _en_replacement, en_pattern, tr_replacement in _RUNTIME_PATTERNS:
         if re.match(en_pattern, text):
-            return re.sub(en_pattern, tr_replacement, text)
+            def expand(match):
+                return re.sub(
+                    r"\\([1-9][0-9]*)",
+                    lambda group: _translate_runtime_patterns(
+                        match.group(int(group.group(1))), language
+                    ),
+                    tr_replacement,
+                )
+            return re.sub(en_pattern, expand, text)
     return text
