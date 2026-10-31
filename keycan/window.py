@@ -540,6 +540,12 @@ class KeycanWindow(Adw.ApplicationWindow):
                 self.preferences.get("language"),
             )
             self.status.set_text(f"{message} ({save_error})")
+        elif render_error is not None:
+            message = translate(
+                "Çalışma kaydedildi ancak sonuç görünümü güncellenemedi.",
+                self.preferences.get("language"),
+            )
+            self.status.set_text(f"{message} ({render_error})")
         elif profile_error is not None:
             message = translate(
                 "Çalışma kaydedildi ancak profil görünümü güncellenemedi.",
