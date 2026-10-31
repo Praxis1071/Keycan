@@ -51,7 +51,9 @@ keycan/
 ## Aşamalar
 
 ### Aşama 0 — Mimari ve bağımlılık denetimi
-**Durum: Devam ediyor**
+**Durum: Devam ediyor — statik kaynak incelemesi yapıldı, çalışma zamanı doğrulaması bekliyor**
+
+İlk statik bulgular: [Mimari İnceleme Raporu](ARCHITECTURE_AUDIT.md). Rapor, henüz çalıştırılmamış testleri başarılı gibi göstermemek için statik inceleme ile dinamik doğrulamayı ayrı tutar.
 
 - Gerçek giriş noktalarını, modül importlarını ve çalışma zamanı bağımlılıklarını çıkar.
 - `window.py`, `database.py`, `database_runtime.py`, istatistik ve ayar modüllerinin sorumluluklarını haritala.
