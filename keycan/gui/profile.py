@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
+import tempfile
+import uuid
 from pathlib import Path
 
 import gi
@@ -295,12 +296,30 @@ class ProfilePanel(Gtk.Box):
 
     def _save_profile(self) -> None:
         self._profile_path.parent.mkdir(parents=True, exist_ok=True)
-        payload = json.dumps(
-            {"name": self._profile_name, "photo": str(self._photo_path) if self._photo_path else ""},
-            ensure_ascii=False,
-            indent=2,
-        ) + "\n"
-        self._profile_path.write_text(payload, encoding="utf-8")
+        payload = {
+            "name": self._profile_name,
+            "photo": str(self._photo_path) if self._photo_path else "",
+        }
+        temporary_path: Path | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=self._profile_path.parent,
+                prefix=".profile-",
+                suffix=".tmp",
+                delete=False,
+            ) as stream:
+                json.dump(payload, stream, ensure_ascii=False, indent=2)
+                stream.write("\n")
+                stream.flush()
+                os.fsync(stream.fileno())
+                temporary_path = Path(stream.name)
+            os.replace(temporary_path, self._profile_path)
+            temporary_path = None
+        finally:
+            if temporary_path is not None:
+                temporary_path.unlink(missing_ok=True)
 
     def _save_name(self, row) -> None:
         self._profile_name = row.get_text().strip()[:80]
@@ -332,26 +351,77 @@ class ProfilePanel(Gtk.Box):
             return
         if source is None:
             return
+
+        temporary_path: Path | None = None
+        destination: Path | None = None
+        old_path = self._photo_path
         try:
-            self._data_dir().mkdir(parents=True, exist_ok=True)
             basename = source.get_basename() or "profile.png"
-            suffix = basename.rsplit(".", 1)[-1].lower()
+            suffix = Path(basename).suffix.lower().lstrip(".")
             if suffix not in {"png", "jpg", "jpeg", "webp"}:
-                suffix = "png"
-            destination = self._data_dir() / f"profile-photo.{suffix}"
-            for old in self._data_dir().glob("profile-photo.*"):
-                if old != destination:
-                    old.unlink(missing_ok=True)
-            source_path = Path(source.get_path() or "")
-            if not source_path.is_file():
                 return
-            shutil.copy2(source_path, destination)
-        except (OSError, TypeError):
+
+            data_dir = self._data_dir()
+            data_dir.mkdir(parents=True, exist_ok=True)
+            descriptor, temporary_name = tempfile.mkstemp(
+                prefix=".profile-photo-",
+                suffix=f".{suffix}",
+                dir=data_dir,
+            )
+            os.close(descriptor)
+            temporary_path = Path(temporary_name)
+
+            # GFile.copy also supports non-local sources (for example remote
+            # locations exposed by the file chooser).
+            if not source.copy(
+                Gio.File.new_for_path(str(temporary_path)),
+                Gio.FileCopyFlags.OVERWRITE,
+                None,
+            ):
+                raise OSError("Profil fotoğrafı kopyalanamadı")
+
+            # Validate the image before touching the currently active photo.
+            texture = Gdk.Texture.new_from_filename(str(temporary_path))
+            destination = data_dir / f"profile-photo-{uuid.uuid4().hex}.{suffix}"
+            os.replace(temporary_path, destination)
+            temporary_path = None
+
+            self._photo_path = destination
+            try:
+                self._save_profile()
+            except Exception:
+                self._photo_path = old_path
+                destination.unlink(missing_ok=True)
+                raise
+
+            self.avatar.set_custom_image(texture)
+            self.remove_photo_button.set_sensitive(True)
+
+            if old_path is not None:
+                self._delete_managed_photo(old_path)
+        except (GLib.Error, OSError, TypeError, ValueError):
+            self._photo_path = old_path
             return
-        self._photo_path = destination
-        self._set_photo(destination)
-        self._save_profile()
-        self.remove_photo_button.set_sensitive(True)
+        finally:
+            if temporary_path is not None:
+                temporary_path.unlink(missing_ok=True)
+
+    def _delete_managed_photo(self, path: Path) -> None:
+        try:
+            data_dir = self._data_dir().resolve()
+            resolved = path.resolve()
+            if (
+                resolved.parent == data_dir
+                and (
+                    resolved.name.startswith("profile-photo.")
+                    or resolved.name.startswith("profile-photo-")
+                )
+            ):
+                resolved.unlink(missing_ok=True)
+        except OSError:
+            # The profile reference is already updated; an orphaned old file
+            # is harmless and can be cleaned up later.
+            pass
 
     def _remove_photo(self, _button) -> None:
         old_path = self._photo_path
