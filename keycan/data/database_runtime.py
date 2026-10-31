@@ -317,9 +317,20 @@ def _restore_defaults(self: Database):
     self.conn.execute("BEGIN")
     try:
         for source_id, name, path, key in source_rows:
+            # A restore resets built-in lesson content, not the user's chosen
+            # display label. Only a physically missing source receives the
+            # original snapshot name.
             self.conn.execute(
-                "UPDATE sources SET display_name = ?, relative_path = ?, custom_key = ?, is_custom = 0, is_deleted = 0 WHERE id = ?",
-                (name, path, key, source_id),
+                """INSERT OR IGNORE INTO sources(
+                       id, display_name, relative_path, is_custom, is_deleted, custom_key
+                   ) VALUES (?, ?, ?, 0, 0, ?)""",
+                (source_id, name, path, key),
+            )
+            self.conn.execute(
+                """UPDATE sources
+                   SET relative_path = ?, custom_key = ?, is_custom = 0, is_deleted = 0
+                   WHERE id = ?""",
+                (path, key, source_id),
             )
         ids = [row[0] for row in source_rows]
         if ids:
@@ -381,27 +392,36 @@ def _default_lesson_identity(self: Database, lesson_id: int) -> str:
 
 
 def _export_data(self: Database) -> str:
+    # Backups include soft-deleted content as well. A deleted lesson may still
+    # own historical sessions, so omitting it would make those sessions
+    # impossible to map when restoring the backup elsewhere.
     groups = []
-    for source_id, name, key, is_custom in self.managed_groups():
+    source_rows = self.conn.execute(
+        """SELECT id, display_name, custom_key, is_custom, is_deleted
+           FROM sources ORDER BY id"""
+    ).fetchall()
+    for source_id, name, key, is_custom, source_deleted in source_rows:
         group_key = key or f"default:{source_id}"
         source_identity = "" if is_custom else _default_source_identity(self, source_id)
         lessons = []
-        for lesson_id, text, lesson_key, order, lesson_custom in self.managed_lessons(source_id):
-            lesson_identity = (
-                "" if lesson_custom else _default_lesson_identity(self, lesson_id)
-            )
-            lesson_row = self.conn.execute(
-                "SELECT title, legacy_metin_id FROM lessons WHERE id = ?",
-                (lesson_id,),
-            ).fetchone()
+        lesson_rows = self.conn.execute(
+            """SELECT id, text, custom_key, custom_order, is_custom, is_deleted,
+                      title, legacy_metin_id
+               FROM lessons WHERE source_id = ?
+               ORDER BY custom_order, legacy_metin_id, id""",
+            (source_id,),
+        ).fetchall()
+        for lesson_id, text, lesson_key, order, lesson_custom, lesson_deleted, title, legacy_id in lesson_rows:
+            lesson_identity = "" if lesson_custom else _default_lesson_identity(self, lesson_id)
             lessons.append({
                 "key": lesson_key or f"default:{lesson_id}",
                 "identity": lesson_identity or None,
                 "text": text,
-                "title": lesson_row[0] if lesson_row else "Ders",
-                "legacy_metin_id": lesson_row[1] if lesson_row else 0,
+                "title": title,
+                "legacy_metin_id": legacy_id,
                 "order": order,
                 "is_custom": bool(lesson_custom),
+                "is_deleted": bool(lesson_deleted),
                 "default_lesson_id": None if lesson_custom else lesson_id,
             })
         groups.append({
@@ -410,18 +430,31 @@ def _export_data(self: Database) -> str:
             "name": name,
             "lessons": lessons,
             "is_custom": bool(is_custom),
+            "is_deleted": bool(source_deleted),
             "default_source_id": None if is_custom else source_id,
         })
+
     rows = self.conn.execute(
-        """SELECT r.completed_at, r.duration_seconds, r.correct_words, r.wrong_words, r.words_per_minute,
-                  r.characters_per_minute, r.target_word_count, r.typed_word_count, r.total_characters,
-                  r.correct_characters, r.wrong_characters, r.accuracy_percent, r.wrong_letter_counts,
-                  r.source_name_snapshot,
-                  r.lesson_title_snapshot, s.custom_key, l.custom_key, l.id, s.id
-           FROM practice_results r LEFT JOIN lessons l ON l.id = r.lesson_id LEFT JOIN sources s ON s.id = l.source_id
-           WHERE r.completed_at != '' ORDER BY r.completed_at, r.rowid"""
+        """SELECT r.completed_at, r.duration_seconds, r.correct_words, r.wrong_words,
+                  r.words_per_minute, r.characters_per_minute, r.target_word_count,
+                  r.typed_word_count, r.total_characters, r.correct_characters,
+                  r.wrong_characters, r.accuracy_percent, r.wrong_letter_counts,
+                  r.source_name_snapshot, r.lesson_title_snapshot, s.custom_key,
+                  l.custom_key, l.id, s.id, r.session_uuid
+           FROM practice_results r
+           LEFT JOIN lessons l ON l.id = r.lesson_id
+           LEFT JOIN sources s ON s.id = l.source_id
+           WHERE r.completed_at != ''
+           ORDER BY r.completed_at, r.rowid"""
     ).fetchall()
-    fields = ("completed_at", "duration_seconds", "correct_words", "wrong_words", "words_per_minute", "characters_per_minute", "target_word_count", "typed_word_count", "total_characters", "correct_characters", "wrong_characters", "accuracy_percent", "wrong_letter_counts", "source_name", "lesson_title", "source_key", "lesson_key", "lesson_id", "source_id")
+    fields = (
+        "completed_at", "duration_seconds", "correct_words", "wrong_words",
+        "words_per_minute", "characters_per_minute", "target_word_count",
+        "typed_word_count", "total_characters", "correct_characters",
+        "wrong_characters", "accuracy_percent", "wrong_letter_counts",
+        "source_name", "lesson_title", "source_key", "lesson_key",
+        "lesson_id", "source_id", "session_uuid",
+    )
     practice_results = []
     for row in rows:
         item = dict(zip(fields, row))
@@ -438,7 +471,14 @@ def _export_data(self: Database) -> str:
             if lesson_id is not None else ""
         ) or None
         practice_results.append(item)
-    return json.dumps({"format": "keycan-backup", "version": 2, "exported_at": datetime.now().astimezone().isoformat(), "groups": groups, "practice_results": practice_results}, ensure_ascii=False, indent=2)
+
+    return json.dumps({
+        "format": "keycan-backup",
+        "version": 3,
+        "exported_at": datetime.now().astimezone().isoformat(),
+        "groups": groups,
+        "practice_results": practice_results,
+    }, ensure_ascii=False, indent=2)
 
 
 def _import_data(self: Database, raw: str):
