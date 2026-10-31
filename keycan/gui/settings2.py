@@ -112,7 +112,11 @@ class SettingsPanel(Gtk.Box):
             self.status.set_text(message)
             if self.on_content_changed:self.on_content_changed()
             if self.on_statistics_changed:self.on_statistics_changed()
-        except Exception as exc:self.status.set_text(f"{self._t('Yedek içe aktarılamadı:')} {self._t(str(exc))}")
+        except Exception as exc:
+            LOGGER.exception("Failed to import Keycan backup")
+            self.status.set_text(
+                f"{self._t('Yedek içe aktarılamadı:')} {self._t(str(exc))}"
+            )
     def _reset(self,_b):
         d=Gtk.AlertDialog(message=self._t("İstatistikleri ve profil ilerlemesini sıfırlamak istiyor musun?"),detail=self._t("Tamamlanan tüm çalışma geçmişi kalıcı olarak silinir. Bu kayıtlardan hesaplanan XP, seviye, rozet ve ilerleme bilgileri sıfırlanır. Profil adın, fotoğrafın, ders grupların ve metinlerin korunur."));d.set_buttons([self._t("İptal"),self._t("Sıfırla")]);d.set_default_button(0);d.set_cancel_button(0);d.choose(self.parent_window,None,self._reset_finish,None)
     def _reset_finish(self,d,result,_data):
