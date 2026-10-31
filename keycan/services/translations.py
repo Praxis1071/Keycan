@@ -6,6 +6,7 @@ import re
 
 TRANSLATIONS = {
     "Ayarlar": "Settings",
+    "Ders kataloğu yüklenemedi; mevcut SQLite dersleri kullanılmaya devam ediyor.": "The lesson catalog could not be loaded; existing SQLite lessons will continue to be used.",
     "Sonraki seviye için {remaining} XP": "{remaining} XP to the next level",
     "{len(unlocked)} / {len(BADGES)} rozet açıldı.": "{len(unlocked)} / {len(BADGES)} badges unlocked.",
     "Gelişmiş analiz": "Advanced analysis",
