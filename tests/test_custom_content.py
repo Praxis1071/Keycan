@@ -511,3 +511,38 @@ def test_save_result_is_idempotent_for_the_same_session_uuid(tmp_path: Path) -> 
         ).fetchone()[0] == 1
     finally:
         db.close()
+
+
+def test_version_two_backup_without_session_ids_remains_importable(tmp_path: Path) -> None:
+    source = make_db(tmp_path / "v2-source.db")
+    try:
+        source.save_result(
+            1, 60, 1, 0,
+            target_word_count=1, typed_word_count=1, total_characters=5,
+            correct_characters=5, wrong_characters=0, words_per_minute=1,
+            characters_per_minute=5, accuracy_percent=100,
+        )
+        payload = json.loads(source.export_data())
+        payload["version"] = 2
+        for group in payload["groups"]:
+            group.pop("is_deleted", None)
+            for lesson in group["lessons"]:
+                lesson.pop("is_deleted", None)
+        for result in payload["practice_results"]:
+            result.pop("session_uuid", None)
+        backup = json.dumps(payload)
+    finally:
+        source.close()
+
+    target = make_db(tmp_path / "v2-target.db")
+    try:
+        target.import_data(backup)
+        assert target.conn.execute(
+            "SELECT COUNT(*) FROM practice_results"
+        ).fetchone()[0] == 1
+        assert target.import_data(backup) == (2, 1)
+        assert target.conn.execute(
+            "SELECT COUNT(*) FROM practice_results"
+        ).fetchone()[0] == 1
+    finally:
+        target.close()
