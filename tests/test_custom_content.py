@@ -493,3 +493,21 @@ def test_legacy_sessions_receive_stable_ids_during_migration(tmp_path: Path) -> 
         assert indexes.get("idx_practice_results_session_uuid") == 1
     finally:
         migrated.close()
+
+
+def test_save_result_is_idempotent_for_the_same_session_uuid(tmp_path: Path) -> None:
+    db = make_db(tmp_path / "idempotent-save.db")
+    try:
+        metrics = dict(
+            target_word_count=1, typed_word_count=1, total_characters=5,
+            correct_characters=5, wrong_characters=0, words_per_minute=1,
+            characters_per_minute=5, accuracy_percent=100,
+        )
+        db.save_result(1, 60, 1, 0, session_uuid="same-session", **metrics)
+        db.save_result(1, 60, 1, 0, session_uuid="same-session", **metrics)
+        assert db.conn.execute(
+            "SELECT COUNT(*) FROM practice_results WHERE session_uuid = ?",
+            ("same-session",),
+        ).fetchone()[0] == 1
+    finally:
+        db.close()
