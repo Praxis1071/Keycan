@@ -860,7 +860,7 @@ class ConfiguredKeycanWindow(KeycanWindow):
         row.set_child(box); return row
 
     def _load_sources(self) -> None:
-        sources = self.db.sources()
+        sources = self.lesson_service.sources()
         self.source_ids = [source_id for source_id, _name in sources]
         self.source_dropdown.set_model(Gtk.StringList.new([name for _source_id, name in sources]))
         if sources:
