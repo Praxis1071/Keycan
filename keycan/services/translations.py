@@ -529,7 +529,7 @@ _RUNTIME_PATTERNS = (
     (r"^Yeterli veri olduğunda gösterilir$", r"Shown when enough data is available", r"^Shown when enough data is available$", r"Yeterli veri olduğunda gösterilir"),
     (r"^En az iki çalışma olduğunda karşılaştırma gösterilir$", r"Comparison is shown after at least two practice sessions", r"^Comparison is shown after at least two practice sessions$", r"En az iki çalışma olduğunda karşılaştırma gösterilir"),
     (r"^(.+) kelime$", r"\1 words", r"^(.+) words$", r"\1 kelime"),
-    (r"^Ders (.+)$", r"Lesson \\1", r"^Lesson (.+)$", r"Ders \\1"),
+    (r"^Ders (.+)$", r"Lesson \1", r"^Lesson (.+)$", r"Ders \1"),
 )
 
 
