@@ -142,9 +142,33 @@ Kullanıcının 10 parmak yazmayı öğrenmesine yardımcı olan, açıklayıcı
 
 ---
 
+## 🏗️ Aşama 10 — Mimari İyileştirme ve Veri Katmanının Modernizasyonu
+
+Aşama 0–9 ile tamamlanan kullanıcı özellikleri korunarak mevcut mimari kontrollü ve aşamalı biçimde iyileştirilecektir. Bu çalışma yeni özellik geliştirme veya baştan yazım değildir.
+
+**Temel kurallar**
+- Yazma motoru (`keycan/core/typing_engine.py`) değiştirilmeyecek.
+- Mevcut özellikler, kullanıcı verileri, istatistikler ve profil ilerlemesi korunacak.
+- Her aşama test edilmeden sonraki aşamaya geçilmeyecek.
+- Büyük ve geri dönüşü zor değişiklikler yerine küçük, izole refaktörler yapılacak.
+
+**Alt aşamalar**
+1. **Mimari ve bağımlılık denetimi:** Modül importları, veri akışları, sorumluluklar, test tabanı ve riskler belgelenecek.
+2. **JSON ders formatı:** Hazır ders kataloğu JSON'a taşınacak; kullanıcı içerikleri ve hazır içerik düzenlemeleri kullanıcı veri dizinindeki JSON deposunda tutulacak. Şema doğrulama, kararlı kimlikler ve atomik yazım eklenecek.
+3. **Ders içeriklerini sadeleştirme:** Grup adları ve ders başlıkları yalnızca Türkçe/İngilizce harfler ve kelime arası boşluk içerecek. Metinlerden sayılar ve noktalama kaldırılacak; Türkçe karakterler korunacak. Önce karşılaştırmalı önizleme ve doğrulama raporu üretilecek.
+4. **Ders verisini JSON'a taşıma:** Eski SQLite içeriği kayıpsız dönüştürülecek. Çalışma geçmişi ve profil verileri korunacak; eski tablolar doğrulama tamamlanmadan silinmeyecek.
+5. **Yinelenen modüller ve runtime müdahaleleri:** Monkey-patch kullanımı kaldırılacak; yinelenen veritabanı, istatistik ve ayar modülleri import/çağrı analiziyle sadeleştirilecek.
+6. **Pencere sorumluluklarını azaltma:** `window.py` yalnızca üst seviye pencere ve koordinasyon görevlerini üstlenecek; bağımsız sorumluluklar mevcut davranış korunarak ayrılacak.
+7. **Veritabanı ve servis katmanları:** SQL erişimi GUI'den ayrılacak; şema migrasyonları, transaction, hata yönetimi ve servis sorumlulukları düzenlenecek.
+8. **Entegrasyon ve regresyon:** Tam test paketi, CI, GTK açılış/kapanış, JSON geçişi, yedekleme/geri yükleme ve eski verilerle uyumluluk doğrulanacak.
+
+Ayrıntılı uygulama sırası, hedef veri modeli, güvenlik kapıları ve her aşamanın tamamlanma koşulları: [Mimari İyileştirme Yol Haritası](docs/ARCHITECTURE_REFACTOR_ROADMAP.md).
+
+**Durum:** Plan eklendi. İlk olarak mimari ve bağımlılık denetimi yürütülecek.
+
 ## 🏁 Mevcut Yol Haritasının Durumu
 
-Aşama 0–9 kapsamındaki mevcut geliştirme planı tamamlanmıştır. Bundan sonraki çalışmalar yeni bir roadmap maddesi eklenmeden önce bakım, kullanıcı geri bildirimi, hata düzeltmeleri ve mevcut özelliklerin kalite/stabilite iyileştirmeleri üzerinden ilerleyecektir.
+Aşama 0–9 tamamlandı. Aşama 10, yeni özelliklerden önce mevcut uygulamanın mimarisini, veri yönetimini ve sürdürülebilirliğini iyileştirmeye odaklanır.
 
 ## 📌 Yol Haritasının Sınırları
 
