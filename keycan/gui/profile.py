@@ -377,6 +377,7 @@ class ProfilePanel(Gtk.Box):
                 Gio.File.new_for_path(str(temporary_path)),
                 Gio.FileCopyFlags.OVERWRITE,
                 None,
+                None,
             ):
                 raise OSError("Profil fotoğrafı kopyalanamadı")
 
