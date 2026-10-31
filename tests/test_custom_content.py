@@ -241,3 +241,78 @@ def test_default_backup_does_not_overwrite_custom_group_with_same_id(tmp_path: P
         assert result_lesson == restored_lesson
     finally:
         target.close()
+
+def test_backup_round_trip_preserves_default_lesson_history(tmp_path: Path) -> None:
+    source = make_db(tmp_path / "default-source.db")
+    try:
+        source.save_result(
+            1, 60, 1, 0,
+            target_word_count=1, typed_word_count=1, total_characters=5,
+            correct_characters=5, wrong_characters=0, words_per_minute=1,
+            characters_per_minute=5, accuracy_percent=100,
+        )
+        backup = json.loads(source.export_data())
+        assert backup["practice_results"][0]["source_key"] == "default:1"
+        assert backup["practice_results"][0]["lesson_key"] == "default:1"
+    finally:
+        source.close()
+
+    target = make_db(tmp_path / "default-target.db")
+    try:
+        imported, skipped = target.import_data(json.dumps(backup))
+        assert (imported, skipped) == (1, 0)
+        assert target.conn.execute(
+            "SELECT COUNT(*) FROM practice_results"
+        ).fetchone()[0] == 1
+        assert target.conn.execute(
+            "SELECT lesson_id FROM practice_results"
+        ).fetchone()[0] == 1
+    finally:
+        target.close()
+
+
+def test_default_backup_does_not_overwrite_custom_group_with_same_id(tmp_path: Path) -> None:
+    source = make_db(tmp_path / "collision-source.db")
+    try:
+        source.save_result(
+            1, 60, 1, 0,
+            target_word_count=1, typed_word_count=1, total_characters=5,
+            correct_characters=5, wrong_characters=0, words_per_minute=1,
+            characters_per_minute=5, accuracy_percent=100,
+        )
+        backup = source.export_data()
+    finally:
+        source.close()
+
+    target = make_db(tmp_path / "collision-target.db")
+    try:
+        target.conn.execute(
+            """UPDATE sources
+               SET display_name = 'My custom group', relative_path = 'custom://collision',
+                   is_custom = 1, custom_key = 'collision-key'
+               WHERE id = 1"""
+        )
+        target.conn.execute("UPDATE lessons SET is_custom = 1 WHERE id = 1")
+        target.conn.commit()
+
+        imported, skipped = target.import_data(backup)
+        assert (imported, skipped) == (1, 0)
+        collision = target.conn.execute(
+            "SELECT display_name, is_custom FROM sources WHERE id = 1"
+        ).fetchone()
+        assert collision == ("My custom group", 1)
+        restored_default = target.conn.execute(
+            "SELECT id FROM sources WHERE display_name = 'Hazır Ders' AND is_custom = 0"
+        ).fetchone()
+        assert restored_default is not None
+        restored_lesson = target.conn.execute(
+            "SELECT id FROM lessons WHERE source_id = ? AND is_custom = 0",
+            (restored_default[0],),
+        ).fetchone()
+        assert restored_lesson is not None
+        result_lesson = target.conn.execute(
+            "SELECT lesson_id FROM practice_results"
+        ).fetchone()
+        assert result_lesson == restored_lesson
+    finally:
+        target.close()
