@@ -22,6 +22,7 @@ from keycan.gui.keyboard_guide import KeyboardGuidePanel
 from keycan.services.i18n import apply_to_widget_tree
 from keycan.services.translations import translate
 from keycan.services.preferences import Preferences
+from keycan.services.lesson_service import LessonService
 from keycan.utils.text import WORD_PATTERN, format_remaining
 
 
@@ -45,6 +46,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         super().__init__(application=app, title="Keycan — On Parmak")
         self.set_default_size(1200, 760)
         self.db = Database(database_path)
+        self.lesson_service = LessonService(self.db)
         self.engine = TypingEngine()
         self.preferences = Preferences()
         self.current_lesson_id: int | None = None
@@ -286,14 +288,14 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.workspace.set_text_size(self.text_size)
 
     def _load_sources(self) -> None:
-        sources = self.db.sources()
+        sources = self.lesson_service.sources()
         self.source_ids = [i for i, _ in sources]
         self.source_dropdown.set_model(Gtk.StringList.new([n for _, n in sources]))
         if sources:
             self.source_dropdown.set_selected(0)
 
     def _load_lessons(self, source_id: int) -> None:
-        lessons = self.db.lessons(source_id)
+        lessons = self.lesson_service.lessons(source_id)
         self.lesson_ids = [i for i, _ in lessons]
         self.lesson_dropdown.set_model(Gtk.StringList.new([n for _, n in lessons]))
         if lessons:
@@ -312,7 +314,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         index = self.lesson_dropdown.get_selected()
         if 0 <= index < len(getattr(self, "lesson_ids", [])):
             lesson_id = self.lesson_ids[index]
-            _id, _title, text = self.db.lesson(lesson_id)
+            _id, _title, text = self.lesson_service.lesson(lesson_id)
             self.current_lesson_id = lesson_id
             self.current_text = text
             self._restart()
