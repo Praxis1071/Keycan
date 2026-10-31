@@ -24,7 +24,7 @@ class SettingsPanel(Gtk.Box):
         self._action(data,"Ders gruplarını yönet","Keycan'ın hazır grupları dahil tüm grupları oluştur, düzenle, sırala ve çalış.","Yönet",self._content)
         self._action(data,"İstatistikleri dışa aktar","Çalışma geçmişini ve ders içeriklerini Keycan yedeği olarak kaydet.","Dışa aktar",self._export)
         self._action(data,"İstatistikleri içe aktar","Daha önce oluşturduğun Keycan yedeğini geri yükle.","İçe aktar",self._import)
-        self._destructive(data,"İstatistikleri sıfırla","Tamamlanan tüm çalışma geçmişini kalıcı olarak sil.","Sıfırla",self._reset)
+        self._destructive(data,"İstatistikleri ve profili sıfırla","Tamamlanan tüm çalışma geçmişini siler; bu kayıtlardan hesaplanan profil ilerlemesi de sıfırlanır. Profil adın ve fotoğrafın korunur.","Sıfırla",self._reset)
         self._destructive(data,"Tüm ders gruplarını ve metinleri sıfırla","Keycan'ın hazır içerikleri dahil tüm ders gruplarını ve metinlerini kaldır.","Tümünü sıfırla",self._reset_content)
         self._action(data,"Varsayılan ders gruplarını ve metinleri ekle","Keycan'ın ilk kurulumdaki hazır ders gruplarını ve metinlerini geri yükle.","Varsayılanları ekle",self._restore_defaults)
         appearance=Adw.PreferencesGroup(); appearance.set_title("Görünüm ve dil"); appearance.set_description("Keycan arayüzünün görünümünü ve dilini belirle."); self.append(appearance)
@@ -85,7 +85,7 @@ class SettingsPanel(Gtk.Box):
             if self.on_statistics_changed:self.on_statistics_changed()
         except Exception as exc:self.status.set_text(f"Yedek içe aktarılamadı: {exc}")
     def _reset(self,_b):
-        d=Gtk.AlertDialog(message="İstatistikleri tamamen sıfırlamak istiyor musun?",detail="Tamamlanan tüm çalışma geçmişi kalıcı olarak silinir. Ders grupların ve metinlerin korunur.");d.set_buttons(["İptal","Sıfırla"]);d.set_default_button(0);d.set_cancel_button(0);d.choose(self.parent_window,None,self._reset_finish,None)
+        d=Gtk.AlertDialog(message="İstatistikleri ve profil ilerlemesini sıfırlamak istiyor musun?",detail="Tamamlanan tüm çalışma geçmişi kalıcı olarak silinir. Bu kayıtlardan hesaplanan XP, seviye, rozet ve ilerleme bilgileri sıfırlanır. Profil adın, fotoğrafın, ders grupların ve metinlerin korunur.");d.set_buttons(["İptal","Sıfırla"]);d.set_default_button(0);d.set_cancel_button(0);d.choose(self.parent_window,None,self._reset_finish,None)
     def _reset_finish(self,d,result,_data):
         try:response=d.choose_finish(result)
         except Exception:return
