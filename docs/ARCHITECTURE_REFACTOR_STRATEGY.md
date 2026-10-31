@@ -122,8 +122,8 @@ A mechanical group-name cleanup creates collisions (for example, the F/Q keyboar
 - The Flatpak wrapper seeds the user's XDG data database from the packaged database. The Flatpak manifest copies the entire `keycan/` package, so the new JSON resource is included automatically.
 - `window.py` now routes source/lesson reads through `LessonService`; result saving and statistics still use the database. `content_manager2.py` uses the service for group/lesson reads and SQLite for CRUD writes. It still uses the database's private `_display_source_name` helper, which can be removed from the GUI boundary in a later focused change.
 - The active GUI modules are `settings2.py` and `statistics_clean.py`. The older `settings.py` and `statistics.py` have no current direct import references. They are being retained as requested; any consolidation should preserve their import paths or leave compatibility wrappers.
-- `statistics_runtime.py` only replaces `MetricCard.set_value` to cancel stale GLib animation timers on refresh/reset. The same behavior can live directly in `MetricCard`, removing this runtime side effect.
-- `database.py` already defines CRUD and backup methods that are shadowed by the runtime module's different implementations. The runtime patch adds snapshot management, progression summary, and content reset/restore. Consolidation must choose one authoritative implementation per operation; simply deleting the runtime file would remove active behavior.
+- The former `statistics_runtime.py` patch only replaced `MetricCard.set_value` to cancel stale GLib animation timers. That behavior now lives directly in `MetricCard`; the runtime file remains as a side-effect-free compatibility import, and `app.py` no longer imports it.
+- `database.py` already defines CRUD and backup methods that are shadowed by the runtime module's different implementations. The runtime patch adds snapshot management, progression summary, and content reset/restore. Consolidation must choose one authoritative implementation per operation; simply deleting the runtime file would remove active behavior. This remains the largest outstanding runtime refactor.
 
 ### Consequence for the next implementation step
 
@@ -137,3 +137,11 @@ The JSON catalog is ready, but GUI consumers should not read JSON directly. The 
 - The check also verifies that all group and lesson IDs in the packaged JSON catalog match the default-content snapshot IDs in the migrated database.
 - Current repository database validation reports 83 active sources (82 built-in groups plus one active custom group) and 1,833 active lessons.
 - The full CI workflow now runs `check.sh` plus the full pytest suite. Latest verified run: all four jobs succeeded; the repository check passed (44 focused tests) and the full suite passed (59 tests).
+
+
+## 10. Duplicate-module audit update
+
+- Confirmed that `settings2.py` and `statistics_clean.py` are the active GUI implementations. The older `settings.py` and `statistics.py` are not imported by the current application path; both files are retained.
+- Moved the metric-card animation cancellation/reset logic into `MetricCard.set_value`. The former `statistics_runtime.py` file remains as a side-effect-free compatibility import, and the application no longer imports it.
+- The database runtime module still patches `Database` methods at import time. It has not been removed or rewritten; its initializer, snapshot behavior, custom-content CRUD, progression summary, and backup implementation must be migrated carefully before the side effect can be eliminated.
+- `window.py` currently contains a base `KeycanWindow` plus `ConfiguredKeycanWindow`, with overlapping source-loading methods. This is a candidate for a later small refactor, not a reason to rewrite the window in one pass.
