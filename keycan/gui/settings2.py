@@ -18,6 +18,7 @@ class SettingsPanel(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=18)
         self.parent_window=parent; self.on_content_changed=on_content_changed; self.on_statistics_changed=on_statistics_changed
         self.preferences=getattr(parent,"preferences",Preferences())
+        self.content_window = None
         self.set_margin_top(20); self.set_margin_bottom(20); self.set_margin_start(20); self.set_margin_end(20)
         title=Gtk.Label(label="Ayarlar"); title.set_xalign(0); title.add_css_class("title-2"); self.append(title)
         data=Adw.PreferencesGroup(); data.set_title("Veri ve içerik"); data.set_description("Çalışma geçmişini ve tüm ders içeriklerini yönet."); self.append(data)
@@ -57,61 +58,76 @@ class SettingsPanel(Gtk.Box):
     @staticmethod
     def _destructive(group,title,subtitle,text,callback):
         row=Adw.ActionRow(); row.set_title(title); row.set_subtitle(subtitle); b=Gtk.Button(label=text); b.add_css_class("destructive-action"); b.set_valign(Gtk.Align.CENTER); b.connect("clicked",callback); row.add_suffix(b); group.add(row)
+    def _t(self, text: str) -> str:
+        return translate(text, self.preferences.get("language"))
+
+    def set_language(self, language: str) -> None:
+        if self.content_window is not None:
+            self.content_window.set_language(language)
+
     def _db(self): return getattr(self.parent_window,"db",None)
     def _content(self,_b):
-        if self._db() is None:self.status.set_text("Veritabanına erişilemedi.");return
-        ContentManagerWindow(self.parent_window,self._db(),self.on_content_changed).present()
+        if self._db() is None:self.status.set_text(self._t("Veritabanına erişilemedi."));return
+        self.content_window = ContentManagerWindow(
+            self.parent_window, self._db(), self.on_content_changed,
+            language=self.preferences.get("language"),
+        )
+        self.content_window.present()
     def _export(self,_b):
-        if self._db() is None:self.status.set_text("Veritabanına erişilemedi.");return
+        if self._db() is None:self.status.set_text(self._t("Veritabanına erişilemedi."));return
         try:self._pending_export=self._db().export_data()
-        except Exception as exc:self.status.set_text(f"Dışa aktarma hazırlanamadı: {exc}");return
-        d=Gtk.FileDialog(); d.set_title("Keycan yedeğini kaydet"); d.set_initial_name("keycan-yedek.json"); d.save(self.parent_window,None,self._save_finish,None)
+        except Exception as exc:self.status.set_text(f"{self._t('Dışa aktarma hazırlanamadı:')} {exc}");return
+        d=Gtk.FileDialog(); d.set_title(self._t("Keycan yedeğini kaydet")); d.set_initial_name("keycan-yedek.json"); d.save(self.parent_window,None,self._save_finish,None)
     def _save_finish(self,d,result,_data):
         try:file=d.save_finish(result)
         except Exception:return
         if file is None:return
-        try:file.replace_contents(self._pending_export.encode("utf-8"),None,False,Gio.FileCreateFlags.REPLACE_DESTINATION,None);self.status.set_text(f"Yedek kaydedildi: {file.get_basename()}")
-        except Exception as exc:self.status.set_text(f"Yedek kaydedilemedi: {exc}")
+        try:file.replace_contents(self._pending_export.encode("utf-8"),None,False,Gio.FileCreateFlags.REPLACE_DESTINATION,None);self.status.set_text(f"{self._t('Yedek kaydedildi:')} {file.get_basename()}")
+        except Exception as exc:self.status.set_text(f"{self._t('Yedek kaydedilemedi:')} {exc}")
     def _import(self,_b):
-        if self._db() is None:self.status.set_text("Veritabanına erişilemedi.");return
-        d=Gtk.FileDialog();d.set_title("Keycan yedeğini seç");d.open(self.parent_window,None,self._open_finish,None)
+        if self._db() is None:self.status.set_text(self._t("Veritabanına erişilemedi."));return
+        d=Gtk.FileDialog();d.set_title(self._t("Keycan yedeğini seç"));d.open(self.parent_window,None,self._open_finish,None)
     def _open_finish(self,d,result,_data):
         try:file=d.open_finish(result)
         except Exception:return
         if file is None:return
         try:
-            raw,_=file.load_contents(None); imported,skipped=self._db().import_data(raw.decode("utf-8")); self.status.set_text(f"İçe aktarma tamamlandı: {imported} grup/metin kaydı işlendi"+(f", {skipped} kayıt atlandı." if skipped else "."));
+            raw,_=file.load_contents(None); imported,skipped=self._db().import_data(raw.decode("utf-8"))
+            message=f"{self._t('İçe aktarma tamamlandı:')} {imported} {self._t('grup/metin kaydı işlendi')}"
+            if skipped: message += f", {skipped} {self._t('kayıt atlandı')}."
+            else: message += "."
+            self.status.set_text(message)
             if self.on_content_changed:self.on_content_changed()
             if self.on_statistics_changed:self.on_statistics_changed()
-        except Exception as exc:self.status.set_text(f"Yedek içe aktarılamadı: {exc}")
+        except Exception as exc:self.status.set_text(f"{self._t('Yedek içe aktarılamadı:')} {exc}")
     def _reset(self,_b):
-        d=Gtk.AlertDialog(message="İstatistikleri ve profil ilerlemesini sıfırlamak istiyor musun?",detail="Tamamlanan tüm çalışma geçmişi kalıcı olarak silinir. Bu kayıtlardan hesaplanan XP, seviye, rozet ve ilerleme bilgileri sıfırlanır. Profil adın, fotoğrafın, ders grupların ve metinlerin korunur.");d.set_buttons(["İptal","Sıfırla"]);d.set_default_button(0);d.set_cancel_button(0);d.choose(self.parent_window,None,self._reset_finish,None)
+        d=Gtk.AlertDialog(message=self._t("İstatistikleri ve profil ilerlemesini sıfırlamak istiyor musun?"),detail=self._t("Tamamlanan tüm çalışma geçmişi kalıcı olarak silinir. Bu kayıtlardan hesaplanan XP, seviye, rozet ve ilerleme bilgileri sıfırlanır. Profil adın, fotoğrafın, ders grupların ve metinlerin korunur."));d.set_buttons([self._t("İptal"),self._t("Sıfırla")]);d.set_default_button(0);d.set_cancel_button(0);d.choose(self.parent_window,None,self._reset_finish,None)
     def _reset_finish(self,d,result,_data):
         try:response=d.choose_finish(result)
         except Exception:return
         if response!=1:return
-        try:count=self._db().reset_statistics();self.status.set_text(f"İstatistikler sıfırlandı. Silinen çalışma: {count}.")
-        except Exception as exc:self.status.set_text(f"İstatistikler sıfırlanamadı: {exc}");return
+        try:count=self._db().reset_statistics();self.status.set_text(f"{self._t('İstatistikler sıfırlandı. Silinen çalışma:')} {count}.")
+        except Exception as exc:self.status.set_text(f"{self._t('İstatistikler sıfırlanamadı:')} {exc}");return
         if self.on_statistics_changed:self.on_statistics_changed()
     def _reset_content(self,_b):
-        d=Gtk.AlertDialog(message="Tüm ders gruplarını ve metinleri sıfırlamak istiyor musun?",detail="DİKKAT: Keycan'ın varsayılan hazır dersleri ve senin eklediğin tüm ders grupları ve metinler dahil bütün ders içeriği çalışma alanından kaldırılır. İstatistikler ve çalışma geçmişi silinmez. Varsayılan içerikleri daha sonra 'Varsayılan ders gruplarını ve metinleri ekle' ile geri getirebilirsin.");d.set_buttons(["İptal","Tümünü sıfırla"]);d.set_default_button(0);d.set_cancel_button(0);d.choose(self.parent_window,None,self._reset_content_finish,None)
+        d=Gtk.AlertDialog(message=self._t("Tüm ders gruplarını ve metinleri sıfırlamak istiyor musun?"),detail=self._t("DİKKAT: Keycan'ın varsayılan hazır dersleri ve senin eklediğin tüm ders grupları ve metinler dahil bütün ders içeriği çalışma alanından kaldırılır. İstatistikler ve çalışma geçmişi silinmez. Varsayılan içerikleri daha sonra 'Varsayılan ders gruplarını ve metinleri ekle' ile geri getirebilirsin."));d.set_buttons([self._t("İptal"),self._t("Tümünü sıfırla")]);d.set_default_button(0);d.set_cancel_button(0);d.choose(self.parent_window,None,self._reset_content_finish,None)
     def _reset_content_finish(self,d,result,_data):
         try:response=d.choose_finish(result)
         except Exception:return
         if response!=1:return
         try:
-            groups,lessons=self._db().reset_all_content(); self.status.set_text(f"Tüm ders içeriği sıfırlandı. Kaldırılan grup: {groups}, metin: {lessons}.")
-        except Exception as exc:self.status.set_text(f"Ders içeriği sıfırlanamadı: {exc}");return
+            groups,lessons=self._db().reset_all_content(); self.status.set_text(f"{self._t('Tüm ders içeriği sıfırlandı. Kaldırılan grup:')} {groups}, {self._t('metin:')} {lessons}.")
+        except Exception as exc:self.status.set_text(f"{self._t('Ders içeriği sıfırlanamadı:')} {exc}");return
         if self.on_content_changed:self.on_content_changed()
     def _restore_defaults(self,_b):
-        d=Gtk.AlertDialog(message="Varsayılan ders grupları ve metinleri geri yüklensin mi?",detail="Keycan'ın ilk kurulumdaki hazır ders grupları ve metinleri geri getirilir. Çalışma geçmişin ve istatistiklerin korunur. Varsayılan gruplarda yaptığın değişiklikler geri alınır.");d.set_buttons(["İptal","Varsayılanları ekle"]);d.set_default_button(0);d.set_cancel_button(0);d.choose(self.parent_window,None,self._restore_defaults_finish,None)
+        d=Gtk.AlertDialog(message=self._t("Varsayılan ders grupları ve metinleri geri yüklensin mi?"),detail=self._t("Keycan'ın ilk kurulumdaki hazır ders grupları ve metinleri geri getirilir. Çalışma geçmişin ve istatistiklerin korunur. Varsayılan gruplarda yaptığın değişiklikler geri alınır."));d.set_buttons([self._t("İptal"),self._t("Varsayılanları ekle")]);d.set_default_button(0);d.set_cancel_button(0);d.choose(self.parent_window,None,self._restore_defaults_finish,None)
     def _restore_defaults_finish(self,d,result,_data):
         try:response=d.choose_finish(result)
         except Exception:return
         if response!=1:return
         try:
-            groups,lessons=self._db().restore_defaults(); self.status.set_text(f"Varsayılan içerik geri yüklendi: {groups} grup, {lessons} metin.")
-        except Exception as exc:self.status.set_text(f"Varsayılan içerik geri yüklenemedi: {exc}");return
+            groups,lessons=self._db().restore_defaults(); self.status.set_text(f"{self._t('Varsayılan içerik geri yüklendi:')} {groups} {self._t('grup')}, {lessons} {self._t('metin')}.")
+        except Exception as exc:self.status.set_text(f"{self._t('Varsayılan içerik geri yüklenemedi:')} {exc}");return
         if self.on_content_changed:self.on_content_changed()
 
 
