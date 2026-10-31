@@ -427,8 +427,16 @@ def _export_data(self: Database) -> str:
         item = dict(zip(fields, row))
         item["source_key"] = item["source_key"] or f"default:{item['source_id']}"
         item["lesson_key"] = item["lesson_key"] or f"default:{item['lesson_id']}"
-        item["source_identity"] = _default_source_identity(self, int(item["source_id"])) or None
-        item["lesson_identity"] = _default_lesson_identity(self, int(item["lesson_id"])) or None
+        source_id = item["source_id"]
+        lesson_id = item["lesson_id"]
+        item["source_identity"] = (
+            _default_source_identity(self, int(source_id))
+            if source_id is not None else ""
+        ) or None
+        item["lesson_identity"] = (
+            _default_lesson_identity(self, int(lesson_id))
+            if lesson_id is not None else ""
+        ) or None
         practice_results.append(item)
     return json.dumps({"format": "keycan-backup", "version": 2, "exported_at": datetime.now().astimezone().isoformat(), "groups": groups, "practice_results": practice_results}, ensure_ascii=False, indent=2)
 
@@ -567,11 +575,11 @@ def _import_data(self: Database, raw: str):
                 lesson_identity = str(result.get("lesson_identity", "")).strip()
                 source_key = str(result.get("source_key", "")).strip()
                 source_identity = str(result.get("source_identity", "")).strip()
-                lesson_id = (
-                    lesson_map.get(lesson_identity)
-                    if lesson_identity
-                    else lesson_map.get(lesson_key) if lesson_key else None
-                )
+                lesson_id = lesson_map.get(lesson_identity) if lesson_identity else None
+                if lesson_id is None and lesson_key:
+                    # Prefer the exported key as a compatibility fallback if
+                    # a backup has been transformed by an older/custom tool.
+                    lesson_id = lesson_map.get(lesson_key)
                 mapped_source_id = (
                     source_map.get(source_key)
                     or source_map.get(source_identity)
