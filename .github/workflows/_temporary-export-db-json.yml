@@ -1,0 +1,74 @@
+name: Temporary database JSON export
+
+on:
+  push:
+    paths:
+      - ".github/workflows/_temporary-export-db-json.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Export every SQLite table to JSON
+        run: |
+          python - <<'PY'
+          import json
+          import sqlite3
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          database = Path("typing_data.db")
+          if not database.is_file():
+              raise SystemExit("typing_data.db was not found")
+
+          connection = sqlite3.connect(f"file:{database}?mode=ro", uri=True)
+          connection.row_factory = sqlite3.Row
+
+          tables = connection.execute(
+              "SELECT name, sql FROM sqlite_master "
+              "WHERE type = 'table' AND name NOT LIKE 'sqlite_%' "
+              "ORDER BY name"
+          ).fetchall()
+
+          payload = {
+              "format": "keycan-database-export",
+              "version": 1,
+              "source": "typing_data.db",
+              "exported_at": datetime.now(timezone.utc).isoformat(),
+              "tables": {}
+          }
+
+          for table in tables:
+              name = table["name"]
+              rows = connection.execute(
+                  f'SELECT * FROM "{name}" ORDER BY rowid'
+              ).fetchall()
+              payload["tables"][name] = {
+                  "schema": table["sql"],
+                  "row_count": len(rows),
+                  "rows": [dict(row) for row in rows]
+              }
+
+          connection.close()
+          output = Path("typing_data.json")
+          output.write_text(
+              json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False) + "\\n",
+              encoding="utf-8"
+          )
+          print(f"Exported {len(tables)} tables to {output} ({output.stat().st_size} bytes)")
+          PY
+      - name: Commit JSON export
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add typing_data.json
+          git commit -m "Add complete JSON export of typing database"
+          git push origin main
