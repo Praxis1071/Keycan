@@ -355,7 +355,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         return tag
 
     def _apply_privacy_state(self) -> None:
-        active = self.privacy_enabled and self.started_at is not None and not self.finished
+        active = self.privacy_enabled and self.started_at is not None
         buffer = self.input_view.get_buffer()
         table = buffer.get_tag_table()
         hidden = table.lookup("privacy-hidden")
@@ -459,7 +459,6 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.countdown.set_text("00:00")
         self.input_view.set_editable(False)
         self.duration_spin.set_sensitive(True)
-        self._apply_privacy_state()
         elapsed = 0.0 if self.started_at is None else min(time.monotonic() - self.started_at, self._duration_seconds())
         result = self.engine.match_words(self.current_text, self.typed)
         self._render_target_results(result.matched_target_indices)
@@ -488,26 +487,41 @@ class KeycanWindow(Adw.ApplicationWindow):
                 if typed_char.isalpha():
                     wrong_letters[typed_char.lower()] += 1
 
-        self.db.save_result(
-            self.current_lesson_id,
-            elapsed,
-            result.correct,
-            result.wrong,
-            target_word_count=target_word_count,
-            typed_word_count=typed_word_count,
-            total_characters=total_characters,
-            correct_characters=correct_characters,
-            wrong_characters=wrong_characters,
-            words_per_minute=words_per_minute,
-            characters_per_minute=characters_per_minute,
-            accuracy_percent=accuracy_percent,
-            wrong_letter_counts=dict(wrong_letters),
-        )
-        if getattr(self, "profile_page", None) is not None:
-            self.profile_page.refresh()
-        self.status.set_text(
-            translate(f"Süre doldu. Doğru: {result.correct}  |  Yanlış: {result.wrong}  |  Toplam: {typed_word_count}", self.preferences.get("language"))
-        )
+        save_error = None
+        try:
+            self.db.save_result(
+                self.current_lesson_id,
+                elapsed,
+                result.correct,
+                result.wrong,
+                target_word_count=target_word_count,
+                typed_word_count=typed_word_count,
+                total_characters=total_characters,
+                correct_characters=correct_characters,
+                wrong_characters=wrong_characters,
+                words_per_minute=words_per_minute,
+                characters_per_minute=characters_per_minute,
+                accuracy_percent=accuracy_percent,
+                wrong_letter_counts=dict(wrong_letters),
+            )
+        except Exception as exc:
+            save_error = exc
+        else:
+            if getattr(self, "profile_page", None) is not None:
+                self.profile_page.refresh()
+
+        # Rendering correctness tags clears existing tags, so re-apply the
+        # privacy tag after rendering. Privacy remains active until restart.
+        self._apply_privacy_state()
+        if save_error is None:
+            message = f"Süre doldu. Doğru: {result.correct}  |  Yanlış: {result.wrong}  |  Toplam: {typed_word_count}"
+            self.status.set_text(translate(message, self.preferences.get("language")))
+        else:
+            message = translate(
+                "Çalışma tamamlandı ancak istatistiklere kaydedilemedi.",
+                self.preferences.get("language"),
+            )
+            self.status.set_text(f"{message} ({save_error})")
 
     def _render_target_results(self, matched: set[int]) -> None:
         buffer = self.target_view.get_buffer()
