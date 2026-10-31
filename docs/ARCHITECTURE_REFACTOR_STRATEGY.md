@@ -122,3 +122,12 @@ A mechanical group-name cleanup creates collisions (for example, the F/Q keyboar
 ### Consequence for the next implementation step
 
 The JSON catalog is ready, but GUI consumers should not read JSON directly. Introduce one content-facing service that combines packaged default lessons with the existing SQLite-backed custom workspace, and route both `window.py` and `content_manager2.py` through it. Preserve the current edit, rename, delete, reorder, reset, restore, and history behavior. Only after this boundary is tested should the database source of truth be switched.
+
+## 9. Database and CI validation findings
+
+- The repository contains both `typing_data.db` and the 10 MB JSON database export. The JSON export was read through the Git object API; the binary database was not modified.
+- The checked-in database is not guaranteed to have the latest runtime schema before migrations. The original `check.sh` assumed migrated columns already existed and failed against the clean repository database.
+- `check.sh` now copies the tracked database to a temporary directory, applies the real `Database` migrations to that copy, and performs integrity/schema/snapshot checks there. This validates migrations without mutating the checked-in database.
+- The check also verifies that all group and lesson IDs in the packaged JSON catalog match the default-content snapshot IDs in the migrated database.
+- Current repository database validation reports 83 active sources (82 built-in groups plus one active custom group) and 1,833 active lessons.
+- The full CI workflow now runs `check.sh` plus the full pytest suite. Latest verified run: all four jobs succeeded; the repository check passed (44 focused tests) and the full suite passed (59 tests).
