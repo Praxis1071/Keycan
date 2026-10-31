@@ -235,6 +235,7 @@ Aşağıdaki alanlarda kullanıcı testi başarılıdır. Bu özellikler düzelt
 1. **KC-001 ve KC-002:** Gizlilik modunun sonuç gösterimi ve kayıt akışı birlikte incelenecek. Aynı oturum akışını etkileyebilecekleri için ortak kök neden araştırılacak.
 2. **KC-003:** İçe aktarma zinciri dosya okuma aşamasından veritabanı transaction'ına kadar izlenecek; varsayılan/özel ders kimlik eşleştirmesi test edilecek.
 3. **KC-004:** Çeviri kaynakları ve widget kapsamı tek tek envanterlenecek; eksik metinler belirlenecek.
+4. **KC-005:** Profil fotoğrafını kaldırma ve profili sıfırlama akışları tasarlanıp, profil dışındaki verilerin korunması doğrulanacak.
 
 Her hata için kök neden doğrulanmadan kod değiştirilmeyecek. Düzeltmelerden sonra ilgili otomatik testler ve yukarıdaki başarılı kullanıcı senaryoları tekrar çalıştırılacak.
 
