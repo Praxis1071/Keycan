@@ -101,13 +101,14 @@ def test_reset_all_then_restore_defaults(tmp_path: Path) -> None:
     try:
         group = db.create_custom_group("Kendi Grup")
         db.create_custom_lesson(group, "kendi metnim")
+        db.rename_group(1, "Benim Ders Grubum")
         db.update_lesson(1, "kullanıcının değiştirdiği içerik")
         groups, lessons = db.reset_all_content()
         assert (groups, lessons) == (2, 2)
         assert db.sources() == []
         restored_groups, restored_lessons = db.restore_defaults()
         assert (restored_groups, restored_lessons) == (1, 1)
-        assert db.sources() == [(1, "1. Hazır Ders")]
+        assert db.sources() == [(1, "1. Benim Ders Grubum")]
         assert db.lesson(1)[2] == "hazır metin"
         assert not db.custom_groups()
     finally:
@@ -129,7 +130,7 @@ def test_restore_defaults_keeps_custom_content_out_and_history_intact(tmp_path: 
         db.update_lesson(1, "değişmiş hazır metin")
         restored_groups, restored_lessons = db.restore_defaults()
         assert (restored_groups, restored_lessons) == (1, 1)
-        assert db.sources() == [(1, "1. Hazır Ders"), (2, "2. Kendi Grup")]
+        assert db.sources() == [(1, "1. Değişmiş Hazır Grup"), (2, "2. Kendi Grup")]
         assert db.lesson(1)[2] == "hazır metin"
         assert [row[1] for row in db.custom_lessons(custom_group)] == ["kendi metnim"]
         assert db.conn.execute("SELECT COUNT(*) FROM practice_results").fetchone()[0] == 1
@@ -155,7 +156,7 @@ def test_backup_round_trip_restores_content_and_stats(tmp_path: Path) -> None:
     restored = make_db(tmp_path / "restored.db")
     try:
         imported, skipped = restored.import_data(backup)
-        assert imported == 2 and skipped == 0
+        assert imported == 3 and skipped == 0
         groups = restored.custom_groups()
         assert len(groups) == 1
         lessons = restored.custom_lessons(groups[0][0])
@@ -185,7 +186,7 @@ def test_backup_round_trip_preserves_default_lesson_history(tmp_path: Path) -> N
     target = make_db(tmp_path / "default-target.db")
     try:
         imported, skipped = target.import_data(json.dumps(backup))
-        assert (imported, skipped) == (1, 0)
+        assert (imported, skipped) == (3, 0)
         assert target.conn.execute(
             "SELECT COUNT(*) FROM practice_results"
         ).fetchone()[0] == 1
@@ -399,3 +400,94 @@ def test_legacy_backup_skips_ambiguous_name_based_lesson_mapping(tmp_path: Path)
     finally:
         db.close()
 
+
+
+def test_backup_round_trip_preserves_deleted_lesson_history(tmp_path: Path) -> None:
+    source = make_db(tmp_path / "deleted-source.db")
+    try:
+        source.save_result(
+            1, 60, 1, 0,
+            target_word_count=1, typed_word_count=1, total_characters=5,
+            correct_characters=5, wrong_characters=0, words_per_minute=1,
+            characters_per_minute=5, accuracy_percent=100,
+        )
+        source.delete_lesson(1)
+        backup = source.export_data()
+        payload = json.loads(backup)
+        assert payload["groups"][0]["lessons"][0]["is_deleted"] is True
+    finally:
+        source.close()
+
+    target = make_db(tmp_path / "deleted-target.db")
+    try:
+        target.import_data(backup)
+        assert target.conn.execute(
+            "SELECT is_deleted FROM lessons WHERE id = 1"
+        ).fetchone() == (1,)
+        assert target.conn.execute(
+            "SELECT COUNT(*) FROM practice_results"
+        ).fetchone()[0] == 1
+        assert target.practice_statistics("Tümü")["practices"] == 1
+    finally:
+        target.close()
+
+
+def test_backup_session_uuids_keep_identical_sessions_and_prevent_reimport(tmp_path: Path) -> None:
+    source = make_db(tmp_path / "session-source.db")
+    try:
+        metrics = dict(
+            target_word_count=1, typed_word_count=1, total_characters=5,
+            correct_characters=5, wrong_characters=0, words_per_minute=1,
+            characters_per_minute=5, accuracy_percent=100,
+        )
+        source.save_result(1, 60, 1, 0, session_uuid="session-one", **metrics)
+        source.save_result(1, 60, 1, 0, session_uuid="session-two", **metrics)
+        backup = source.export_data()
+        exported = json.loads(backup)
+        assert exported["version"] == 3
+        assert {item["session_uuid"] for item in exported["practice_results"]} == {
+            "session-one", "session-two"
+        }
+    finally:
+        source.close()
+
+    target = make_db(tmp_path / "session-target.db")
+    try:
+        target.import_data(backup)
+        assert target.conn.execute(
+            "SELECT COUNT(*) FROM practice_results"
+        ).fetchone()[0] == 2
+        assert target.conn.execute(
+            "SELECT COUNT(DISTINCT session_uuid) FROM practice_results"
+        ).fetchone()[0] == 2
+
+        target.import_data(backup)
+        assert target.conn.execute(
+            "SELECT COUNT(*) FROM practice_results"
+        ).fetchone()[0] == 2
+    finally:
+        target.close()
+
+
+def test_legacy_sessions_receive_stable_ids_during_migration(tmp_path: Path) -> None:
+    path = tmp_path / "legacy-session.db"
+    db = make_db(path)
+    try:
+        db.conn.execute(
+            "INSERT INTO practice_results(lesson_id, duration_seconds) VALUES (1, 60)"
+        )
+        db.conn.commit()
+    finally:
+        db.close()
+
+    migrated = make_db(path)
+    try:
+        session_uuid = migrated.conn.execute(
+            "SELECT session_uuid FROM practice_results"
+        ).fetchone()[0]
+        assert isinstance(session_uuid, str) and session_uuid
+        assert migrated.conn.execute(
+            "PRAGMA index_list(practice_results)"
+        ).fetchall()
+    finally:
+        migrated.close()
