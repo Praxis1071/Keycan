@@ -76,14 +76,14 @@ class SettingsPanel(Gtk.Box):
     def _export(self,_b):
         if self._db() is None:self.status.set_text(self._t("Veritabanına erişilemedi."));return
         try:self._pending_export=self._db().export_data()
-        except Exception as exc:self.status.set_text(f"{self._t('Dışa aktarma hazırlanamadı:')} {exc}");return
+        except Exception as exc:self.status.set_text(f"{self._t('Dışa aktarma hazırlanamadı:')} {self._t(str(exc))}");return
         d=Gtk.FileDialog(); d.set_title(self._t("Keycan yedeğini kaydet")); d.set_initial_name("keycan-yedek.json"); d.save(self.parent_window,None,self._save_finish,None)
     def _save_finish(self,d,result,_data):
         try:file=d.save_finish(result)
         except Exception:return
         if file is None:return
         try:file.replace_contents(self._pending_export.encode("utf-8"),None,False,Gio.FileCreateFlags.REPLACE_DESTINATION,None);self.status.set_text(f"{self._t('Yedek kaydedildi:')} {file.get_basename()}")
-        except Exception as exc:self.status.set_text(f"{self._t('Yedek kaydedilemedi:')} {exc}")
+        except Exception as exc:self.status.set_text(f"{self._t('Yedek kaydedilemedi:')} {self._t(str(exc))}")
     def _import(self,_b):
         if self._db() is None:self.status.set_text(self._t("Veritabanına erişilemedi."));return
         d=Gtk.FileDialog();d.set_title(self._t("Keycan yedeğini seç"));d.open(self.parent_window,None,self._open_finish,None)
@@ -99,7 +99,7 @@ class SettingsPanel(Gtk.Box):
             self.status.set_text(message)
             if self.on_content_changed:self.on_content_changed()
             if self.on_statistics_changed:self.on_statistics_changed()
-        except Exception as exc:self.status.set_text(f"{self._t('Yedek içe aktarılamadı:')} {exc}")
+        except Exception as exc:self.status.set_text(f"{self._t('Yedek içe aktarılamadı:')} {self._t(str(exc))}")
     def _reset(self,_b):
         d=Gtk.AlertDialog(message=self._t("İstatistikleri ve profil ilerlemesini sıfırlamak istiyor musun?"),detail=self._t("Tamamlanan tüm çalışma geçmişi kalıcı olarak silinir. Bu kayıtlardan hesaplanan XP, seviye, rozet ve ilerleme bilgileri sıfırlanır. Profil adın, fotoğrafın, ders grupların ve metinlerin korunur."));d.set_buttons([self._t("İptal"),self._t("Sıfırla")]);d.set_default_button(0);d.set_cancel_button(0);d.choose(self.parent_window,None,self._reset_finish,None)
     def _reset_finish(self,d,result,_data):
@@ -107,7 +107,7 @@ class SettingsPanel(Gtk.Box):
         except Exception:return
         if response!=1:return
         try:count=self._db().reset_statistics();self.status.set_text(f"{self._t('İstatistikler sıfırlandı. Silinen çalışma:')} {count}.")
-        except Exception as exc:self.status.set_text(f"{self._t('İstatistikler sıfırlanamadı:')} {exc}");return
+        except Exception as exc:self.status.set_text(f"{self._t('İstatistikler sıfırlanamadı:')} {self._t(str(exc))}");return
         if self.on_statistics_changed:self.on_statistics_changed()
     def _reset_content(self,_b):
         d=Gtk.AlertDialog(message=self._t("Tüm ders gruplarını ve metinleri sıfırlamak istiyor musun?"),detail=self._t("DİKKAT: Keycan'ın varsayılan hazır dersleri ve senin eklediğin tüm ders grupları ve metinler dahil bütün ders içeriği çalışma alanından kaldırılır. İstatistikler ve çalışma geçmişi silinmez. Varsayılan içerikleri daha sonra 'Varsayılan ders gruplarını ve metinleri ekle' ile geri getirebilirsin."));d.set_buttons([self._t("İptal"),self._t("Tümünü sıfırla")]);d.set_default_button(0);d.set_cancel_button(0);d.choose(self.parent_window,None,self._reset_content_finish,None)
@@ -117,7 +117,7 @@ class SettingsPanel(Gtk.Box):
         if response!=1:return
         try:
             groups,lessons=self._db().reset_all_content(); self.status.set_text(f"{self._t('Tüm ders içeriği sıfırlandı. Kaldırılan grup:')} {groups}, {self._t('metin:')} {lessons}.")
-        except Exception as exc:self.status.set_text(f"{self._t('Ders içeriği sıfırlanamadı:')} {exc}");return
+        except Exception as exc:self.status.set_text(f"{self._t('Ders içeriği sıfırlanamadı:')} {self._t(str(exc))}");return
         if self.on_content_changed:self.on_content_changed()
     def _restore_defaults(self,_b):
         d=Gtk.AlertDialog(message=self._t("Varsayılan ders grupları ve metinleri geri yüklensin mi?"),detail=self._t("Keycan'ın ilk kurulumdaki hazır ders grupları ve metinleri geri getirilir. Çalışma geçmişin ve istatistiklerin korunur. Varsayılan gruplarda yaptığın değişiklikler geri alınır."));d.set_buttons([self._t("İptal"),self._t("Varsayılanları ekle")]);d.set_default_button(0);d.set_cancel_button(0);d.choose(self.parent_window,None,self._restore_defaults_finish,None)
@@ -127,7 +127,7 @@ class SettingsPanel(Gtk.Box):
         if response!=1:return
         try:
             groups,lessons=self._db().restore_defaults(); self.status.set_text(f"{self._t('Varsayılan içerik geri yüklendi:')} {groups} {self._t('grup')}, {lessons} {self._t('metin')}.")
-        except Exception as exc:self.status.set_text(f"{self._t('Varsayılan içerik geri yüklenemedi:')} {exc}");return
+        except Exception as exc:self.status.set_text(f"{self._t('Varsayılan içerik geri yüklenemedi:')} {self._t(str(exc))}");return
         if self.on_content_changed:self.on_content_changed()
 
 
