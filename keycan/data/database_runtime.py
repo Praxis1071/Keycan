@@ -386,6 +386,7 @@ def _import_data(self: Database, raw: str):
         raise ValueError("Yedek dosyasının yapısı geçersiz")
     lesson_map = {}
     source_map = {}
+    source_id_map = {}
     imported = skipped = 0
     self.conn.execute("BEGIN")
     try:
@@ -418,12 +419,23 @@ def _import_data(self: Database, raw: str):
                     (name, relative_path, int(is_custom), source_key),
                 ).lastrowid)
             self.conn.execute("UPDATE sources SET display_name = ?, is_deleted = 0, is_custom = ? WHERE id = ?", (name, int(is_custom), source_id))
-            source_map[key] = source_id
+            if key:
+                source_map[key] = source_id
+            if not is_custom and isinstance(default_id, int):
+                source_id_map[default_id] = source_id
             if is_custom:
                 imported += 1
             for order, item in enumerate(group.get("lessons", [])):
                 text = self._validate_text(str(item.get("text", "")))
-                lesson_is_custom = bool(item.get("is_custom", is_custom))
+                lesson_is_custom = bool(
+                    item.get(
+                        "is_custom",
+                        is_custom or (
+                            "default_lesson_id" in item
+                            and item.get("default_lesson_id") is None
+                        ),
+                    )
+                )
                 default_lesson_id = item.get("default_lesson_id")
                 lesson_key = str(item.get("key", "")).strip() or uuid.uuid4().hex
                 lesson_id = None
@@ -462,7 +474,11 @@ def _import_data(self: Database, raw: str):
                 lesson_key = str(result.get("lesson_key", "")).strip()
                 source_key = str(result.get("source_key", "")).strip()
                 lesson_id = lesson_map.get(lesson_key) if lesson_key else None
-                mapped_source_id = source_map.get(source_key) if source_key else None
+                mapped_source_id = (
+                    source_map.get(source_key)
+                    if source_key
+                    else source_id_map.get(result.get("source_id"))
+                )
                 if lesson_id is None and isinstance(result.get("lesson_id"), int):
                     if mapped_source_id is not None:
                         found = self.conn.execute(
