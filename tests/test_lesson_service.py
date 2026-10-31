@@ -79,3 +79,14 @@ def test_service_preserves_custom_groups_and_lessons(database: Database) -> None
     assert any(row[0] == group_id and row[1] == "Kendi Derslerim" for row in service.managed_groups())
     assert service.lesson(lesson_id)[2] == "benim ozel metnim"
     assert any(row[0] == lesson_id and row[1] == "benim ozel metnim" for row in service.managed_lessons(group_id))
+
+
+def test_service_resolves_all_built_in_texts_to_catalog(database: Database) -> None:
+    service = LessonService(database)
+    for group in service.catalog.groups:
+        resolved = {
+            row[0]: row[1]
+            for row in service.managed_lessons(group.id)
+        }
+        for lesson in group.lessons:
+            assert resolved[lesson.id] == lesson.text
