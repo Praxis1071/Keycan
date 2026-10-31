@@ -96,15 +96,20 @@ A mechanical group-name cleanup creates collisions (for example, the F/Q keyboar
 
 ## 7. Work completed on the refactor branch
 
-- Added `keycan/resources/lessons/tr/catalog.json` with schema version 1, 82 uniquely named groups, and 1,833 lessons.
+- Added `keycan/resources/lessons/tr/catalog.json` with schema version 1, 82 uniquely named groups, and 1,833 lessons. Each group also carries its exact bundled `legacy_name` so the service can distinguish a legacy label from a user rename.
 - Added `keycan/services/lesson_catalog.py` to load and validate the packaged catalog without GTK or third-party dependencies.
-- Added `tests/test_lesson_catalog.py` for catalog size, unique group names, letter-only visible names/text, and invalid-catalog rejection.
-- Cleaned the default lesson text by replacing digits and punctuation/symbols with word separators, preserving Unicode letters and normalizing whitespace. No lesson became empty.
+- Added `keycan/services/lesson_service.py` as a read-only compatibility bridge between the packaged catalog and SQLite.
+- Routed the main typing window and the lesson-content manager's read operations through `LessonService`. Existing SQLite write operations remain unchanged.
+- The service displays cleaned JSON names/text when the database still contains the original bundled content. If a user has renamed a group or edited a lesson, the service keeps the SQLite value instead.
+- Compared all 1,833 catalog lesson texts against the tracked database export. After applying the exact letter-preserving cleanup normalization, every lesson matched: no words were added, lost, or reordered. Turkish and other Unicode letters are preserved.
+- Compared all 82 group IDs and 1,833 lesson IDs. The catalog covers every bundled default ID. A stale deleted empty source (ID 69) is intentionally not treated as catalog content.
+- Added service tests for full catalog coverage, all lesson-text overlays, unchanged SQLite rows, user renames/edits, and custom groups/lessons.
 - Two pairs of lessons become identical after punctuation/digit cleanup. They were deliberately retained: removing them would change lesson IDs/order and could affect historical references.
 - Curated unique group names rather than relying on a blind regex. F/Q keyboard variants and other similar groups remain distinguishable without digits or punctuation.
-- Fixed the JSON backup null-identity bug. GitHub Actions now passes all four jobs (Stage 5, Stage 6, Stage 7, and full regression).
+- Fixed the JSON backup null-identity bug. The tracked database is copied to a temporary location for migration/integrity checks; the repository database is not modified.
+- Latest GitHub Actions run: all four jobs passed (Stage 5, Stage 6, Stage 7, and regression/full checks).
 
-**Important migration boundary:** The new JSON catalog and loader are prepared and tested, but the running GUI still reads active lesson data through the existing SQLite-backed database API. The runtime switch is intentionally not done yet. Before switching, the service must preserve default-group rename/edit/delete behavior, custom group CRUD, restore/reset semantics, stable lesson IDs, and practice-history references. The old database data is not being deleted.
+**Current migration boundary:** The GUI now reads built-in display names and unchanged lesson text from JSON through `LessonService`, while SQLite continues to hold the editable workspace, custom content, ordering/deletion state, and history. This is a deliberate compatibility phase, not a destructive database migration. No SQLite tables or old files have been removed. The next gate is to harden JSON error handling and verify restore/reset/backup round trips against the new service before any database responsibilities are consolidated.
 
 ## 8. Dependency and runtime map
 
@@ -114,14 +119,14 @@ A mechanical group-name cleanup creates collisions (for example, the F/Q keyboar
 - `tests/test_custom_content.py` also imports `database_runtime` for side effects. This makes test behavior sensitive to import order and hides the real dependency.
 - The database constructor first runs the schema migrations in `database.py`; the patched initializer then migrates custom paths, creates/loads default-content snapshots, and reconciles the snapshot with active content.
 - The Flatpak wrapper seeds the user's XDG data database from the packaged database. The Flatpak manifest copies the entire `keycan/` package, so the new JSON resource is included automatically.
-- `window.py` directly calls database source/lesson lookup and result-save methods. `content_manager2.py` directly calls database CRUD methods and even the private `_display_source_name` helper. These are the key call sites to redirect through a lesson/content service.
-- The active GUI modules are `settings2.py` and `statistics_clean.py`. The older `settings.py` and `statistics.py` have no current direct import references; confirm packaging, tests, and indirect imports before removing them.
+- `window.py` now routes source/lesson reads through `LessonService`; result saving and statistics still use the database. `content_manager2.py` uses the service for group/lesson reads and SQLite for CRUD writes. It still uses the database's private `_display_source_name` helper, which can be removed from the GUI boundary in a later focused change.
+- The active GUI modules are `settings2.py` and `statistics_clean.py`. The older `settings.py` and `statistics.py` have no current direct import references. They are being retained as requested; any consolidation should preserve their import paths or leave compatibility wrappers.
 - `statistics_runtime.py` only replaces `MetricCard.set_value` to cancel stale GLib animation timers on refresh/reset. The same behavior can live directly in `MetricCard`, removing this runtime side effect.
 - `database.py` already defines CRUD and backup methods that are shadowed by the runtime module's different implementations. The runtime patch adds snapshot management, progression summary, and content reset/restore. Consolidation must choose one authoritative implementation per operation; simply deleting the runtime file would remove active behavior.
 
 ### Consequence for the next implementation step
 
-The JSON catalog is ready, but GUI consumers should not read JSON directly. Introduce one content-facing service that combines packaged default lessons with the existing SQLite-backed custom workspace, and route both `window.py` and `content_manager2.py` through it. Preserve the current edit, rename, delete, reorder, reset, restore, and history behavior. Only after this boundary is tested should the database source of truth be switched.
+The JSON catalog is ready, but GUI consumers should not read JSON directly. The first read-only service boundary is now in place for both `window.py` and `content_manager2.py`. Next, move display-name formatting fully into the service, add a user-facing fallback for invalid/missing JSON, and exercise reset/restore/import/export through the service. Do not switch write ownership or remove SQLite snapshots until those tests pass.
 
 ## 9. Database and CI validation findings
 
