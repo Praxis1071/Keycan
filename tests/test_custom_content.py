@@ -239,6 +239,10 @@ def test_default_backup_does_not_overwrite_custom_group_with_same_id(tmp_path: P
             "SELECT lesson_id FROM practice_results"
         ).fetchone()
         assert result_lesson == restored_lesson
+        assert target.import_data(backup) == (0, 1)
+        assert target.conn.execute(
+            "SELECT COUNT(*) FROM practice_results"
+        ).fetchone()[0] == 1
     finally:
         target.close()
 
