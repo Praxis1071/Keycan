@@ -31,6 +31,7 @@ class Database:
             "wrong_characters": "INTEGER NOT NULL DEFAULT 0",
             "accuracy_percent": "REAL NOT NULL DEFAULT 0",
             "wrong_letter_counts": "TEXT NOT NULL DEFAULT '{}'",
+            "session_uuid": "TEXT",
         }
         for name, definition in additions.items():
             if name not in columns:
@@ -70,6 +71,20 @@ class Database:
                    END
                WHERE accuracy_percent = 0
                  AND (correct_words > 0 OR wrong_words > 0)"""
+        )
+        # Stable session identifiers make retries and backup imports idempotent.
+        # Older rows receive identifiers once during migration; no history is discarded.
+        for (result_id,) in self.conn.execute(
+            "SELECT id FROM practice_results WHERE session_uuid IS NULL OR session_uuid = ''"
+        ).fetchall():
+            self.conn.execute(
+                "UPDATE practice_results SET session_uuid = ? WHERE id = ?",
+                (uuid.uuid4().hex, result_id),
+            )
+        self.conn.execute(
+            """CREATE UNIQUE INDEX IF NOT EXISTS idx_practice_results_session_uuid
+               ON practice_results(session_uuid)
+               WHERE session_uuid IS NOT NULL AND session_uuid != ''"""
         )
         self.conn.commit()
 
@@ -599,7 +614,11 @@ class Database:
         characters_per_minute: float,
         accuracy_percent: float,
         wrong_letter_counts: dict[str, int] | None = None,
+        session_uuid: str | None = None,
     ) -> None:
+        session_uuid = str(session_uuid or uuid.uuid4().hex).strip()
+        if not session_uuid:
+            raise ValueError("Çalışma oturumu kimliği boş olamaz")
         metrics = {
             "duration": duration,
             "correct": correct,
@@ -632,13 +651,14 @@ class Database:
                     correct_words, wrong_words, words_per_minute, characters_per_minute,
                     completed_at, source_name_snapshot, lesson_title_snapshot,
                     target_word_count, typed_word_count, total_characters,
-                    correct_characters, wrong_characters, accuracy_percent, wrong_letter_counts
+                    correct_characters, wrong_characters, accuracy_percent, wrong_letter_counts,
+                    session_uuid
                 ) VALUES (
                     ?, ?, ?, ?, ?,
                     ?, ?, ?, ?,
                     CURRENT_TIMESTAMP, ?, ?,
                     ?, ?, ?,
-                    ?, ?, ?, ?
+                    ?, ?, ?, ?, ?
                 )""",
                 (
                     lesson_id, duration, correct_characters, wrong_characters, words_per_minute,
@@ -646,6 +666,7 @@ class Database:
                     source_name, lesson_title, target_word_count, typed_word_count,
                     total_characters, correct_characters, wrong_characters, accuracy_percent,
                     json.dumps(metrics["wrong_letter_counts"], ensure_ascii=False),
+                    session_uuid,
                 ),
             )
             self.conn.commit()
