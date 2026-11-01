@@ -50,6 +50,7 @@ Katalog doğrulaması, yinelenen kimlikler, bozuk kaynak, eksik kaynak ve kullan
 
 - `window.py` ana pencere, sayfa navigasyonu, ders seçimi ve yazma oturumu yaşam döngüsünü koordine eder. Üretim penceresi artık `_BaseKeycanWindow` üzerine açık `KeycanWindow` sınıfı olarak kuruludur; runtime sınıf alias'ı ve yinelenen kaynak yükleme metotları kaldırılmıştır.
 - Bu dosyanın sorumluluklarını azaltmak mantıklıdır; ancak GTK sinyalleri, widget yaşam döngüsü, zamanlayıcılar ve kapanışta bekleyen kayıtlar nedeniyle büyük bir yeniden yazım yapılmamalıdır.
+- Ana pencerenin CSS, widget yerleşimi ve tercih popover'ı `gui/window_layout.py` içine taşındı; `window.py` yaklaşık 850 satırdan 585 satıra küçüldü.
 - Kelime/karakter/doğruluk ölçümleri ve kayıt payload'ı GTK penceresinden `core/session_metrics.py` içine taşındı.
 - Editörün gizlilik görünümü, sonuç renklendirme ve metin buffer sunumu `gui/workspace.py` sorumluluğuna alındı. Pencere bu işlemleri workspace API'si üzerinden çağırır.
 - Oturum başlatma, zamanlayıcı, GTK buffer'ın oturum sonunda okunması ve kapanışta bekleyen kayıt uyarısı hâlâ pencerededir. Veritabanına kaydetme ve başarısız kayıt kuyruğunu yeniden deneme `services/session_recorder.py` tarafından yönetilir.
@@ -87,7 +88,7 @@ KC-001–KC-005 düzeltmeleri main'e alınmıştır. Ayrıntılı hata geçmişi
 
 ## 10. Sonraki adım ve kapsam sınırı
 
-Runtime sınıf mutasyonu kaldırılmış, managed veritabanı davranışları normal alt sınıf metotlarına dönüştürülmüş ve eski import yolları uyumluluk dışa aktarımlarıyla korunmuştur. Saf oturum ölçümleri `core/session_metrics.py` içine; editör gizliliği ve sonuç renklendirme ise `gui/workspace.py` içine ayrılmıştır. CI'da 52 depo kontrolü, 72 pytest testi ve Ruff F821 denetimi başarıyla tamamlanmıştır. GTK/Xvfb smoke testi başarılı: pencere ve sayfalar oluşturuldu; içerik yöneticisi açıldı; gizlilik etiketi ve canlı dil değişimi kontrol edildi; örnek yazım oturumu SQLite'a kaydedildi, başarısız kayıt yeniden denendi ve aynı oturum kimliğiyle tek kayıt doğrulandı; sonuç mesajı kontrol edildi. Beş CI işi de başarılı. `SessionRecorder` başarısız kayıtları sabit oturum kimliğiyle kuyruğa alıp yeniden dener; birim ve GTK smoke testleri bu akışı doğrular.
+Runtime sınıf mutasyonu kaldırılmış, managed veritabanı davranışları normal alt sınıf metotlarına dönüştürülmüş ve eski import yolları uyumluluk dışa aktarımlarıyla korunmuştur. Saf oturum ölçümleri `core/session_metrics.py` içine; editör gizliliği ve sonuç renklendirme ise `gui/workspace.py` içine ayrılmıştır. CI'da 52 depo kontrolü, 72 pytest testi ve Ruff F821 denetimi başarıyla tamamlanmıştır. GTK/Xvfb smoke testi son layout ayrıştırmasından sonra da başarılıdır. GTK/Xvfb smoke testi başarılı: pencere ve sayfalar oluşturuldu; içerik yöneticisi açıldı; gizlilik etiketi ve canlı dil değişimi kontrol edildi; örnek yazım oturumu SQLite'a kaydedildi, başarısız kayıt yeniden denendi ve aynı oturum kimliğiyle tek kayıt doğrulandı; sonuç mesajı kontrol edildi. Beş CI işi de başarılı. `SessionRecorder` başarısız kayıtları sabit oturum kimliğiyle kuyruğa alıp yeniden dener; birim ve GTK smoke testleri bu akışı doğrular.
 
 Bu çalışma sırasında:
 
