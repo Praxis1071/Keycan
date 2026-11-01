@@ -184,5 +184,5 @@ The stabilization pull request [#2](https://github.com/Praxis1071/Keycan/pull/2)
 - Move the module-level managed database functions into ordinary class methods or focused repository/service objects only after a method-by-method comparison and focused tests.
 - Continue extracting session lifecycle and lesson-loading responsibilities from `window.py` in small, GTK-safe increments.
 - window.py still coordinates multiple pages and typing-session state. Extract responsibilities incrementally; preserve GTK signal/lifecycle behavior.
-- Legacy settings/statistics modules should not be deleted until import, packaging, tests and external compatibility are checked.
+- Legacy settings/statistics module paths are retained as compatibility re-exports; their implementations now have one authoritative source.
 - Backup restore, reset/restore defaults and historical session identity must remain regression-gated.
