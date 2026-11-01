@@ -87,7 +87,7 @@ KC-001–KC-005 düzeltmeleri main'e alınmıştır. Ayrıntılı hata geçmişi
 
 ## 10. Sonraki adım ve kapsam sınırı
 
-Runtime sınıf mutasyonu kaldırılmış, managed veritabanı davranışları normal alt sınıf metotlarına dönüştürülmüş ve eski import yolları uyumluluk dışa aktarımlarıyla korunmuştur. Saf oturum ölçümleri `core/session_metrics.py` içine; editör gizliliği ve sonuç renklendirme ise `gui/workspace.py` içine ayrılmıştır. CI'da 52 depo kontrolü, 70 pytest testi ve Ruff F821 denetimi başarıyla tamamlanmıştır. Yeni GTK/Xvfb smoke testi pencere oluşturma, sayfa kurulumu, bir oturumun kaydedilmesi ve sonuç mesajını otomatik doğrulamak üzere eklendi; sonucu ayrıca raporlanacaktır.
+Runtime sınıf mutasyonu kaldırılmış, managed veritabanı davranışları normal alt sınıf metotlarına dönüştürülmüş ve eski import yolları uyumluluk dışa aktarımlarıyla korunmuştur. Saf oturum ölçümleri `core/session_metrics.py` içine; editör gizliliği ve sonuç renklendirme ise `gui/workspace.py` içine ayrılmıştır. CI'da 52 depo kontrolü, 70 pytest testi ve Ruff F821 denetimi başarıyla tamamlanmıştır. GTK/Xvfb smoke testi başarılı: pencere ve sayfalar oluşturuldu; içerik yöneticisi açıldı; gizlilik etiketi ve canlı dil değişimi kontrol edildi; örnek yazım oturumu SQLite'a kaydedildi ve sonuç mesajı doğrulandı. Beş CI işi de başarılı.
 
 Bu çalışma sırasında:
 
