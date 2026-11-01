@@ -13,10 +13,25 @@ Bu dosya, 31 Ekim 2026 tarihinde yapılan kullanıcı testleri ve kod incelemesi
 
 ---
 
-## Hata özeti
+## Güncel durum — 2026-11-01
 
-| ID | Alan | Durum | Öncelik |
+Bu dosyanın aşağıdaki KC-001–KC-005 bölümleri ilk hata teşhislerini ve tarihsel inceleme notlarını korur. Düzeltmelerin güncel durumu aşağıdaki gibidir.
+
+| ID | Alan | Güncel durum | Not |
 |---|---|---|---|
+| KC-001 | Gizlilik modu – sonuç gösterimi | **Düzeltme main'e alındı** | PR #2 birleştirildi; GTK masaüstü doğrulaması ayrıca yapılmalı. |
+| KC-002 | Gizlilik modu – sonuç kaydı | **Düzeltme main'e alındı** | Hata yönetimi ve transaction rollback iyileştirildi; CI başarılı. |
+| KC-003 | Yedek/istatistik içe aktarma | **Ayarlar arayüzünden kaldırıldı; API korundu** | PR #2, yedek kimlik eşleştirmesi ve uyumluluk düzeltmelerini de içeriyor. |
+| KC-004 | İngilizce arayüz çevirileri | **Düzeltme main'e alındı** | Tek çeviri kataloğu ve ek widget kapsamı; görsel GTK kontrolü ayrıca yapılmalı. |
+| KC-005 | Profil sıfırlama adı ve fotoğraf kaldırma | **Düzeltme main'e alındı** | Fotoğraf seçme/kaldırma ve kalıcılık masaüstünde ayrıca kontrol edilmeli. |
+
+**Birleştirme:** [PR #2 — Fix Keycan stabilization issues KC-001–KC-005](https://github.com/Praxis1071/Keycan/pull/2)  
+**Birleştirme commit'i:** `3c5c80180c3d911696903a61868abffd43a7b2df)  
+**PR doğrulaması:** 45 test geçti; Stage 5, Stage 6, Stage 7 ve tam regresyon işleri başarılı.
+
+Önemli: PR'nin CI başarısı, GTK masaüstü arayüzünde yapılması gereken manuel kontrollerin tamamlandığını göstermez. Aşağıdaki eski “bekleyen” teşhis maddeleri tarihsel bağlam olarak korunmuştur; güncel durum için bu tablo ve PR kaydı esas alınmalıdır.
+
+---|---|---|---|
 | KC-001 | Gizlilik modu – oturum sonuçlarının gösterilmesi | Kod düzeltmesi uygulandı; GTK çalışma zamanı testi bekleniyor | Yüksek |
 | KC-002 | Gizlilik modu – sonuçların istatistiklere kaydedilmesi | Kayıt hata yönetimi ve transaction güvenliği düzeltildi; kullanıcı testi bekleniyor | Kritik |
 | KC-003 | Yedek/istatistik içe aktarma | Kullanıcı isteğiyle Ayarlar arayüzünden kaldırıldı; veritabanı API'si korundu | Tamamlandı |
