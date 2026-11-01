@@ -169,10 +169,11 @@ Bu aşama yeni kullanıcı özellikleri ekleme veya uygulamayı baştan yazma ç
 
 2. **Veri mimarisinin netleştirilmesi**
    - Paketle gelen hazır ders kataloğunun JSON kaynakları belirlenecek.
-   - Kullanıcının özel dersleri ve hazır dersler üzerindeki kişisel değişiklikleri için kullanıcı veri dizinindeki JSON deposu/override yaklaşımı netleştirilecek.
-   - Çalışma oturumları, istatistikler ve geçmiş gibi işlem kayıtlarının SQLite'ta kalması sağlanacak.
+   - Kullanıcı tarafından oluşturulan dersler ve hazır dersler üzerindeki kişisel değişikliklerin kalıcı olarak nerede tutulacağı (mevcut SQLite modeli mi, JSON deposu/override mı) karşılaştırmalı olarak değerlendirilecek; karar veri kaybı riski, kullanım kolaylığı, tutarlılık ve bakım maliyetine göre verilecek.
+   - Çalışma oturumları, istatistikler ve geçmiş gibi işlem kayıtlarının SQLite'ta kalması temel yaklaşım olacak.
+   - Paketlenmiş hazır ders kataloğunun JSON olması ile kullanıcı tarafından düzenlenebilir içeriğin depolanma biçimi birbirinden ayrı kararlar olarak ele alınacak.
    - JSON ve SQLite'ın görevleri, kararlı kimlikler, şema sürümü, hata davranışı ve yedekleme sözleşmesi açıkça belgelenecek.
-   - JSON'a geçişin çalışma geçmişini veya profil hesaplamalarını koparmadığı kanıtlanacak.
+   - Herhangi bir veri taşıma kararı verilirse çalışma geçmişi veya profil hesaplamalarının kopmadığı testlerle kanıtlanacak.
 
 3. **Ders kataloğu ve içerik kalitesinin iyileştirilmesi**
    - JSON şeması, kimlik benzersizliği ve içerik doğrulama kuralları testlerle güvence altına alınacak.
@@ -181,8 +182,9 @@ Bu aşama yeni kullanıcı özellikleri ekleme veya uygulamayı baştan yazma ç
    - Kullanıcı onayı ve yedek olmadan mevcut içerik topluca değiştirilmeyecek.
 
 4. **Veri geçişi ve kalıcılık güvenliği**
-   - Gerekli görülürse eski SQLite ders içeriği kontrollü ve tekrarlanabilir biçimde JSON'a aktarılacak.
-   - Eski veriler ile yeni içerikler kimlik, kayıt sayısı ve içerik karşılaştırmalarıyla doğrulanacak.
+   - Önceki aşamada JSON/SQLite sorumlulukları için onaylanan hedef modele göre gerekiyorsa eski SQLite ders içeriği kontrollü ve tekrarlanabilir biçimde taşınacak.
+   - Veri taşıma yapılması zorunlu değilse sırf teknoloji değişikliği amacıyla mevcut ve çalışan SQLite kullanıcı içeriği katmanı değiştirilmeden korunacak.
+   - Herhangi bir geçişte eski ve yeni veriler kimlik, kayıt sayısı ve içerik karşılaştırmalarıyla doğrulanacak.
    - Geçiş tamamlanmadan eski tablolar silinmeyecek.
    - Transaction, atomik dosya yazımı, bozuk dosya, yarım kalmış işlem, yedek alma/geri yükleme ve geriye dönük uyumluluk test edilecek.
 
