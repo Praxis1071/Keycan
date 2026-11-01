@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from keycan.core.session_metrics import calculate_session_metrics
 from keycan.core.typing_engine import TypingEngine
+from keycan.services.session_recorder import SessionRecorder
 
 
 def test_session_metrics_preserve_word_and_character_analysis() -> None:
@@ -67,3 +68,52 @@ def test_session_metrics_builds_database_payload() -> None:
         "wrong_letter_counts": {},
         "session_uuid": "stable-session",
     }
+
+
+
+class _FakeDatabase:
+    def __init__(self) -> None:
+        self.saved: list[dict[str, object]] = []
+        self.failures_remaining = 0
+
+    def save_result(self, **payload: object) -> None:
+        if self.failures_remaining:
+            self.failures_remaining -= 1
+            raise RuntimeError("temporary failure")
+        self.saved.append(dict(payload))
+
+
+def test_session_recorder_retries_failed_writes_without_changing_session_id() -> None:
+    database = _FakeDatabase()
+    database.failures_remaining = 1
+    recorder = SessionRecorder(database)
+    payload = {"lesson_id": 7, "session_uuid": "stable-session"}
+
+    error = recorder.save(payload)
+
+    assert isinstance(error, RuntimeError)
+    assert recorder.pending_saves == [payload]
+    assert database.saved == []
+
+    failures = recorder.retry_pending()
+
+    assert failures == []
+    assert recorder.pending_saves == []
+    assert database.saved == [payload]
+    assert database.saved[0]["session_uuid"] == "stable-session"
+
+
+def test_session_recorder_keeps_payloads_pending_when_retry_fails() -> None:
+    database = _FakeDatabase()
+    database.failures_remaining = 2
+    recorder = SessionRecorder(database)
+    payload = {"lesson_id": 8, "session_uuid": "retry-session"}
+
+    assert isinstance(recorder.save(payload), RuntimeError)
+    failures = recorder.retry_pending()
+
+    assert len(failures) == 1
+    assert failures[0][0] == payload
+    assert isinstance(failures[0][1], RuntimeError)
+    assert recorder.pending_saves == [payload]
+    assert database.saved == []
