@@ -35,7 +35,7 @@ Kullanıcı içeriğini JSON'a taşıma kararı alınmış değildir. Bu yönde 
 - `LessonService` tür sözleşmesi de `ManagedDatabase` API'sini açıkça belirtir.
 - Temel `Database` sınıfı, `database_runtime.py` import edildiğinde değişmez. Bu davranış alt süreç regresyon testiyle doğrulanır.
 
-**Kalan iş:** `database_runtime.py` içindeki modül düzeyi fonksiyonlar hâlâ alt sınıf metotlarına bağlanır. Bunları okunabilir sınıf metotlarına veya uygun repository/service bileşenlerine taşımak sonraki, ayrı bir sadeleştirme adımıdır.
+**Kalan iş:** `managed_database.py` içindeki modül düzeyi fonksiyonlar hâlâ alt sınıf metotlarına bağlanır. Bunları okunabilir sınıf metotlarına veya uygun repository/service bileşenlerine taşımak sonraki, ayrı bir sadeleştirme adımıdır.
 ## 4. Ders kataloğu servisi
 
 - Paketlenmiş Türkçe katalog JSON olarak bulunur.
@@ -59,7 +59,7 @@ Katalog doğrulaması, yinelenen kimlikler, bozuk kaynak, eksik kaynak ve kullan
 - Aktif GUI uygulaması settings2.py ve statistics_clean.py modüllerini kullanır.
 - settings.py ve statistics.py artık aktif settings2.py ve statistics_clean.py modüllerine yönlendiren küçük uyumluluk dışa aktarımlarıdır; yinelenen uygulama kodu kaldırılmıştır.
 - statistics_runtime.py içindeki eski MetricCard müdahalesi aktif uygulama yolundan çıkarılmış, davranış MetricCard içine taşınmıştır.
-- database_runtime.py ise hâlâ önemli uyumluluk davranışları içerir ve ayrı ele alınmalıdır.
+- database_runtime.py yalnızca managed_database.py içindeki sınıfı dışa aktaran küçük bir uyumluluk modülüdür.
 
 ## 7. Test ve CI durumu
 
