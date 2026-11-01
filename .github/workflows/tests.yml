@@ -150,7 +150,8 @@ jobs:
                   (retry_uuid,),
               ).fetchone()[0]
               assert retry_saved == 1
-              window.db.close()
+              window._allow_close_with_pending_saves = True
+              assert window._on_close_request(window) is False
           print("GTK smoke test passed: window, pages, typing session, persistence and status.")
           PY
 
