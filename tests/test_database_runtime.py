@@ -10,9 +10,11 @@ def test_managed_database_is_an_explicit_subclass_without_runtime_patching() -> 
     script = """
 from keycan.data.database import Database
 assert not hasattr(Database, "managed_groups")
-from keycan.data.database_runtime import ManagedDatabase
+from keycan.data.managed_database import ManagedDatabase
+from keycan.data.database_runtime import ManagedDatabase as CompatibilityManagedDatabase
 assert not hasattr(Database, "managed_groups")
 assert issubclass(ManagedDatabase, Database)
+assert CompatibilityManagedDatabase is ManagedDatabase
 assert hasattr(ManagedDatabase, "managed_groups")
 assert hasattr(ManagedDatabase, "export_data")
 assert hasattr(ManagedDatabase, "restore_defaults")
