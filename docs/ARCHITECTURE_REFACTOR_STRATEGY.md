@@ -145,8 +145,8 @@ The JSON catalog is ready, but GUI consumers should not read JSON directly. The 
 
 - Confirmed that `settings2.py` and `statistics_clean.py` are the active GUI implementations. The older `settings.py` and `statistics.py` are thin compatibility re-exports, not separate implementations.
 - Moved the metric-card animation cancellation/reset logic into `MetricCard.set_value`. The former `statistics_runtime.py` file remains as a side-effect-free compatibility import, and the application no longer imports it.
-- The database runtime registration mechanism has been removed. The application now uses the explicit `ManagedDatabase` subclass; its method implementations are still module-level functions assigned in the subclass body and may be moved into ordinary class methods in a later cleanup.
-- `window.py` currently contains a base `KeycanWindow` plus `ConfiguredKeycanWindow`, with overlapping source-loading methods. This is a candidate for a later small refactor, not a reason to rewrite the window in one pass.
+- The database runtime registration mechanism has been removed. All managed operations are now ordinary methods declared directly in `ManagedDatabase`; no module-level function assignments remain.
+- `window.py` now exposes one public `KeycanWindow` class composed over a private base class. The duplicate source-loading override and runtime class alias have been removed.
 
 
 ## 11. Managed database subclass refactor (branch: architecture/maintenance-refactor)
@@ -159,6 +159,8 @@ The JSON catalog is ready, but GUI consumers should not read JSON directly. The 
 - Updated custom-content, lesson-service, and progression tests to use the managed subclass.
 - Added a subprocess test proving the base class is not mutated and the managed API is available.
 - Extracted typing-session metrics from `window.py` into pure `core/session_metrics.py` calculations and added focused tests.
+- Moved editor privacy presentation and result highlighting from the application window into `gui/workspace.py`, which already owns the two text views.
+- Fixed a completion-status reference uncovered during the extraction and added an Xvfb-based GTK smoke test that constructs the real window and completes a persisted practice session.
 - GitHub Actions run 41297237152 passed all four jobs. `check.sh` completed 52 checks and the full suite passed 70 tests.
 - GTK desktop interaction tests have not been run in CI and remain a separate manual verification gate.
 
@@ -181,8 +183,8 @@ The stabilization pull request [#2](https://github.com/Praxis1071/Keycan/pull/2)
 
 ### Remaining high-risk work
 
-- Move the module-level managed database functions into ordinary class methods or focused repository/service objects only after a method-by-method comparison and focused tests.
-- Continue extracting session lifecycle and lesson-loading responsibilities from `window.py` in small, GTK-safe increments.
-- window.py still coordinates multiple pages and typing-session state. Extract responsibilities incrementally; preserve GTK signal/lifecycle behavior.
+- Audit overlapping legacy CRUD methods inherited from `Database`; retain them until external compatibility and all call sites are established.
+- Continue extracting session timing, retry-save coordination and lesson selection from `window.py` only where a small independent responsibility can be tested without moving GTK widget work off the main thread.
+- `window.py` still coordinates multiple pages and typing-session state. The workspace now owns editor privacy and result presentation; preserve GTK signal/lifecycle behavior in any further extraction.
 - Legacy settings/statistics module paths are retained as compatibility re-exports; their implementations now have one authoritative source.
 - Backup restore, reset/restore defaults and historical session identity must remain regression-gated.
