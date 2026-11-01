@@ -57,7 +57,7 @@ Katalog doğrulaması, yinelenen kimlikler, bozuk kaynak, eksik kaynak ve kullan
 ## 6. Yinelenen modüller
 
 - Aktif GUI uygulaması settings2.py ve statistics_clean.py modüllerini kullanır.
-- settings.py ve statistics.py eski/alternatif uygulamalar olarak depoda tutulmaktadır; silinmeden önce import, test, paketleme ve olası uyumluluk referansları aranmalıdır.
+- settings.py ve statistics.py artık aktif settings2.py ve statistics_clean.py modüllerine yönlendiren küçük uyumluluk dışa aktarımlarıdır; yinelenen uygulama kodu kaldırılmıştır.
 - statistics_runtime.py içindeki eski MetricCard müdahalesi aktif uygulama yolundan çıkarılmış, davranış MetricCard içine taşınmıştır.
 - database_runtime.py ise hâlâ önemli uyumluluk davranışları içerir ve ayrı ele alınmalıdır.
 
