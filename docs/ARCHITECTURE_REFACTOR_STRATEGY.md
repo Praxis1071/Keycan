@@ -9,7 +9,8 @@ The repository already has a useful separation between `app.py`, `window.py`, `g
 Confirmed findings from the current branch:
 
 - `keycan/app.py` no longer performs database runtime registration.
-- `database_runtime.py` now exposes a concrete `ManagedDatabase(Database)` subclass. The previous runtime assignment of methods onto the base class has been removed; content CRUD, progression queries, default-content snapshots, and JSON backup import/export are available through the subclass.
+- `managed_database.py` exposes a concrete `ManagedDatabase(Database)` subclass. The previous runtime assignment of methods onto the base class has been removed; content CRUD, progression queries, default-content snapshots, and JSON backup import/export are available through the subclass.
+- `database_runtime.py` is now a small backward-compatible re-export; active application code imports `ManagedDatabase` from `managed_database.py`.
 - The base `Database` class remains unchanged when `database_runtime.py` is imported. A subprocess regression test protects this boundary.
 - `database.py` already contains overlapping database behavior and schema migrations. The two files must be compared method-by-method before consolidation.
 - `window.py` imports and coordinates the database, workspace, search, settings, statistics, profile, keyboard guide, translation, and preference components. It also owns substantial interaction state.
@@ -137,7 +138,7 @@ The JSON catalog is ready, but GUI consumers should not read JSON directly. The 
 - `check.sh` now copies the tracked database to a temporary directory, applies the real `Database` migrations to that copy, and performs integrity/schema/snapshot checks there. This validates migrations without mutating the checked-in database.
 - The check also verifies that all group and lesson IDs in the packaged JSON catalog match the default-content snapshot IDs in the migrated database.
 - Current repository database validation reports 83 active sources (82 built-in groups plus one active custom group) and 1,833 active lessons.
-- The full CI workflow runs `check.sh` plus the full pytest suite. On branch `architecture/maintenance-refactor`, the first managed-database refactor passed all four jobs; `check.sh` completed 52 focused checks and the full pytest suite passed 67 tests.
+- The full CI workflow runs `check.sh` plus the full pytest suite. On branch `architecture/maintenance-refactor`, the managed-database and session-metrics refactors passed all four jobs; `check.sh` completed 52 focused checks and the full pytest suite passed 70 tests.
 
 
 ## 10. Duplicate-module audit update (historical findings, updated below)
@@ -150,13 +151,15 @@ The JSON catalog is ready, but GUI consumers should not read JSON directly. The 
 
 ## 11. Managed database subclass refactor (branch: architecture/maintenance-refactor)
 
-- Replaced the previous `install_database_runtime()` monkey-patch with `ManagedDatabase(Database)`.
+- Replaced the previous `install_database_runtime()` monkey-patch with `ManagedDatabase(Database)` in `managed_database.py`.
+- Kept `database_runtime.py` as a small compatibility re-export; active application code imports the dedicated managed module.
 - The application window now constructs `ManagedDatabase`; `app.py` no longer registers methods or depends on import order.
 - The base `Database` class remains unchanged when the managed module is imported.
 - Content management, default snapshots, progression summary, and backup/restore methods remain available on `ManagedDatabase`.
 - Updated custom-content, lesson-service, and progression tests to use the managed subclass.
 - Added a subprocess test proving the base class is not mutated and the managed API is available.
-- GitHub Actions run 41297090084 passed all four jobs. `check.sh` completed 52 checks and the full suite passed 67 tests.
+- Extracted typing-session metrics from `window.py` into pure `core/session_metrics.py` calculations and added focused tests.
+- GitHub Actions run 41297237152 passed all four jobs. `check.sh` completed 52 checks and the full suite passed 70 tests.
 - GTK desktop interaction tests have not been run in CI and remain a separate manual verification gate.
 
 
@@ -179,6 +182,7 @@ The stabilization pull request [#2](https://github.com/Praxis1071/Keycan/pull/2)
 ### Remaining high-risk work
 
 - Move the module-level managed database functions into ordinary class methods or focused repository/service objects only after a method-by-method comparison and focused tests.
+- Continue extracting session lifecycle and lesson-loading responsibilities from `window.py` in small, GTK-safe increments.
 - window.py still coordinates multiple pages and typing-session state. Extract responsibilities incrementally; preserve GTK signal/lifecycle behavior.
 - Legacy settings/statistics modules should not be deleted until import, packaging, tests and external compatibility are checked.
 - Backup restore, reset/restore defaults and historical session identity must remain regression-gated.
