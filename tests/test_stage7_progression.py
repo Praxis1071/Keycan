@@ -4,7 +4,7 @@ import sqlite3
 from datetime import date, timedelta
 from pathlib import Path
 
-from keycan.data.database_runtime import ManagedDatabase
+from keycan.data.managed_database import ManagedDatabase
 from keycan.services.progression import (
     badge_keys,
     level_for_xp,
