@@ -316,7 +316,6 @@ class TypingWorkspace(Gtk.Box):
 
     def render_input_results(self, typed_text: str, correctness: list[bool]) -> None:
         buffer = self.input_view.get_buffer()
-        buffer.set_text(typed_text)
         start, end = buffer.get_start_iter(), buffer.get_end_iter()
         buffer.remove_all_tags(start, end)
         base = self._get_tag(buffer, "editor-default", "#111111")
