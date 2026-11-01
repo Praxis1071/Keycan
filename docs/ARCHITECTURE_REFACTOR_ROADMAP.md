@@ -111,7 +111,7 @@ keycan/
 - Kalan modül düzeyi managed fonksiyonları normal sınıf metotlarına taşı; bu adım ayrı testlerle yürütülmeli.
 - Managed veritabanı işlemleri normal `ManagedDatabase` sınıf metotları olarak taşındı; testler sınıfın kendi metotlarını sunduğunu doğruluyor.
 
-**Doğrulama:** Managed database ve session metrics refactor'ları için GitHub Actions tüm dört işi başarıyla tamamladı; `check.sh` 52 kontrolü, tam pytest paketi 70 testi geçti. GTK masaüstü etkileşimleri henüz elle doğrulanmadı.
+**Doğrulama:** GitHub Actions'ın beş işi başarıyla tamamlandı: `check.sh` 52 kontrol, tam pytest 70 test, Ruff F821 ve GTK/Xvfb smoke testi. GTK smoke testi gerçek pencereyi, sayfa kurulumunu, ayarlar içindeki ders yönetimini, gizlilik etiketini, dil değişimini ve yazım oturumu kaydını doğruluyor.
 
 **Çıkış koşulu:** Runtime monkey-patch olmadan uygulama ve testler çalışır; yinelenen modüllerin kaldırılması için kullanım/uyumluluk kanıtı bulunur; hiçbir özellik kaybolmaz.
 
@@ -126,7 +126,7 @@ keycan/
 - Her çıkarımda mevcut sinyal bağlantıları, GTK widget yaşam döngüsü ve kapanışta bekleyen kayıtlar korunmalı.
 - Gereksiz controller/factory/manager sınıfları oluşturma; yalnızca bağımsız sorumlulukları ayır.
 
-**Doğrulama:** CI `check.sh` 52 kontrol, tam pytest paketi 70 test ve Ruff F821 statik denetimini başarıyla tamamladı. GTK/Xvfb otomatik masaüstü smoke testi eklendi; başarılı sonuç alınmadan aşama tamamlandı sayılmayacak.
+**Doğrulama:** [GitHub Actions run 41298923011](https://github.com/Praxis1071/Keycan/actions/runs/41298923011) beş işin tamamını başarıyla tamamladı. GTK/Xvfb smoke testi pencere, sayfalar, içerik yöneticisi, gizlilik, canlı dil değişimi, oturum kaydı ve durum mesajını kontrol ediyor. İnsan tarafından gerçek masaüstünde yapılacak kullanım testi hâlâ gereklidir.
 
 **Çıkış koşulu:** `window.py` küçülür; çalışma alanı ve pencere davranışı değişmez; GTK başlangıç/kapanış ve oturum testleri geçer.
 
