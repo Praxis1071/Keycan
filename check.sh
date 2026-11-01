@@ -9,15 +9,13 @@ import sqlite3
 import tempfile
 from pathlib import Path
 
-from keycan.data.database import Database
+from keycan.data.database_runtime import ManagedDatabase
 from keycan.services.lesson_catalog import load_lesson_catalog
-from keycan.data.database_runtime import install_database_runtime
-install_database_runtime()
 
 with tempfile.TemporaryDirectory() as temp_dir:
     database_path = Path(temp_dir) / "typing_data.db"
     shutil.copy2("typing_data.db", database_path)
-    database = Database(database_path)
+    database = ManagedDatabase(database_path)
     connection = database.conn
     try:
         connection.execute("PRAGMA foreign_keys = ON")
