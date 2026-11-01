@@ -1,4 +1,4 @@
-# Keycan — Aşama 2 İstatistikler Sayfası Tasarım Belgesi
+> **Historical design note:** This document records the original Stage 2 statistics design. It is retained as background context, not as the current architecture or implementation plan. Current priorities are in [ROADMAP.md](../ROADMAP.md); current architecture details are in [ARCHITECTURE_REFACTOR_ROADMAP.md](ARCHITECTURE_REFACTOR_ROADMAP.md).\n\n---\n\n# Keycan — Aşama 2 İstatistikler Sayfası Tasarım Belgesi
 
 Bu belge, Aşama 2'nin uygulama içinde nasıl görünmesi gerektiğini ve kullanıcı tarafından onaylanan son UX kararlarını tanımlar. Aşama 3'te aynı arayüz gerçek SQLite kayıtlarıyla beslenecektir.
 
