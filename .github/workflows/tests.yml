@@ -87,6 +87,11 @@ jobs:
               assert window.content_stack.get_child_by_name("statistics") is not None
               assert window.content_stack.get_child_by_name("profile") is not None
 
+              window.settings_page._content(None)
+              content_window = window.settings_page.content_window
+              assert content_window.group_list.get_first_child() is not None
+              content_window.close()
+
               lessons = window.lesson_service.lessons(window.lesson_service.sources()[0][0])
               assert lessons
               window.current_lesson_id = lessons[0][0]
