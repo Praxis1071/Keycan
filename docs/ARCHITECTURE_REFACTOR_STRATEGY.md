@@ -122,14 +122,14 @@ A mechanical group-name cleanup creates collisions (for example, the F/Q keyboar
 - The managed database constructor first runs the base schema migrations in `database.py`; it then migrates custom paths, creates/loads default-content snapshots, and reconciles the snapshot with active content.
 - Tests that need content management, progression, or backup methods instantiate `ManagedDatabase`; tests that need only base statistics/schema behavior can continue using `Database`.
 - The Flatpak wrapper seeds the user's XDG data database from the packaged database. The Flatpak manifest copies the entire `keycan/` package, so the new JSON resource is included automatically.
-- `window.py` now routes source/lesson reads through `LessonService`; result saving and statistics still use the database. `content_manager2.py` uses the service for group/lesson reads and SQLite for CRUD writes. It still uses the database's private `_display_source_name` helper, which can be removed from the GUI boundary in a later focused change.
+- `window.py` and `content_manager2.py` route group/lesson reads and display-name formatting through `LessonService`; content writes and statistics persistence remain in SQLite through `ManagedDatabase`.
 - The active GUI modules are `settings2.py` and `statistics_clean.py`. The older `settings.py` and `statistics.py` are now thin compatibility re-exports, preserving old import paths without duplicating their implementations.
 - The former `statistics_runtime.py` patch only replaced `MetricCard.set_value` to cancel stale GLib animation timers. That behavior now lives directly in `MetricCard`; the runtime file remains as a side-effect-free compatibility import, and `app.py` no longer imports it.
-- `database.py` still contains older custom-content CRUD methods alongside the richer managed API. `ManagedDatabase` intentionally overrides the application-facing operations while preserving inherited legacy methods. A method-by-method API audit is still needed before any duplicate methods are removed. The managed implementation now lives in the explicitly named `managed_database.py`; its module-level functions can be moved into normal class methods in a later focused cleanup.
+- `database.py` still contains older custom-content CRUD methods alongside the richer managed API. `ManagedDatabase` intentionally overrides the application-facing operations while preserving inherited legacy methods. A method-by-method call-site and external compatibility audit is still needed before any duplicate methods are removed. Managed methods are now ordinary class methods.
 
 ### Consequence for the next implementation step
 
-The JSON catalog is ready, but GUI consumers should not read JSON directly. The first read-only service boundary is now in place for both `window.py` and `content_manager2.py`. Next, move display-name formatting fully into the service, add a user-facing fallback for invalid/missing JSON, and exercise reset/restore/import/export through the service. Do not switch write ownership or remove SQLite snapshots until those tests pass.
+The JSON catalog is read through `LessonService`; GUI consumers do not read JSON directly. Both the main window and content manager use the service for group/lesson reads and display formatting. User writes remain in SQLite. A future improvement may add a clearer user-facing warning when the packaged JSON catalog is invalid; do not switch write ownership or remove SQLite snapshots.
 
 ## 9. Database and CI validation findings
 
@@ -138,7 +138,7 @@ The JSON catalog is ready, but GUI consumers should not read JSON directly. The 
 - `check.sh` now copies the tracked database to a temporary directory, applies the real `Database` migrations to that copy, and performs integrity/schema/snapshot checks there. This validates migrations without mutating the checked-in database.
 - The check also verifies that all group and lesson IDs in the packaged JSON catalog match the default-content snapshot IDs in the migrated database.
 - Current repository database validation reports 83 active sources (82 built-in groups plus one active custom group) and 1,833 active lessons.
-- The full CI workflow runs `check.sh` plus the full pytest suite. On branch `architecture/maintenance-refactor`, the managed-database and session-metrics refactors passed all four jobs; `check.sh` completed 52 focused checks and the full pytest suite passed 70 tests.
+- The full CI workflow runs `check.sh`, Ruff's undefined-name check, the full pytest suite, and an Xvfb GTK smoke test. Latest successful run: [41298757790](https://github.com/Praxis1071/Keycan/actions/runs/41298757790); 52 focused checks, 70 pytest tests, Ruff F821, and GTK window/session/persistence smoke test all passed.
 
 
 ## 10. Duplicate-module audit update (historical findings, updated below)
@@ -161,8 +161,9 @@ The JSON catalog is ready, but GUI consumers should not read JSON directly. The 
 - Extracted typing-session metrics from `window.py` into pure `core/session_metrics.py` calculations and added focused tests.
 - Moved editor privacy presentation and result highlighting from the application window into `gui/workspace.py`, which already owns the two text views.
 - Fixed a completion-status reference uncovered during the extraction and added an Xvfb-based GTK smoke test that constructs the real window and completes a persisted practice session.
-- GitHub Actions run 41297237152 passed all four jobs. `check.sh` completed 52 checks and the full suite passed 70 tests.
-- GTK desktop interaction tests have not been run in CI and remain a separate manual verification gate.
+- GitHub Actions run 41298757790 passed all five jobs: 52 `check.sh` checks, 70 pytest tests, Ruff F821, and GTK/Xvfb launch/session/persistence smoke test.
+- The latest smoke test also exercises the settings content manager, privacy tag toggling and live language switch.
+- Full interactive human verification on the user's desktop remains a separate final gate.
 
 
 
