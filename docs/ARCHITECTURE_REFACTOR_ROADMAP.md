@@ -119,6 +119,7 @@ keycan/
 **Durum: Kısmen tamamlandı — saf oturum ölçümleri core modülüne ayrıldı; GTK oturum yaşam döngüsü hâlâ pencerede**
 
 - Kelime/karakter/doğruluk ölçümleri ve veritabanı kayıt payload'ı `keycan/core/session_metrics.py` içine taşındı; saf hesaplamalar GTK dışında test ediliyor.
+- Ana pencerenin CSS, widget yerleşimi ve tercih popover'ı `keycan/gui/window_layout.py` içine taşındı; `window.py` yaklaşık 850 satırdan 585 satıra küçüldü.
 - Editör gizlilik görünümü, sonuç renklendirme ve text-buffer sunumu `keycan/gui/workspace.py` içine taşındı; pencere yalnızca oturum durumunu iletir.
 - Veritabanı oturum kaydı, başarısız kayıt kuyruğu ve yeniden deneme `keycan/services/session_recorder.py` içine taşındı; pencere kullanıcıya durum/yeniden deneme arayüzünü sunar.
 - Pencereyi zamanla sayfa yerleşimi ve üst seviye koordinasyonla sınırla.
@@ -127,7 +128,7 @@ keycan/
 - Her çıkarımda mevcut sinyal bağlantıları, GTK widget yaşam döngüsü ve kapanışta bekleyen kayıtlar korunmalı.
 - Gereksiz controller/factory/manager sınıfları oluşturma; yalnızca bağımsız sorumlulukları ayır.
 
-**Doğrulama:** [GitHub Actions run 41299278251](https://github.com/Praxis1071/Keycan/actions/runs/41299101770) beş işin tamamını başarıyla tamamladı. GTK/Xvfb smoke testi pencere, sayfalar, içerik yöneticisi, gizlilik, canlı dil değişimi, oturum kaydı, başarısız kayıt yeniden denemesi ve durum mesajını kontrol ediyor. İnsan tarafından gerçek masaüstünde yapılacak kullanım testi hâlâ gereklidir.
+**Doğrulama:** [GitHub Actions run 41299614825](https://github.com/Praxis1071/Keycan/actions/runs/41299614825) beş işin tamamını başarıyla tamamladı. GTK/Xvfb smoke testi pencere, sayfalar, içerik yöneticisi, gizlilik, canlı dil değişimi, oturum kaydı, başarısız kayıt yeniden denemesi ve durum mesajını kontrol ediyor. İnsan tarafından gerçek masaüstünde yapılacak kullanım testi hâlâ gereklidir.
 
 **Çıkış koşulu:** `window.py` küçülür; çalışma alanı ve pencere davranışı değişmez; GTK başlangıç/kapanış ve oturum testleri geçer.
 
