@@ -125,6 +125,31 @@ jobs:
               assert saved == 1
               assert "Toplam: 2" in window.status.get_text()
               assert window.finished
+
+              window._restart()
+              window.started_at = time.monotonic() - 2
+              window.input_view.get_buffer().set_text("bir iki")
+              retry_uuid = window.session_uuid
+              original_save = window.db.save_result
+              fail_once = {"value": True}
+
+              def fail_once_save(**payload):
+                  if fail_once["value"]:
+                      fail_once["value"] = False
+                      raise RuntimeError("temporary save failure")
+                  return original_save(**payload)
+
+              window.db.save_result = fail_once_save
+              window._finish_now()
+              assert len(window.pending_saves) == 1
+              window.db.save_result = original_save
+              window._retry_save_results(None)
+              assert window.pending_saves == []
+              retry_saved = window.db.conn.execute(
+                  "SELECT COUNT(*) FROM practice_results WHERE session_uuid = ?",
+                  (retry_uuid,),
+              ).fetchone()[0]
+              assert retry_saved == 1
               window.db.close()
           print("GTK smoke test passed: window, pages, typing session, persistence and status.")
           PY
