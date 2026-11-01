@@ -14,7 +14,7 @@ Bu belge, mevcut Keycan uygulamasını yeniden yazmadan daha sade, sürdürüleb
 ## Hedef mimari ilkeleri
 
 1. **Hazır ders kataloğu JSON:** Uygulamayla gelen varsayılan ders grupları ve ders metinleri sürümlenmiş JSON dosyalarında tutulur.
-2. **Kullanıcı içeriği JSON:** Kullanıcının oluşturduğu gruplar ve hazır içerik üzerinde yaptığı değişiklikler kullanıcı veri dizinindeki JSON içerik deposunda tutulur. Paket içindeki varsayılan JSON dosyaları doğrudan değiştirilmez.
+2. **Kullanıcı içeriği — karar kapısı:** Hazır kataloğun paket içindeki JSON kaynağı olması kararlaştırılmıştır. Kullanıcının özel grupları ve hazır içerik üzerindeki düzenlemeleri için mevcut SQLite yazma modelinin korunması başlangıç tercihidir. JSON tabanlı kullanıcı deposu/override ancak somut bir gereksinim ve ölçülebilir fayda gösterilirse ayrıca değerlendirilecektir; bu geçiş önceden kabul edilmiş değildir.
 3. **SQLite çalışma verileri:** Yazma oturumları, istatistikler ve geçmiş SQLite'ta kalır. Ders içeriğinin JSON'a taşınması çalışma geçmişini SQLite'tan çıkarmak anlamına gelmez.
 4. **Yedekleme:** JSON tabanlı, sürüm numarası ve doğrulama bilgisi olan dışa aktarma biçimi kullanılır. Yedek, hem kullanıcı ders içeriğini hem de SQLite çalışma verilerini kapsar; geri yükleme önce doğrulanır ve mevcut verinin üzerine yazmadan önce güvenli geri dönüş noktası oluşturur.
 5. **Servis sınırı:** GUI, JSON dosyalarını veya SQL sorgularını doğrudan yönetmez. Ders işlemleri ders servisi; kalıcı çalışma verileri veri katmanı üzerinden yürütülür.
@@ -51,7 +51,7 @@ keycan/
 ## Aşamalar
 
 ### Aşama 0 — Mimari ve bağımlılık denetimi
-**Durum: Devam ediyor — statik kaynak incelemesi yapıldı, çalışma zamanı doğrulaması bekliyor**
+**Durum: Kısmen tamamlandı — kaynak/CI incelemesi mevcut; GTK masaüstü çalışma zamanı doğrulaması ayrıca gerekli**
 
 İlk statik bulgular: [Mimari İnceleme Raporu](ARCHITECTURE_AUDIT.md). Rapor, henüz çalıştırılmamış testleri başarılı gibi göstermemek için statik inceleme ile dinamik doğrulamayı ayrı tutar.
 
@@ -65,11 +65,11 @@ keycan/
 **Çıkış koşulu:** Bağımlılık haritası, veri akışı, test tabanı ve risk listesi yazılı hale gelmeden veri taşıma başlamaz.
 
 ### Aşama 1 — JSON ders formatı ve servis tasarımı
-**Durum: Bekliyor**
+**Durum: Kısmen tamamlandı — paketlenmiş Türkçe katalog ve okuma servisi main dalında mevcut; ek doğrulamalar sürüyor**
 
 - Türkçe ve İngilizce hazır ders katalogları için açık bir JSON şeması belirle.
 - Her grup ve ders için kararlı kimlik, ad, sıra ve metin alanlarını tanımla.
-- Kullanıcı içerikleri ve hazır içerik üzerindeki düzenlemeler için kullanıcı veri dizininde ayrı JSON deposu/override yaklaşımı oluştur.
+- Kullanıcı içeriklerinin mevcut SQLite tabanlı yazma modelini ve hazır ders kataloğu JSON okuma sınırını doğrula. JSON kullanıcı deposu/override seçeneğini ancak gerekçeli karşılaştırma ve ayrı onay sonrasında ele al.
 - JSON yükleme, şema doğrulama, yinelenen kimlik kontrolü, hata raporlama ve atomik kaydetmeyi tek ders servisinde topla.
 - GUI'nin mevcut veritabanı API'sinden yeni servis API'sine geçiş sözleşmesini belirle.
 - JSON formatı için birim testleri ekle.
@@ -87,17 +87,17 @@ keycan/
 
 **Çıkış koşulu:** Her ders için önce/sonra karşılaştırması ve doğrulama raporu bulunur; kaybolan/boşalan içerik yoktur veya açıkça çözümlenmiştir.
 
-### Aşama 3 — Ders içeriğinin JSON'a taşınması
-**Durum: Bekliyor**
+### Aşama 3 — Ders içeriği kaynaklarının güvenli ayrıştırılması
+**Durum: Kısmen tamamlandı — hazır derslerin JSON okuma yolu mevcut; kullanıcı içeriği SQLite'ta kalıyor**
 
 - Hazır dersleri paket içindeki JSON kataloglarına taşı.
-- Kullanıcı tarafından oluşturulan grupları ve düzenlemeleri kullanıcı veri dizinindeki JSON deposuna taşı.
+- Kullanıcı tarafından oluşturulan grupları veya düzenlemeleri JSON'a taşımayı varsayma. Önce mevcut SQLite modelinin bakım, yedekleme ve kullanıcı deneyimi açısından yeterli olduğunu doğrula; yalnızca kanıtlanmış ihtiyaç varsa ayrı migrasyon tasarla.
 - SQLite'taki eski ders tablolarını ilk geçişte silme; geçiş sırasında eski veriyi JSON'a dönüştür ve kayıt sayısı/kimlik/metin karşılaştırması yap.
 - Çalışma geçmişi için kararlı ders kimlikleri ve mevcut snapshot alanları üzerinden ilişkiyi koru. Eski `lesson_id` kayıtlarını kayıpsız dönüştürmeden hiçbir tabloyu kaldırma.
 - Eski veritabanıyla açılışta güvenli, tek seferlik geçiş uygula; geçiş tamamlanma işareti ve tekrar çalıştırma güvenliği ekle.
-- İçerik ekleme, düzenleme, silme, sıralama, varsayılanları geri yükleme ve yedekleme akışlarını JSON servisine bağla.
+- Yerleşik katalog okuma akışını LessonService üzerinden sürdür; kullanıcı içeriği CRUD, sıralama, silme/geri yükleme ve yedekleme davranışını mevcut SQLite API'siyle uyumlu tut.
 
-**Çıkış koşulu:** Eski ve yeni içerik sayıları/kimlikleri karşılaştırılır; tüm CRUD ve geri yükleme testleri geçer; geçmiş ve profil sayıları değişmez.
+**Çıkış koşulu:** Paketlenmiş katalog ile mevcut kullanıcı içeriği arasındaki sınır testlerle doğrulanır; kullanıcı içeriği migrasyonu ancak ayrı bir karar ve kanıtlanmış ihtiyaç varsa uygulanır. Herhangi bir geçişte CRUD, geri yükleme, geçmiş ve profil tutarlılığı kanıtlanır.
 
 ### Aşama 4 — Runtime monkey-patch ve yinelenen modülleri sadeleştirme
 **Durum: Bekliyor**
@@ -162,3 +162,13 @@ keycan/
 - Yeni çevrimiçi hesap, bulut senkronizasyonu veya yeni ürün özellikleri eklemek.
 - Ölçülmemiş performans varsayımları için optimizasyon yapmak.
 - Sırf mimari görünmesi için fazladan katman veya bağımlılık eklemek.
+
+
+## 2026-11-01 — Güncel kararlar ve uygulama durumu
+
+- Paketlenmiş varsayılan ders kataloğu JSON olarak kalır; GUI katalog dosyalarını doğrudan okumaz, LessonService sınırını kullanır.
+- Kullanıcı tarafından oluşturulan içerikler ve hazır içerik üzerindeki kişisel düzenlemeler için SQLite mevcut yazma modeli korunur. Kullanıcı verisini JSON'a taşımak şu an hedef veya zorunlu iş değildir.
+- Yazma oturumları, istatistikler ve geçmiş SQLite'ta kalır.
+- JSON tabanlı yedekleme/geri yükleme, uygulamanın canlı veri deposu değildir; sürümlü dışa aktarma biçimidir ve geriye dönük uyumluluğu korunmalıdır.
+- Main dalında KC-001–KC-005 stabilizasyon PR'si (#2) birleştirilmiştir. İlgili otomatik testler PR doğrulamasında başarılı olmuştur. Gizlilik, profil fotoğrafı ve canlı dil değişimi gibi GTK etkileşimleri için manuel kontrol gereksinimi ayrıca takip edilir.
+- Bu belge, ROADMAP.md Aşama 10'un teknik uygulama kaynağıdır. Öncelik çakışırsa ROADMAP'teki güvenlik kuralları ve bu belgede açıklanan veri koruma sınırları geçerlidir.
