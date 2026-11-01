@@ -4,12 +4,13 @@ This document is the implementation companion to `ROADMAP.md` Stage 10. The road
 
 ## 1. Current architecture findings
 
-The repository already has a useful separation between `app.py`, `window.py`, `gui/`, `data/`, `services/`, `core/`, and `utils/`. The problem is not a lack of folders; it is unclear ownership and runtime patching across modules.
+The repository already has a useful separation between `app.py`, `window.py`, `gui/`, `data/`, `services/`, `core/`, and `utils/`. The remaining challenge is clear ownership and small, testable boundaries between the existing modules.
 
 Confirmed findings from the current branch:
 
-- `keycan/app.py` explicitly registers the database compatibility runtime before constructing the window. This is still a transitional class-method registration mechanism, not import-time patching.
-- `database_runtime.py` replaces many `Database` methods after class creation. It contains custom content CRUD, progression queries, default-content snapshots, and JSON backup import/export.
+- `keycan/app.py` no longer performs database runtime registration.
+- `database_runtime.py` now exposes a concrete `ManagedDatabase(Database)` subclass. The previous runtime assignment of methods onto the base class has been removed; content CRUD, progression queries, default-content snapshots, and JSON backup import/export are available through the subclass.
+- The base `Database` class remains unchanged when `database_runtime.py` is imported. A subprocess regression test protects this boundary.
 - `database.py` already contains overlapping database behavior and schema migrations. The two files must be compared method-by-method before consolidation.
 - `window.py` imports and coordinates the database, workspace, search, settings, statistics, profile, keyboard guide, translation, and preference components. It also owns substantial interaction state.
 - The active GUI imports `settings2.py` and `statistics_clean.py`. The older `settings.py` and `statistics.py` have no direct references in the current code-search results, but must be checked for indirect imports and tests before removal.
@@ -115,15 +116,15 @@ A mechanical group-name cleanup creates collisions (for example, the F/Q keyboar
 ## 8. Dependency and runtime map
 
 - `main.py` delegates to `keycan.app.main()`.
-- `app.py` explicitly registers the database compatibility runtime before constructing the window. `statistics_runtime.py` is no longer part of the active application import path.
-- `KeycanWindow` imports the base `Database` class. Its behavior changes globally only because the app later imports the runtime patch module before the window is instantiated.
-- Tests that require runtime database methods now call `install_database_runtime()` explicitly. A subprocess regression test verifies that importing the module alone does not patch the class and that repeated registration is idempotent.
-- The database constructor first runs the schema migrations in `database.py`; the patched initializer then migrates custom paths, creates/loads default-content snapshots, and reconciles the snapshot with active content.
+- `app.py` imports the composed window without a database registration side effect. `statistics_runtime.py` is no longer part of the active application import path.
+- `KeycanWindow` uses `ManagedDatabase`, an explicit subclass of the base `Database` class. Importing `database_runtime.py` does not modify the base class.
+- The managed database constructor first runs the base schema migrations in `database.py`; it then migrates custom paths, creates/loads default-content snapshots, and reconciles the snapshot with active content.
+- Tests that need content management, progression, or backup methods instantiate `ManagedDatabase`; tests that need only base statistics/schema behavior can continue using `Database`.
 - The Flatpak wrapper seeds the user's XDG data database from the packaged database. The Flatpak manifest copies the entire `keycan/` package, so the new JSON resource is included automatically.
 - `window.py` now routes source/lesson reads through `LessonService`; result saving and statistics still use the database. `content_manager2.py` uses the service for group/lesson reads and SQLite for CRUD writes. It still uses the database's private `_display_source_name` helper, which can be removed from the GUI boundary in a later focused change.
 - The active GUI modules are `settings2.py` and `statistics_clean.py`. The older `settings.py` and `statistics.py` have no current direct import references. They are being retained as requested; any consolidation should preserve their import paths or leave compatibility wrappers.
 - The former `statistics_runtime.py` patch only replaced `MetricCard.set_value` to cancel stale GLib animation timers. That behavior now lives directly in `MetricCard`; the runtime file remains as a side-effect-free compatibility import, and `app.py` no longer imports it.
-- `database.py` already defines CRUD and backup methods that are shadowed by the runtime module's different implementations. The runtime patch adds snapshot management, progression summary, and content reset/restore. Consolidation must choose one authoritative implementation per operation; simply deleting the runtime file would remove active behavior. This remains the largest outstanding runtime refactor.
+- `database.py` still contains older custom-content CRUD methods alongside the richer managed API. `ManagedDatabase` intentionally overrides the application-facing operations while preserving inherited legacy methods. A method-by-method API audit is still needed before any duplicate methods are removed. The module can later be renamed to better reflect its new role.
 
 ### Consequence for the next implementation step
 
@@ -136,27 +137,31 @@ The JSON catalog is ready, but GUI consumers should not read JSON directly. The 
 - `check.sh` now copies the tracked database to a temporary directory, applies the real `Database` migrations to that copy, and performs integrity/schema/snapshot checks there. This validates migrations without mutating the checked-in database.
 - The check also verifies that all group and lesson IDs in the packaged JSON catalog match the default-content snapshot IDs in the migrated database.
 - Current repository database validation reports 83 active sources (82 built-in groups plus one active custom group) and 1,833 active lessons.
-- The full CI workflow now runs `check.sh` plus the full pytest suite. Latest verified run: all four jobs succeeded; the repository check passed (44 focused tests) and the full suite passed (59 tests).
+- The full CI workflow runs `check.sh` plus the full pytest suite. On branch `architecture/maintenance-refactor`, the first managed-database refactor passed all four jobs; `check.sh` completed 52 focused checks and the full pytest suite passed 67 tests.
 
 
 ## 10. Duplicate-module audit update (historical findings, updated below)
 
 - Confirmed that `settings2.py` and `statistics_clean.py` are the active GUI implementations. The older `settings.py` and `statistics.py` are not imported by the current application path; both files are retained.
 - Moved the metric-card animation cancellation/reset logic into `MetricCard.set_value`. The former `statistics_runtime.py` file remains as a side-effect-free compatibility import, and the application no longer imports it.
-- The database runtime compatibility module still registers additional `Database` methods explicitly. It has not been removed or rewritten; its initializer, snapshot behavior, custom-content CRUD, progression summary, and backup implementation must be migrated carefully before the registration layer can be eliminated.
+- The database runtime registration mechanism has been removed. The application now uses the explicit `ManagedDatabase` subclass; its method implementations are still module-level functions assigned in the subclass body and may be moved into ordinary class methods in a later cleanup.
 - `window.py` currently contains a base `KeycanWindow` plus `ConfiguredKeycanWindow`, with overlapping source-loading methods. This is a candidate for a later small refactor, not a reason to rewrite the window in one pass.
 
 
-## 11. Explicit database runtime registration
+## 11. Managed database subclass refactor (branch: architecture/maintenance-refactor)
 
-- Added `install_database_runtime()`; importing `database_runtime.py` no longer modifies `Database`.
-- The application installs the database compatibility methods before importing the window class, making the dependency visible at the composition root.
-- Tests and the repository check script call the registration function explicitly.
-- Registration is idempotent and covered by a subprocess test that starts with an unpatched `Database` class.
-- This is an intermediate safety improvement only. The registration function still assigns methods onto `Database`; the remaining task is to move these implementations into explicit database/repository classes and make the compatibility module a no-op.
+- Replaced the previous `install_database_runtime()` monkey-patch with `ManagedDatabase(Database)`.
+- The application window now constructs `ManagedDatabase`; `app.py` no longer registers methods or depends on import order.
+- The base `Database` class remains unchanged when the managed module is imported.
+- Content management, default snapshots, progression summary, and backup/restore methods remain available on `ManagedDatabase`.
+- Updated custom-content, lesson-service, and progression tests to use the managed subclass.
+- Added a subprocess test proving the base class is not mutated and the managed API is available.
+- GitHub Actions run 41297090084 passed all four jobs. `check.sh` completed 52 checks and the full suite passed 67 tests.
+- GTK desktop interaction tests have not been run in CI and remain a separate manual verification gate.
 
 
-## 12. Current main-branch decisions (2026-11-01)
+
+## 12. Current data ownership decisions (2026-11-01)
 
 This section supersedes any older wording in this document that suggests all user lesson content must move to JSON.
 
@@ -173,7 +178,7 @@ The stabilization pull request [#2](https://github.com/Praxis1071/Keycan/pull/2)
 
 ### Remaining high-risk work
 
-- database_runtime.py still contains compatibility behavior registered onto Database. Move behavior into explicit methods/services only after a method-by-method comparison and focused tests.
+- Move the module-level managed database functions into ordinary class methods or focused repository/service objects only after a method-by-method comparison and focused tests.
 - window.py still coordinates multiple pages and typing-session state. Extract responsibilities incrementally; preserve GTK signal/lifecycle behavior.
 - Legacy settings/statistics modules should not be deleted until import, packaging, tests and external compatibility are checked.
 - Backup restore, reset/restore defaults and historical session identity must remain regression-gated.
