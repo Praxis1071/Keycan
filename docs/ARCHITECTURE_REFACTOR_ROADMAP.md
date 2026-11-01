@@ -99,18 +99,19 @@ keycan/
 **Çıkış koşulu:** Paketlenmiş katalog ile mevcut kullanıcı içeriği arasındaki sınır testlerle doğrulanır; kullanıcı içeriği migrasyonu ancak ayrı bir karar ve kanıtlanmış ihtiyaç varsa uygulanır. Herhangi bir geçişte CRUD, geri yükleme, geçmiş ve profil tutarlılığı kanıtlanır.
 
 ### Aşama 4 — Runtime monkey-patch ve yinelenen modülleri sadeleştirme
-**Durum: Kısmen tamamlandı — database runtime monkey-patch kaldırıldı; yinelenen modül denetimi sürüyor**
+**Durum: Büyük ölçüde tamamlandı — database runtime monkey-patch kaldırıldı; yinelenen GUI uygulamaları uyumluluk dışa aktarımlarına dönüştürüldü**
 
 - `database_runtime.py` içindeki `Database` sınıfına çalışma anında metot atama mekanizması kaldırıldı. Uygulama artık `managed_database.py` içindeki açık `ManagedDatabase(Database)` alt sınıfını kullanıyor.
 - Eski `database_runtime.py` yolu, eski importları bozmamak için küçük bir uyumluluk dışa aktarımı olarak tutuluyor.
 - Uygulama başlangıcındaki `install_database_runtime()` çağrısı kaldırıldı; `app.py` artık import sırasına bağlı veritabanı kaydı yapmıyor.
 - İçerik yönetimi, ilerleme ve yedekleme API'sini kullanan testler `ManagedDatabase` ile çalışacak şekilde güncellendi.
 - Alt süreç regresyon testi, hem `managed_database.py` hem de uyumluluk modülü import edildiğinde temel `Database` sınıfının değişmediğini ve managed API'nin alt sınıfta bulunduğunu doğruluyor.
-- `database.py` / `database_runtime.py`, `statistics.py` / `statistics_clean.py`, `settings.py` / `settings2.py` için tüm import ve çağrı noktalarını doğrula.
-- Yalnızca kullanılmadığı kanıtlanan veya yerine geçen dosyaları kaldır; uyumluluk gerekiyorsa geçici ince bir yönlendirme katmanı kullan.
+- `statistics.py` artık `statistics_clean.py` modülünden; `settings.py` ise `settings2.py` modülünden küçük uyumluluk dışa aktarımları sağlar. Yinelenen uygulama kodu kaldırıldı, eski import yolları korundu.
+- `database_runtime.py` da `managed_database.py` için uyumluluk dışa aktarımıdır; aktif kod doğrudan managed modülünü kullanır.
+- Kalan modül düzeyi managed fonksiyonları normal sınıf metotlarına taşı; bu adım ayrı testlerle yürütülmeli.
 - Managed alt sınıfındaki modül düzeyi fonksiyonları daha sonra normal sınıf metotlarına taşı; bu adım ayrı testlerle yürütülmeli.
 
-**Doğrulama:** İlk refactor commit'inde GitHub Actions tüm dört işi başarıyla tamamladı; `check.sh` 52 kontrolü, tam pytest paketi 67 testi geçti. GTK masaüstü etkileşimleri henüz elle doğrulanmadı.
+**Doğrulama:** Managed database ve session metrics refactor'ları için GitHub Actions tüm dört işi başarıyla tamamladı; `check.sh` 52 kontrolü, tam pytest paketi 70 testi geçti. GTK masaüstü etkileşimleri henüz elle doğrulanmadı.
 
 **Çıkış koşulu:** Runtime monkey-patch olmadan uygulama ve testler çalışır; yinelenen modüllerin kaldırılması için kullanım/uyumluluk kanıtı bulunur; hiçbir özellik kaybolmaz.
 
