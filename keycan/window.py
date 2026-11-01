@@ -41,7 +41,7 @@ headerbar.keycan-header { background: var(--headerbar-bg-color); color: var(--he
 """
 
 
-class KeycanWindow(Adw.ApplicationWindow):
+class _BaseKeycanWindow(Adw.ApplicationWindow):
     def __init__(self, app: Adw.Application, database_path: Path) -> None:
         super().__init__(application=app, title="Keycan — On Parmak")
         self.set_default_size(1200, 760)
@@ -294,10 +294,19 @@ class KeycanWindow(Adw.ApplicationWindow):
 
     def _load_sources(self) -> None:
         sources = self.lesson_service.sources()
-        self.source_ids = [i for i, _ in sources]
-        self.source_dropdown.set_model(Gtk.StringList.new([n for _, n in sources]))
+        self.source_ids = [source_id for source_id, _name in sources]
+        self.source_dropdown.set_model(
+            Gtk.StringList.new([name for _source_id, name in sources])
+        )
         if sources:
             self.source_dropdown.set_selected(0)
+            return
+
+        self.lesson_ids = []
+        self.lesson_dropdown.set_model(Gtk.StringList.new([]))
+        self.current_lesson_id = None
+        self.current_text = ""
+        self._restart()
 
     def _load_lessons(self, source_id: int) -> None:
         lessons = self.lesson_service.lessons(source_id)
@@ -721,7 +730,7 @@ class KeycanWindow(Adw.ApplicationWindow):
             self.close()
 
 
-class ConfiguredKeycanWindow(KeycanWindow):
+class KeycanWindow(_BaseKeycanWindow):
     """Production application shell composed from the base typing window."""
 
     def __init__(self, app: Adw.Application, database_path: Path):
@@ -830,22 +839,4 @@ class ConfiguredKeycanWindow(KeycanWindow):
         label = Gtk.Label(label=title); label.set_xalign(0); label.set_hexpand(True); box.append(label)
         row.set_child(box); return row
 
-    def _load_sources(self) -> None:
-        sources = self.lesson_service.sources()
-        self.source_ids = [source_id for source_id, _name in sources]
-        self.source_dropdown.set_model(Gtk.StringList.new([name for _source_id, name in sources]))
-        if sources:
-            self.source_dropdown.set_selected(0)
-            return
-        self.lesson_ids = []
-        self.lesson_dropdown.set_model(Gtk.StringList.new([]))
-        self.current_lesson_id = None; self.current_text = ""; self._restart()
 
-    def _on_source_changed(self, _dropdown, _param) -> None:
-        index = self.source_dropdown.get_selected()
-        if 0 <= index < len(self.source_ids):
-            self._load_lessons(self.source_ids[index])
-
-
-# Export the fully composed window so app.py needs no monkey-patching from main.py.
-KeycanWindow = ConfiguredKeycanWindow
