@@ -141,10 +141,10 @@ jobs:
 
               window.db.save_result = fail_once_save
               window._finish_now()
-              assert len(window.pending_saves) == 1
+              assert len(window.session_recorder.pending_saves) == 1
               window.db.save_result = original_save
               window._retry_save_results(None)
-              assert window.pending_saves == []
+              assert window.session_recorder.pending_saves == []
               retry_saved = window.db.conn.execute(
                   "SELECT COUNT(*) FROM practice_results WHERE session_uuid = ?",
                   (retry_uuid,),
