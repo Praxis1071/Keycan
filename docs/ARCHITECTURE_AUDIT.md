@@ -4,7 +4,7 @@
 **İncelenen dal:** `architecture/maintenance-refactor` (başlangıç noktası: main)  
 **Temel sürüm:** v2.5.0  
 **Denetim türü:** GitHub kaynak kodu, mevcut mimari belgeler, test tanımları ve GitHub Actions sonuçlarının statik incelemesi  
-**Durum:** Statik denetim güncellendi; yerel GTK masaüstü doğrulaması ayrıca yapılmalı.
+**Durum:** Statik denetim ve ilk iki refactor adımı branch üzerinde uygulandı; yerel GTK masaüstü doğrulaması ayrıca yapılmalı.
 
 Bu rapor, güncel main dalına göre önceki mimari raporundaki eski dal ve test bilgilerini düzeltir. Kaynak kodu üzerinden görülebilen durum ile masaüstünde gerçekten çalıştırılması gereken kontroller birbirinden ayrı tutulur.
 
@@ -50,7 +50,8 @@ Katalog doğrulaması, yinelenen kimlikler, bozuk kaynak, eksik kaynak ve kullan
 
 - window.py ana pencere, navigasyon ve çalışma alanı koordinasyonunun yanında ders seçimi ve yazma oturumu yaşam döngüsünün önemli bölümünü yönetir.
 - Bu dosyanın sorumluluklarını azaltmak mantıklıdır; ancak GTK sinyalleri, widget yaşam döngüsü, zamanlayıcılar ve kapanışta bekleyen kayıtlar nedeniyle büyük bir yeniden yazım yapılmamalıdır.
-- İlk ayrıştırma adayları ders seçimi/yükleme ve çalışma oturumu kayıt akışlarıdır.
+- İlk ayrıştırma adımı olarak kelime/karakter/doğruluk ölçümleri ve kayıt payload'ı GTK penceresinden çıkarılarak `core/session_metrics.py` içine taşındı. Oturum başlatma, zamanlayıcı, GTK buffer okuma ve kapanışta bekleyen kayıt yönetimi hâlâ pencerededir.
+- Sonraki ayrıştırma adayları ders seçimi/yükleme ve çalışma oturumu yaşam döngüsüdür.
 - Yalnızca gerçek ve bağımsız sorumluluklar için yeni sınıf/servis oluşturulmalıdır.
 
 ## 6. Yinelenen modüller
@@ -77,14 +78,14 @@ KC-001–KC-005 düzeltmeleri main'e alınmıştır. Ayrıntılı hata geçmişi
 ## 9. Öncelikli mimari riskler
 
 1. `window.py` dosyasının pencere koordinasyonunun ötesinde çalışma oturumu ve ders akışlarını da yönetmesi.
-2. `database_runtime.py` içindeki alt sınıf metotlarının hâlâ modül düzeyindeki fonksiyonlara bağlanması ve dosya adının artık tam karşılığını yansıtmaması.
+2. `managed_database.py` içindeki alt sınıf metotlarının hâlâ modül düzeyindeki fonksiyonlara bağlanması.
 3. Eski/aktif settings ve statistics modüllerinin çiftlerinin bulunması.
 4. JSON katalog, SQLite kullanıcı içeriği ve JSON yedekleme rollerinin dokümantasyonda karıştırılma riski.
 5. Flatpak veri yolu, ilk kurulum/var olan kullanıcı verisi geçişi ve yedek geri yükleme senaryolarının her sürümde regresyon testine ihtiyaç duyması.
 
 ## 10. Sonraki adım ve kapsam sınırı
 
-İlk uygulama adımı olarak runtime sınıf mutasyonu kaldırılmış ve `ManagedDatabase` alt sınıfına geçilmiştir. Branch CI doğrulaması `check.sh` için 52 kontrolü ve tam pytest paketi için 67 testi başarıyla tamamlamıştır. Sonraki adım, `window.py` içindeki yazma oturumu hesaplama/kayıt akışını GTK yaşam döngüsünü bozmadan küçük bileşenlere ayırmak ve eski GUI modüllerinin kullanımını kesinleştirmektir.
+İlk uygulama adımı olarak runtime sınıf mutasyonu kaldırılmış ve `ManagedDatabase` alt sınıfına geçilmiştir. Branch CI doğrulaması `check.sh` için 52 kontrolü ve tam pytest paketi için 70 testi başarıyla tamamlamıştır. `window.py` içindeki saf oturum ölçüm hesaplamaları `core/session_metrics.py` içine ayrılmıştır. Sonraki adım, GTK buffer/zamanlayıcı/kapanış yaşam döngüsünü koruyarak oturum koordinasyonunu ve ders yükleme akışını daha küçük bileşenlere ayırmak; ayrıca eski GUI modüllerinin kullanımını kesinleştirmektir.
 
 Bu çalışma sırasında:
 
