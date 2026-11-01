@@ -57,7 +57,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install test dependencies
-        run: python -m pip install --upgrade pip pytest
+        run: python -m pip install --upgrade pip pytest ruff
       - name: Run repository checks
         run: ./check.sh
       - name: Check undefined Python names
