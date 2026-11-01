@@ -14,7 +14,7 @@ Confirmed findings from the current branch:
 - The base `Database` class remains unchanged when `database_runtime.py` is imported. A subprocess regression test protects this boundary.
 - `database.py` already contains overlapping database behavior and schema migrations. The two files must be compared method-by-method before consolidation.
 - `window.py` imports and coordinates the database, workspace, search, settings, statistics, profile, keyboard guide, translation, and preference components. It also owns substantial interaction state.
-- The active GUI imports `settings2.py` and `statistics_clean.py`. The older `settings.py` and `statistics.py` have no direct references in the current code-search results, but must be checked for indirect imports and tests before removal.
+- The active GUI imports `settings2.py` and `statistics_clean.py`. The older `settings.py` and `statistics.py` now re-export the active classes to preserve their historical import paths without maintaining duplicate implementations.
 - The former statistics runtime patch has been removed from the active application path; the animation behavior now belongs to `MetricCard`.
 - The current backup format is already JSON (version 3), with stable identifiers and compatibility handling. It must be preserved and strengthened rather than replaced with a second unrelated format.
 - The initial CI baseline exposed `test_backup_round_trip_preserves_deleted_lesson_history`. The root cause was JSON `null` identities being converted to the literal string `None`, which selected the wrong identity-matching path. The importer now normalizes null identities before matching, and the full CI suite passes.
@@ -69,7 +69,7 @@ Content normalization rules:
 ### Gate D — simplify the architecture
 1. Replace runtime monkey-patching with explicit methods or composed services.
 2. Consolidate duplicate database and statistics implementations only after proving which methods are active.
-3. Keep one settings implementation and one statistics implementation; remove legacy copies only after import, test, and packaging references are updated.
+3. Keep one settings implementation and one statistics implementation; compatibility modules should remain thin re-exports rather than duplicate implementations.
 4. Extract page orchestration and event coordination from `window.py` into focused controllers/services only where there is a real responsibility boundary.
 5. Keep `window.py` as a small composition root for the application window.
 
@@ -123,9 +123,9 @@ A mechanical group-name cleanup creates collisions (for example, the F/Q keyboar
 - Tests that need content management, progression, or backup methods instantiate `ManagedDatabase`; tests that need only base statistics/schema behavior can continue using `Database`.
 - The Flatpak wrapper seeds the user's XDG data database from the packaged database. The Flatpak manifest copies the entire `keycan/` package, so the new JSON resource is included automatically.
 - `window.py` now routes source/lesson reads through `LessonService`; result saving and statistics still use the database. `content_manager2.py` uses the service for group/lesson reads and SQLite for CRUD writes. It still uses the database's private `_display_source_name` helper, which can be removed from the GUI boundary in a later focused change.
-- The active GUI modules are `settings2.py` and `statistics_clean.py`. The older `settings.py` and `statistics.py` have no current direct import references. They are being retained as requested; any consolidation should preserve their import paths or leave compatibility wrappers.
+- The active GUI modules are `settings2.py` and `statistics_clean.py`. The older `settings.py` and `statistics.py` are now thin compatibility re-exports, preserving old import paths without duplicating their implementations.
 - The former `statistics_runtime.py` patch only replaced `MetricCard.set_value` to cancel stale GLib animation timers. That behavior now lives directly in `MetricCard`; the runtime file remains as a side-effect-free compatibility import, and `app.py` no longer imports it.
-- `database.py` still contains older custom-content CRUD methods alongside the richer managed API. `ManagedDatabase` intentionally overrides the application-facing operations while preserving inherited legacy methods. A method-by-method API audit is still needed before any duplicate methods are removed. The module can later be renamed to better reflect its new role.
+- `database.py` still contains older custom-content CRUD methods alongside the richer managed API. `ManagedDatabase` intentionally overrides the application-facing operations while preserving inherited legacy methods. A method-by-method API audit is still needed before any duplicate methods are removed. The managed implementation now lives in the explicitly named `managed_database.py`; its module-level functions can be moved into normal class methods in a later focused cleanup.
 
 ### Consequence for the next implementation step
 
@@ -143,7 +143,7 @@ The JSON catalog is ready, but GUI consumers should not read JSON directly. The 
 
 ## 10. Duplicate-module audit update (historical findings, updated below)
 
-- Confirmed that `settings2.py` and `statistics_clean.py` are the active GUI implementations. The older `settings.py` and `statistics.py` are not imported by the current application path; both files are retained.
+- Confirmed that `settings2.py` and `statistics_clean.py` are the active GUI implementations. The older `settings.py` and `statistics.py` are thin compatibility re-exports, not separate implementations.
 - Moved the metric-card animation cancellation/reset logic into `MetricCard.set_value`. The former `statistics_runtime.py` file remains as a side-effect-free compatibility import, and the application no longer imports it.
 - The database runtime registration mechanism has been removed. The application now uses the explicit `ManagedDatabase` subclass; its method implementations are still module-level functions assigned in the subclass body and may be moved into ordinary class methods in a later cleanup.
 - `window.py` currently contains a base `KeycanWindow` plus `ConfiguredKeycanWindow`, with overlapping source-loading methods. This is a candidate for a later small refactor, not a reason to rewrite the window in one pass.
