@@ -49,6 +49,65 @@ jobs:
       - name: Run Stage 7 progression tests
         run: pytest -q tests/test_stage7_progression.py
 
+
+  gtk-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install GTK test runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 xvfb
+      - name: Launch Keycan and complete a practice session
+        env:
+          GSETTINGS_BACKEND: memory
+          GTK_A11Y: none
+          NO_AT_BRIDGE: 1
+        run: |
+          xvfb-run -a /usr/bin/python3 - <<'PY'
+          import shutil
+          import tempfile
+          import time
+          import uuid
+          from pathlib import Path
+
+          import gi
+          gi.require_version("Adw", "1")
+          gi.require_version("Gtk", "4.0")
+          from gi.repository import Adw
+
+          from keycan.window import KeycanWindow
+
+          app = Adw.Application(application_id="org.keycan.Keycan.CISmoke")
+          app.register(None)
+          with tempfile.TemporaryDirectory() as directory:
+              database_path = Path(directory) / "typing_data.db"
+              shutil.copy2("typing_data.db", database_path)
+              window = KeycanWindow(app, database_path)
+              assert window.content_stack.get_child_by_name("statistics") is not None
+              assert window.content_stack.get_child_by_name("profile") is not None
+
+              lessons = window.lesson_service.lessons(window.lesson_service.sources()[0][0])
+              assert lessons
+              window.current_lesson_id = lessons[0][0]
+              window.current_text = "bir iki"
+              window.session_uuid = uuid.uuid4().hex
+              window.started_at = time.monotonic() - 3
+              window.duration_spin.set_value(1)
+              window.input_view.get_buffer().set_text("bir iki")
+              window._finish_now()
+
+              saved = window.db.conn.execute(
+                  "SELECT COUNT(*) FROM practice_results WHERE session_uuid = ?",
+                  (window.session_uuid,),
+              ).fetchone()[0]
+              assert saved == 1
+              assert "Toplam: 2" in window.status.get_text()
+              assert window.finished
+              window.db.close()
+          print("GTK smoke test passed: window, pages, typing session, persistence and status.")
+          PY
+
   regression:
     runs-on: ubuntu-latest
     steps:
