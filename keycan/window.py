@@ -12,7 +12,7 @@ from gi.repository import Adw, Gdk, GLib, Gtk
 
 from keycan.core.typing_engine import TypingEngine
 from keycan.core.session_metrics import calculate_session_metrics
-from keycan.data.database_runtime import ManagedDatabase
+from keycan.data.managed_database import ManagedDatabase
 from keycan.gui.workspace import TypingWorkspace
 from keycan.gui.search import SourceSearchDropdown
 from keycan.gui.settings2 import SettingsPanel
