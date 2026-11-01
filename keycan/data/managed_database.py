@@ -32,7 +32,7 @@ class ManagedDatabase(Database):
         if not snapshot_pending:
             self._sync_default_snapshot()
 
-    def _migrate_custom_relative_paths(self: Database) -> None:
+    def _migrate_custom_relative_paths(self) -> None:
         columns = {row[1] for row in self.conn.execute("PRAGMA table_info(sources)")}
         if "relative_path" not in columns:
             self.conn.execute("ALTER TABLE sources ADD COLUMN relative_path TEXT NOT NULL DEFAULT ''")
@@ -55,7 +55,7 @@ class ManagedDatabase(Database):
             self.conn.commit()
 
 
-    def _ensure_default_snapshot(self: Database) -> None:
+    def _ensure_default_snapshot(self) -> None:
         self._migrate_custom_relative_paths()
         self.conn.execute(
             """CREATE TABLE IF NOT EXISTS default_content_sources (
@@ -126,7 +126,7 @@ class ManagedDatabase(Database):
             self.conn.commit()
 
 
-    def _sync_default_snapshot(self: Database) -> None:
+    def _sync_default_snapshot(self) -> None:
         """Mirror the currently active built-in workspace content for later restore."""
         source_rows = self.conn.execute(
             """SELECT id, display_name, relative_path, COALESCE(custom_key, '')
@@ -164,7 +164,7 @@ class ManagedDatabase(Database):
 
 
 
-    def sources(self: Database):
+    def sources(self):
         rows = self.conn.execute(
             "SELECT id, display_name, is_custom FROM sources WHERE is_deleted = 0 ORDER BY display_name COLLATE NOCASE, id"
         ).fetchall()
@@ -179,7 +179,7 @@ class ManagedDatabase(Database):
         return [(source_id, self._display_source_name(name, index)) for index, (source_id, name, _is_custom) in enumerate(visible, 1)]
 
 
-    def lessons(self: Database, source_id: int):
+    def lessons(self, source_id: int):
         rows = self.conn.execute(
             "SELECT id FROM lessons WHERE source_id = ? AND is_deleted = 0 ORDER BY custom_order, legacy_metin_id, id",
             (source_id,),
@@ -187,7 +187,7 @@ class ManagedDatabase(Database):
         return [(lesson_id, f"Ders {index}") for index, (lesson_id,) in enumerate(rows, 1)]
 
 
-    def _custom_lesson_position(self: Database, lesson_id: int) -> int:
+    def _custom_lesson_position(self, lesson_id: int) -> int:
         row = self.conn.execute("SELECT source_id, custom_order FROM lessons WHERE id = ?", (lesson_id,)).fetchone()
         if not row:
             raise ValueError("Metin bulunamadı")
@@ -199,13 +199,13 @@ class ManagedDatabase(Database):
         ).fetchone()[0])
 
 
-    def managed_groups(self: Database):
+    def managed_groups(self):
         return self.conn.execute(
             "SELECT id, display_name, custom_key, is_custom FROM sources WHERE is_deleted = 0 ORDER BY display_name COLLATE NOCASE, id"
         ).fetchall()
 
 
-    def managed_lessons(self: Database, source_id: int):
+    def managed_lessons(self, source_id: int):
         return self.conn.execute(
             """SELECT id, text, custom_key, custom_order, is_custom FROM lessons
                WHERE source_id = ? AND is_deleted = 0 ORDER BY custom_order, legacy_metin_id, id""",
@@ -213,7 +213,7 @@ class ManagedDatabase(Database):
         ).fetchall()
 
 
-    def rename_group(self: Database, source_id: int, name: str) -> None:
+    def rename_group(self, source_id: int, name: str) -> None:
         name = self._validate_group_name(name)
         row = self.conn.execute(
             "SELECT is_custom FROM sources WHERE id = ? AND is_deleted = 0", (source_id,)
@@ -226,7 +226,7 @@ class ManagedDatabase(Database):
             self._sync_default_snapshot()
 
 
-    def delete_group(self: Database, source_id: int) -> None:
+    def delete_group(self, source_id: int) -> None:
         row = self.conn.execute(
             "SELECT is_custom FROM sources WHERE id = ? AND is_deleted = 0", (source_id,)
         ).fetchone()
@@ -239,7 +239,7 @@ class ManagedDatabase(Database):
             self._sync_default_snapshot()
 
 
-    def create_custom_group(self: Database, name: str) -> int:
+    def create_custom_group(self, name: str) -> int:
         name = self._validate_group_name(name)
         key = uuid.uuid4().hex
         cursor = self.conn.execute(
@@ -251,7 +251,7 @@ class ManagedDatabase(Database):
         return int(cursor.lastrowid)
 
 
-    def create_lesson(self: Database, source_id: int, text: str) -> int:
+    def create_lesson(self, source_id: int, text: str) -> int:
         text = self._validate_text(text)
         source = self.conn.execute(
             "SELECT is_custom FROM sources WHERE id = ? AND is_deleted = 0", (source_id,)
@@ -273,7 +273,7 @@ class ManagedDatabase(Database):
         return lesson_id
 
 
-    def update_lesson(self: Database, lesson_id: int, text: str) -> None:
+    def update_lesson(self, lesson_id: int, text: str) -> None:
         text = self._validate_text(text)
         source = self.conn.execute(
             """SELECT s.is_custom FROM lessons AS l
@@ -289,7 +289,7 @@ class ManagedDatabase(Database):
             self._sync_default_snapshot()
 
 
-    def delete_lesson(self: Database, lesson_id: int) -> None:
+    def delete_lesson(self, lesson_id: int) -> None:
         row = self.conn.execute(
             """SELECT l.source_id, s.is_custom FROM lessons AS l
                JOIN sources AS s ON s.id = l.source_id
@@ -305,7 +305,7 @@ class ManagedDatabase(Database):
             self._sync_default_snapshot()
 
 
-    def move_lesson(self: Database, lesson_id: int, direction: int) -> None:
+    def move_lesson(self, lesson_id: int, direction: int) -> None:
         if direction not in (-1, 1):
             raise ValueError("Geçersiz sıralama yönü")
         row = self.conn.execute(
@@ -337,7 +337,7 @@ class ManagedDatabase(Database):
             self._sync_default_snapshot()
 
 
-    def _normalize_order(self: Database, source_id: int) -> None:
+    def _normalize_order(self, source_id: int) -> None:
         rows = self.conn.execute(
             "SELECT id FROM lessons WHERE source_id = ? AND is_deleted = 0 ORDER BY custom_order, legacy_metin_id, id", (source_id,)
         ).fetchall()
@@ -346,7 +346,7 @@ class ManagedDatabase(Database):
         self.conn.commit()
 
 
-    def progression_summary(self: Database):
+    def progression_summary(self):
         rows = self.conn.execute(
             """SELECT completed_at, duration_seconds, typed_word_count,
                       words_per_minute, accuracy_percent
@@ -421,7 +421,7 @@ class ManagedDatabase(Database):
         }
 
 
-    def reset_all_content(self: Database):
+    def reset_all_content(self):
         self._ensure_default_snapshot()
         pending = self.conn.execute(
             "SELECT snapshot_pending FROM content_restore_state WHERE id = 1"
@@ -441,7 +441,7 @@ class ManagedDatabase(Database):
         return groups, lessons
 
 
-    def restore_defaults(self: Database):
+    def restore_defaults(self):
         self._ensure_default_snapshot()
         source_rows = self.conn.execute("SELECT source_id, display_name, relative_path, custom_key FROM default_content_sources ORDER BY source_id").fetchall()
         lesson_rows = self.conn.execute(
@@ -486,7 +486,7 @@ class ManagedDatabase(Database):
         return len(source_rows), len(lesson_rows)
 
 
-    def _default_source_identity(self: Database, source_id: int) -> str:
+    def _default_source_identity(self, source_id: int) -> str:
         source = self.conn.execute(
             "SELECT display_name FROM default_content_sources WHERE source_id = ?",
             (source_id,),
@@ -508,7 +508,7 @@ class ManagedDatabase(Database):
         return "default-source:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-    def _default_lesson_identity(self: Database, lesson_id: int) -> str:
+    def _default_lesson_identity(self, lesson_id: int) -> str:
         row = self.conn.execute(
             """SELECT source_id, legacy_metin_id, title, text
                FROM default_content_lessons WHERE lesson_id = ?""",
@@ -528,7 +528,7 @@ class ManagedDatabase(Database):
         return "default-lesson:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-    def export_data(self: Database) -> str:
+    def export_data(self) -> str:
         # Backups include soft-deleted content as well. A deleted lesson may still
         # own historical sessions, so omitting it would make those sessions
         # impossible to map when restoring the backup elsewhere.
@@ -618,7 +618,7 @@ class ManagedDatabase(Database):
         }, ensure_ascii=False, indent=2)
 
 
-    def import_data(self: Database, raw: str):
+    def import_data(self, raw: str):
         payload = json.loads(raw)
         if not isinstance(payload, dict):
             raise ValueError("Yedek dosyasının kök yapısı geçersiz")
