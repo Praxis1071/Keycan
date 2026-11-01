@@ -142,29 +142,84 @@ Kullanıcının 10 parmak yazmayı öğrenmesine yardımcı olan, açıklayıcı
 
 ---
 
-## 🏗️ Aşama 10 — Mimari İyileştirme ve Veri Katmanının Modernizasyonu
+## 🏗️ Aşama 10 — Mimari İyileştirme, Stabilizasyon ve Depo Kalitesinin Artırılması
 
-Aşama 0–9 ile tamamlanan kullanıcı özellikleri korunarak mevcut mimari kontrollü ve aşamalı biçimde iyileştirilecektir. Bu çalışma yeni özellik geliştirme veya baştan yazım değildir.
+Aşama 0–9 ile tamamlanan kullanıcı özellikleri korunarak Keycan'ın kod tabanı, veri yönetimi, test altyapısı, paketleme süreci ve dokümantasyonu iyileştirilecektir.
 
-**Temel kurallar**
-- Yazma motoru (`keycan/core/typing_engine.py`) değiştirilmeyecek.
-- Mevcut özellikler, kullanıcı verileri, istatistikler ve profil ilerlemesi korunacak.
-- Her aşama test edilmeden sonraki aşamaya geçilmeyecek.
-- Büyük ve geri dönüşü zor değişiklikler yerine küçük, izole refaktörler yapılacak.
+Bu aşama yeni kullanıcı özellikleri ekleme veya uygulamayı baştan yazma çalışması değildir. Öncelik; mevcut uygulamayı daha güvenilir, sürdürülebilir, bakımı kolay ve dağıtıma hazır hâle getirmektir.
 
-**Alt aşamalar**
-1. **Mimari ve bağımlılık denetimi:** Modül importları, veri akışları, sorumluluklar, test tabanı ve riskler belgelenecek.
-2. **JSON ders formatı:** Hazır ders kataloğu JSON'a taşınacak; kullanıcı içerikleri ve hazır içerik düzenlemeleri kullanıcı veri dizinindeki JSON deposunda tutulacak. Şema doğrulama, kararlı kimlikler ve atomik yazım eklenecek.
-3. **Ders içeriklerini sadeleştirme:** Grup adları ve ders başlıkları yalnızca Türkçe/İngilizce harfler ve kelime arası boşluk içerecek. Metinlerden sayılar ve noktalama kaldırılacak; Türkçe karakterler korunacak. Önce karşılaştırmalı önizleme ve doğrulama raporu üretilecek.
-4. **Ders verisini JSON'a taşıma:** Eski SQLite içeriği kayıpsız dönüştürülecek. Çalışma geçmişi ve profil verileri korunacak; eski tablolar doğrulama tamamlanmadan silinmeyecek.
-5. **Yinelenen modüller ve runtime müdahaleleri:** Monkey-patch kullanımı kaldırılacak; yinelenen veritabanı, istatistik ve ayar modülleri import/çağrı analiziyle sadeleştirilecek.
-6. **Pencere sorumluluklarını azaltma:** `window.py` yalnızca üst seviye pencere ve koordinasyon görevlerini üstlenecek; bağımsız sorumluluklar mevcut davranış korunarak ayrılacak.
-7. **Veritabanı ve servis katmanları:** SQL erişimi GUI'den ayrılacak; şema migrasyonları, transaction, hata yönetimi ve servis sorumlulukları düzenlenecek.
-8. **Entegrasyon ve regresyon:** Tam test paketi, CI, GTK açılış/kapanış, JSON geçişi, yedekleme/geri yükleme ve eski verilerle uyumluluk doğrulanacak.
+### Değişmez kurallar
 
-Ayrıntılı uygulama sırası, hedef veri modeli, güvenlik kapıları ve her aşamanın tamamlanma koşulları: [Mimari İyileştirme Yol Haritası](docs/ARCHITECTURE_REFACTOR_ROADMAP.md).
+- Yazma motorunun (keycan/core/typing_engine.py) davranışı değiştirilmeyecek; yalnızca mevcut testleriyle doğrulanacak.
+- Mevcut kullanıcı özellikleri, ders içerikleri, çalışma geçmişi, istatistikler ve profil ilerlemesi korunacak.
+- Kullanıcı verisi üzerinde geri dönüşü olmayan işlem yapılmayacak; riskli geçişlerden önce doğrulanabilir yedek alınacak.
+- Her değişiklik küçük, izole, gözden geçirilebilir ve geri alınabilir olacak.
+- Her aşamanın test ve doğrulama kapısı geçilmeden sonraki aşamaya başlanmayacak.
+- Gereksiz soyutlama, bağımlılık, teknoloji veya klasör eklenmeyecek.
+- Kullanıcıya görünen davranış ancak açıkça onaylanmış bir hata düzeltmesi gerektiriyorsa değiştirilecek.
 
-**Durum:** Plan eklendi. İlk olarak mimari ve bağımlılık denetimi yürütülecek.
+### Gelişim planı
+
+1. **Mimari ve bağımlılık denetimi**
+   - Giriş noktaları, import zincirleri, modül sorumlulukları ve veri akışları haritalanacak.
+   - GUI, servisler, SQLite ve JSON arasındaki mevcut sınırlar incelenecek.
+   - Testler, CI iş akışları, paketleme ve bilinen hatalar envanterlenecek.
+   - Statik inceleme ile çalışma zamanı doğrulaması ayrı raporlanacak.
+   - Mevcut davranışlar ve veri bütünlüğü için başlangıç kontrol listesi oluşturulacak.
+
+2. **Veri mimarisinin netleştirilmesi**
+   - Paketle gelen hazır ders kataloğunun JSON kaynakları belirlenecek.
+   - Kullanıcının özel dersleri ve hazır dersler üzerindeki kişisel değişiklikleri için kullanıcı veri dizinindeki JSON deposu/override yaklaşımı netleştirilecek.
+   - Çalışma oturumları, istatistikler ve geçmiş gibi işlem kayıtlarının SQLite'ta kalması sağlanacak.
+   - JSON ve SQLite'ın görevleri, kararlı kimlikler, şema sürümü, hata davranışı ve yedekleme sözleşmesi açıkça belgelenecek.
+   - JSON'a geçişin çalışma geçmişini veya profil hesaplamalarını koparmadığı kanıtlanacak.
+
+3. **Ders kataloğu ve içerik kalitesinin iyileştirilmesi**
+   - JSON şeması, kimlik benzersizliği ve içerik doğrulama kuralları testlerle güvence altına alınacak.
+   - Ders/grup adları ve metinleri için planlanan sadeleştirme önce yalnızca önizleme ve rapor olarak üretilecek.
+   - Türkçe karakterler ve metin anlamı korunacak; boşalan, birleşen veya yinelenen içerikler raporlanacak.
+   - Kullanıcı onayı ve yedek olmadan mevcut içerik topluca değiştirilmeyecek.
+
+4. **Veri geçişi ve kalıcılık güvenliği**
+   - Gerekli görülürse eski SQLite ders içeriği kontrollü ve tekrarlanabilir biçimde JSON'a aktarılacak.
+   - Eski veriler ile yeni içerikler kimlik, kayıt sayısı ve içerik karşılaştırmalarıyla doğrulanacak.
+   - Geçiş tamamlanmadan eski tablolar silinmeyecek.
+   - Transaction, atomik dosya yazımı, bozuk dosya, yarım kalmış işlem, yedek alma/geri yükleme ve geriye dönük uyumluluk test edilecek.
+
+5. **Yinelenen modüller ve runtime müdahalelerinin sadeleştirilmesi**
+   - Monkey-patch ve import yan etkileri açıkça tanımlanmış normal metot/servis tasarımına taşınacak.
+   - Yinelenen veritabanı, istatistik ve ayar modülleri import/çağrı/test analiziyle karşılaştırılacak.
+   - Kullanılmayan dosyalar ancak yerine geçen davranış ve uyumluluk kanıtlandıktan sonra kaldırılacak.
+
+6. **Pencere ve GUI sorumluluklarının azaltılması**
+   - window.py üst seviye pencere, navigasyon ve koordinasyon görevleriyle sınırlandırılacak.
+   - Ders seçimi, çalışma oturumu yaşam döngüsü, kayıt ve sayfa güncelleme sorumlulukları gerektiği ölçüde ayrılacak.
+   - GTK sinyalleri, widget yaşam döngüsü, uygulama kapanışı ve bekleyen kayıtlar korunacak.
+   - Sırf mimari görünmesi için gereksiz controller/manager katmanları oluşturulmayacak.
+
+7. **Veritabanı ve servis katmanlarının iyileştirilmesi**
+   - SQL erişimi GUI katmanından ayrılacak; gerekli yerlerde açık repository/servis sınırları kurulacak.
+   - Şema migrasyonları, transaction yönetimi, bağlantı yaşam döngüsü ve hata raporlama sadeleştirilecek.
+   - Paket kaynakları ile kullanıcının yazılabilir veri dizini ayrılacak.
+   - Tercihler, çeviri, ders ve ilerleme servislerinin sorumlulukları netleştirilecek.
+
+8. **Test, CI ve regresyon güvencesi**
+   - check.sh ve GitHub Actions iş akışları güncel proje yapısıyla tutarlı tutulacak.
+   - Birim testleri, tam regresyon paketi ve veri bütünlüğü kontrolleri güçlendirilecek.
+   - GTK açılış/kapanış, sayfa geçişleri, ders yönetimi, yazma oturumu, gizlilik, profil, istatistik ve yedekleme akışları doğrulanacak.
+   - Eski verilerden geçiş ve başarısız işlem/rollback senaryoları test edilecek.
+   - Başarısız test veya açıklanmamış veri farkı varken sonraki aşamaya geçilmeyecek.
+
+9. **Flatpak, sürümleme ve dokümantasyon**
+   - Flatpak manifesti, uygulama sürümü, bağımlılıklar, izinler ve dağıtım çıktıları gözden geçirilecek.
+   - Tekrarlanabilir yerel derleme ve doğrulama adımları belgelenecek.
+   - Uygun olduğunda GitHub Actions üzerinden otomatik test, paketleme ve release hazırlığı değerlendirilecek.
+   - README, kurulum/build talimatları, hata kaydı, mimari belgeler ve yedekleme politikası güncel gerçekle eşleştirilecek.
+   - Eski veya birbiriyle çelişen plan belgeleri tek güncel teknik kaynağa yönlendirilecek ya da arşivlenecek.
+
+Ayrıntılı teknik sıra, hedef veri modeli, güvenlik kapıları ve her aşamanın tamamlanma koşulları: [Mimari İyileştirme Yol Haritası](docs/ARCHITECTURE_REFACTOR_ROADMAP.md).
+
+**Durum:** Aşama 10 onaylandı. İlk iş, mevcut mimari denetimini güncel main dalı ve gerçek test sonuçlarıyla tamamlamak; henüz veri migrasyonu veya büyük refaktör başlatılmayacak.
 
 ## 🏁 Mevcut Yol Haritasının Durumu
 
