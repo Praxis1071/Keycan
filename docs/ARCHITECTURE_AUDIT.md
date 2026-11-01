@@ -1,10 +1,10 @@
 # Keycan — Güncel Mimari Denetim Raporu
 
 **Denetim tarihi:** 2026-11-01  
-**İncelenen dal:** main  
+**İncelenen dal:** `architecture/maintenance-refactor` (başlangıç noktası: main)  
 **Temel sürüm:** v2.5.0  
 **Denetim türü:** GitHub kaynak kodu, mevcut mimari belgeler, test tanımları ve GitHub Actions sonuçlarının statik incelemesi  
-**Durum:** Statik denetim güncellendi; yerel GTK masaüstü doğrulaması ayrıca yapılmalı.
+**Durum:** Statik denetim ve ilk iki refactor adımı branch üzerinde uygulandı; yerel GTK masaüstü doğrulaması ayrıca yapılmalı.
 
 Bu rapor, güncel main dalına göre önceki mimari raporundaki eski dal ve test bilgilerini düzeltir. Kaynak kodu üzerinden görülebilen durum ile masaüstünde gerçekten çalıştırılması gereken kontroller birbirinden ayrı tutulur.
 
@@ -26,16 +26,16 @@ Güncel ve onaylanmış yaklaşım:
 
 Kullanıcı içeriğini JSON'a taşıma kararı alınmış değildir. Bu yönde bir migrasyon, ancak mevcut SQLite modelinin yetersizliği kanıtlanır ve ayrı tasarım/güvenlik kapısından geçerse gündeme alınabilir.
 
-## 3. Veritabanı runtime uyumluluk katmanı
+## 3. Veritabanı sınıf sınırı
 
-- database.py temel şema, migrasyon ve veritabanı davranışlarını içerir.
-- database_runtime.py hâlâ bazı Database davranışlarını açık bir kayıt fonksiyonu üzerinden sınıfa ekleyen geçiş/uyumluluk katmanıdır.
-- Önceki raporda belirtildiği gibi bunun yalnızca import yan etkisiyle çalıştığı ifadesi artık güncel değildir: kayıt açıkça yapılmaktadır.
-- Buna rağmen metotların iki dosya arasında bölünmüş olması ve sınıf davranışının kayıt sırasına bağlı kalması hâlâ mimari borçtur.
-- database_runtime.py kaldırılmadan önce her metot, çağrı noktası, test ve yan etki karşılaştırılmalıdır.
+- `database.py` temel `Database` sınıfını, şema migrasyonlarını ve istatistik/oturum sorgularını içerir.
+- Önceki uygulama yolu, `database_runtime.py` içindeki kayıt fonksiyonuyla metotları çalışma anında `Database` sınıfına atıyordu. Bu yöntem kaldırıldı.
+- Yeni `ManagedDatabase`, temel `Database` sınıfından türeyen açık bir alt sınıftır. İçerik CRUD, varsayılan içerik snapshot/restore, ilerleme özeti ve JSON yedekleme davranışları bu uygulama sınıfında sunulur.
+- `app.py` artık kayıt fonksiyonu çağırmaz; pencere doğrudan `ManagedDatabase` kullanır.
+- `LessonService` tür sözleşmesi de `ManagedDatabase` API'sini açıkça belirtir.
+- Temel `Database` sınıfı, `database_runtime.py` import edildiğinde değişmez. Bu davranış alt süreç regresyon testiyle doğrulanır.
 
-**Öneri:** Kayıt mekanizmasını hemen silme. Önce metotları tek tek gerçek sınıf metotlarına veya gerekli servis/repository sınırlarına taşı; her adımda ilgili testleri çalıştır.
-
+`managed_database.py` içindeki uygulama işlemleri artık `ManagedDatabase` sınıfında normal metotlar olarak tanımlıdır; sınıf gövdesinde sonradan fonksiyon ataması veya runtime monkey-patch yoktur. Eski `database_runtime.py` yalnızca uyumluluk dışa aktarımıdır.
 ## 4. Ders kataloğu servisi
 
 - Paketlenmiş Türkçe katalog JSON olarak bulunur.
@@ -48,17 +48,21 @@ Katalog doğrulaması, yinelenen kimlikler, bozuk kaynak, eksik kaynak ve kullan
 
 ## 5. GUI ve pencere sorumlulukları
 
-- window.py ana pencere, navigasyon ve çalışma alanı koordinasyonunun yanında ders seçimi ve yazma oturumu yaşam döngüsünün önemli bölümünü yönetir.
+- `window.py` ana pencere, sayfa navigasyonu, ders seçimi ve yazma oturumu yaşam döngüsünü koordine eder. Üretim penceresi artık `_BaseKeycanWindow` üzerine açık `KeycanWindow` sınıfı olarak kuruludur; runtime sınıf alias'ı ve yinelenen kaynak yükleme metotları kaldırılmıştır.
 - Bu dosyanın sorumluluklarını azaltmak mantıklıdır; ancak GTK sinyalleri, widget yaşam döngüsü, zamanlayıcılar ve kapanışta bekleyen kayıtlar nedeniyle büyük bir yeniden yazım yapılmamalıdır.
-- İlk ayrıştırma adayları ders seçimi/yükleme ve çalışma oturumu kayıt akışlarıdır.
+- Ana pencerenin CSS, widget yerleşimi ve tercih popover'ı `gui/window_layout.py` içine taşındı; `window.py` yaklaşık 850 satırdan 585 satıra küçüldü.
+- Kelime/karakter/doğruluk ölçümleri ve kayıt payload'ı GTK penceresinden `core/session_metrics.py` içine taşındı.
+- Editörün gizlilik görünümü, sonuç renklendirme ve metin buffer sunumu `gui/workspace.py` sorumluluğuna alındı. Pencere bu işlemleri workspace API'si üzerinden çağırır.
+- Oturum başlatma, zamanlayıcı, GTK buffer'ın oturum sonunda okunması ve kapanışta bekleyen kayıt uyarısı hâlâ pencerededir. Veritabanına kaydetme ve başarısız kayıt kuyruğunu yeniden deneme `services/session_recorder.py` tarafından yönetilir.
+- Sonraki ayrıştırma adayları ders seçimi/yükleme ve çalışma oturumu yaşam döngüsüdür.
 - Yalnızca gerçek ve bağımsız sorumluluklar için yeni sınıf/servis oluşturulmalıdır.
 
 ## 6. Yinelenen modüller
 
 - Aktif GUI uygulaması settings2.py ve statistics_clean.py modüllerini kullanır.
-- settings.py ve statistics.py eski/alternatif uygulamalar olarak depoda tutulmaktadır; silinmeden önce import, test, paketleme ve olası uyumluluk referansları aranmalıdır.
+- settings.py ve statistics.py artık aktif settings2.py ve statistics_clean.py modüllerine yönlendiren küçük uyumluluk dışa aktarımlarıdır; yinelenen uygulama kodu kaldırılmıştır.
 - statistics_runtime.py içindeki eski MetricCard müdahalesi aktif uygulama yolundan çıkarılmış, davranış MetricCard içine taşınmıştır.
-- database_runtime.py ise hâlâ önemli uyumluluk davranışları içerir ve ayrı ele alınmalıdır.
+- database_runtime.py yalnızca managed_database.py içindeki sınıfı dışa aktaran küçük bir uyumluluk modülüdür.
 
 ## 7. Test ve CI durumu
 
@@ -76,15 +80,15 @@ KC-001–KC-005 düzeltmeleri main'e alınmıştır. Ayrıntılı hata geçmişi
 
 ## 9. Öncelikli mimari riskler
 
-1. database_runtime.py içindeki uyumluluk metotlarının Database sınıfına kayıt yoluyla eklenmesi.
-2. window.py dosyasının pencere koordinasyonunun ötesinde çalışma oturumu ve ders akışlarını da yönetmesi.
-3. Eski/aktif settings ve statistics modüllerinin çiftlerinin bulunması.
+1. `window.py` dosyasının oturum zamanlaması, GTK yaşam döngüsü ve kapanış koordinasyonunu da yönetmesi; kayıt kuyruğu artık `SessionRecorder` servisindedir.
+2. Veritabanı taban sınıfı ile uygulama alt sınıfındaki tarihsel/örtüşen CRUD API'lerinin uyumluluk sınırlarının belgelenmesi.
+3. GTK masaüstü etkileşimlerinin otomatik Xvfb smoke testi ve kullanıcının gerçek masaüstü denemesiyle doğrulanması.
 4. JSON katalog, SQLite kullanıcı içeriği ve JSON yedekleme rollerinin dokümantasyonda karıştırılma riski.
 5. Flatpak veri yolu, ilk kurulum/var olan kullanıcı verisi geçişi ve yedek geri yükleme senaryolarının her sürümde regresyon testine ihtiyaç duyması.
 
 ## 10. Sonraki adım ve kapsam sınırı
 
-İlk uygulama adımı, kodu değiştirmeden güncel main için bağımlılık/import haritasını ve database_runtime.py metot envanterini tamamlamaktır. Ardından her risk için küçük, test edilebilir değişiklikler planlanabilir.
+Runtime sınıf mutasyonu kaldırılmış, managed veritabanı davranışları normal alt sınıf metotlarına dönüştürülmüş ve eski import yolları uyumluluk dışa aktarımlarıyla korunmuştur. Saf oturum ölçümleri `core/session_metrics.py` içine; editör gizliliği ve sonuç renklendirme ise `gui/workspace.py` içine ayrılmıştır. CI'da 52 depo kontrolü, 72 pytest testi ve Ruff F821 denetimi başarıyla tamamlanmıştır. GTK/Xvfb smoke testi son layout ayrıştırmasından sonra da başarılıdır. GTK/Xvfb smoke testi başarılı: pencere ve sayfalar oluşturuldu; içerik yöneticisi açıldı; gizlilik etiketi ve canlı dil değişimi kontrol edildi; örnek yazım oturumu SQLite'a kaydedildi, başarısız kayıt yeniden denendi ve aynı oturum kimliğiyle tek kayıt doğrulandı; sonuç mesajı kontrol edildi. Beş CI işi de başarılı. `SessionRecorder` başarısız kayıtları sabit oturum kimliğiyle kuyruğa alıp yeniden dener; birim ve GTK smoke testleri bu akışı doğrular.
 
 Bu çalışma sırasında:
 

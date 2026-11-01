@@ -99,48 +99,56 @@ keycan/
 **Çıkış koşulu:** Paketlenmiş katalog ile mevcut kullanıcı içeriği arasındaki sınır testlerle doğrulanır; kullanıcı içeriği migrasyonu ancak ayrı bir karar ve kanıtlanmış ihtiyaç varsa uygulanır. Herhangi bir geçişte CRUD, geri yükleme, geçmiş ve profil tutarlılığı kanıtlanır.
 
 ### Aşama 4 — Runtime monkey-patch ve yinelenen modülleri sadeleştirme
-**Durum: Bekliyor**
+**Durum: Tamamlandı — runtime monkey-patch kaldırıldı; yinelenen GUI uygulamaları uyumluluk dışa aktarımlarına dönüştürüldü**
 
-- `database_runtime.py` ve `statistics_runtime.py` içindeki çalışma zamanı sınıf/metot değiştirmelerini belirle.
-- Bu davranışları uygun sınıf veya serviste açık, normal metotlara dönüştür.
-- `database.py` / `database_runtime.py`, `statistics.py` / `statistics_clean.py`, `settings.py` / `settings2.py` için tüm import ve çağrı noktalarını doğrula.
-- Yalnızca kullanılmadığı kanıtlanan veya yerine geçen dosyaları kaldır; uyumluluk gerekiyorsa geçici ince bir yönlendirme katmanı kullan.
-- Uygulama başlangıcındaki yan etkili importları kaldır.
+- `database_runtime.py` içindeki `Database` sınıfına çalışma anında metot atama mekanizması kaldırıldı. Uygulama artık `managed_database.py` içindeki açık `ManagedDatabase(Database)` alt sınıfını kullanıyor.
+- Eski `database_runtime.py` yolu, eski importları bozmamak için küçük bir uyumluluk dışa aktarımı olarak tutuluyor.
+- Uygulama başlangıcındaki `install_database_runtime()` çağrısı kaldırıldı; `app.py` artık import sırasına bağlı veritabanı kaydı yapmıyor.
+- İçerik yönetimi, ilerleme ve yedekleme API'sini kullanan testler `ManagedDatabase` ile çalışacak şekilde güncellendi.
+- Alt süreç regresyon testi, hem `managed_database.py` hem de uyumluluk modülü import edildiğinde temel `Database` sınıfının değişmediğini ve managed API'nin alt sınıfta bulunduğunu doğruluyor.
+- `statistics.py` artık `statistics_clean.py` modülünden; `settings.py` ise `settings2.py` modülünden küçük uyumluluk dışa aktarımları sağlar. Yinelenen uygulama kodu kaldırıldı, eski import yolları korundu.
+- `database_runtime.py` da `managed_database.py` için uyumluluk dışa aktarımıdır; aktif kod doğrudan managed modülünü kullanır.
+- Managed veritabanı işlemleri normal `ManagedDatabase` sınıf metotları olarak taşındı; testler sınıfın kendi metotlarını sunduğunu doğruluyor.
 
-**Çıkış koşulu:** Monkey-patch olmadan uygulama ve testler çalışır; hiçbir özellik kaybolmaz; gereksiz dosyalar için kullanım kanıtı bulunur.
+**Doğrulama:** GitHub Actions'ın beş işi başarıyla tamamlandı: `check.sh` 52 kontrol, tam pytest 72 test, Ruff F821 ve GTK/Xvfb smoke testi. GTK smoke testi gerçek pencereyi, sayfa kurulumunu, ayarlar içindeki ders yönetimini, gizlilik etiketini, dil değişimini ve yazım oturumu kaydını doğruluyor.
+
+**Çıkış koşulu:** Runtime monkey-patch olmadan uygulama ve testler çalışır; yinelenen modüllerin kaldırılması için kullanım/uyumluluk kanıtı bulunur; hiçbir özellik kaybolmaz.
 
 ### Aşama 5 — `window.py` sorumluluklarını azaltma
-**Durum: Bekliyor**
+**Durum: Büyük ölçüde tamamlandı — pencere yerleşimi, editör sunumu, metrikler ve kayıt/yeniden deneme ayrıldı; oturum zamanlaması ve ders seçimi koordinasyonu pencerede bırakıldı**
 
-- Pencereyi sayfa yerleşimi ve üst seviye koordinasyonla sınırla.
-- Ders seçimi/yükleme, çalışma oturumu yaşam döngüsü, oturum kaydı ve sayfa yenileme sorumluluklarını mevcut davranışlarına göre küçük bileşenlere ayır.
+- Kelime/karakter/doğruluk ölçümleri ve veritabanı kayıt payload'ı `keycan/core/session_metrics.py` içine taşındı; saf hesaplamalar GTK dışında test ediliyor.
+- Ana pencerenin CSS, widget yerleşimi ve tercih popover'ı `keycan/gui/window_layout.py` içine taşındı; `window.py` yaklaşık 850 satırdan 585 satıra küçüldü.
+- Editör gizlilik görünümü, sonuç renklendirme ve text-buffer sunumu `keycan/gui/workspace.py` içine taşındı; pencere yalnızca oturum durumunu iletir.
+- Veritabanı oturum kaydı, başarısız kayıt kuyruğu ve yeniden deneme `keycan/services/session_recorder.py` içine taşındı; pencere kullanıcıya durum/yeniden deneme arayüzünü sunar.
+- Pencere artık 585 satırdır ve ana sorumlulukları ayrılmıştır. GTK zamanlayıcısı, ders seçimi ve pencere kapanış koordinasyonu GTK sinyalleriyle sıkı bağlı olduğu için ayrı bir controller'a taşınmadı; gerçek masaüstü testinden sonra ihtiyaç görülürse ayrıca ele alınabilir.
 - GUI widget'ları GUI katmanında; iş kuralları servislerde; kalıcı veri erişimi veri katmanında kalsın.
 - Her çıkarımda mevcut sinyal bağlantıları, GTK widget yaşam döngüsü ve kapanışta bekleyen kayıtlar korunmalı.
 - Gereksiz controller/factory/manager sınıfları oluşturma; yalnızca bağımsız sorumlulukları ayır.
 
+**Doğrulama:** [GitHub Actions run 41299917686](https://github.com/Praxis1071/Keycan/actions/runs/41299917686) beş işin tamamını başarıyla tamamladı. GTK/Xvfb smoke testi pencere, sayfalar, içerik yöneticisi, gizlilik, canlı dil değişimi, oturum kaydı, başarısız kayıt yeniden denemesi, bekleyen kayıt kontrolü ve pencerenin kapanış temizliğini kontrol ediyor. İnsan tarafından gerçek masaüstünde yapılacak kullanım testi hâlâ gereklidir.
+
 **Çıkış koşulu:** `window.py` küçülür; çalışma alanı ve pencere davranışı değişmez; GTK başlangıç/kapanış ve oturum testleri geçer.
 
 ### Aşama 6 — Veritabanı ve servis katmanlarını düzenleme
-**Durum: Bekliyor**
+**Durum: Kısmen tamamlandı — temel sınırlar ve servis sorumlulukları netleştirildi; legacy CRUD/transaction denetimi sürüyor**
 
-- SQLite şema migrasyonlarını tek ve izlenebilir yerde topla.
-- SQL sorgularını GUI'den uzaklaştır; gerekli yerlerde repository kullan.
-- İstatistik/profil/ilerleme hesaplarını veri erişiminden ayır.
-- Bağlantı kapanışı, transaction, hata yönetimi ve yedek geri yükleme davranışını netleştir.
-- Tercihler, çeviri, ders ve ilerleme servislerinin tek sorumluluklu olmasını sağla.
-- Kullanıcı verisi dizini ve paket kaynakları yollarını birbirinden ayır; uygulama kaynak kodu dizinine yazma zorunluluğunu kaldır.
+- Şema migrasyonları ve SQL veri erişimi temel `Database`/`ManagedDatabase` katmanında tutuluyor; GUI doğrudan katalog JSON okumuyor.
+- Ders kataloğu ve gösterim isimleri `LessonService`; XP/rozet/seri kuralları `progression.py`; oturum kayıt kuyruğu `SessionRecorder`; tercihler XDG config; profil verisi XDG config/data kullanıyor.
+- Flatpak wrapper ilk veritabanını XDG data alanına kopyalıyor; paketlenmiş kaynak DB salt-okunur uygulama alanında kalıyor.
+- Tamamlanması gerekenler: `Database` ve `ManagedDatabase` arasındaki tarihsel CRUD API örtüşmelerini çağrı noktalarıyla denetlemek; transaction ve restore hata senaryolarını daha geniş testlerle kapsamak. Bu aşamada uyumluluk metotları silinmedi.
 
 **Çıkış koşulu:** Servis ve repository testleri geçer; mevcut istatistik, profil, tema, dil ve içerik davranışları korunur.
 
 ### Aşama 7 — Entegrasyon, regresyon ve dokümantasyon
-**Durum: Bekliyor**
+**Durum: Otomatik doğrulama tamamlandı; gerçek masaüstü kullanıcı testi bekleniyor**
 
-- Tam test paketini ve CI iş akışını çalıştır.
-- GTK uygulamasının açılış, sayfa geçişleri, ders pratiği, oturum kaydı ve kapanış akışını kontrol et.
-- JSON bozuk dosya, eski DB'den geçiş, yinelenen kimlik, yedek alma/geri yükleme ve yarım kalan yazım senaryolarını test et.
-- `typing_engine.py` değişmediğini diff üzerinden doğrula ve mevcut yazma motoru testlerini çalıştır.
-- Eski/çelişkili migration belgelerini güncel mimari belgesine yönlendir veya arşivle.
-- Kurulum, paketleme ve yedekleme belgelerini yeni veri yollarına göre güncelle.
+- Tam test paketi, Ruff F821, `check.sh` ve GTK/Xvfb smoke CI başarıyla tamamlandı.
+- GTK smoke testi gerçek pencere, sayfalar, içerik yöneticisi, gizlilik, canlı dil değişimi, oturum kaydı ve başarısız kayıt yeniden denemesini kontrol ediyor.
+- JSON katalog doğrulaması, eski DB migrasyonları, kimlik eşlemesi ve yedek/geri yükleme regresyonları mevcut pytest paketi ve depo kontrolleriyle kapsanıyor.
+- `typing_engine.py` bu branch'te değiştirilmedi.
+- Mimari ve yedekleme belgeleri güncellendi; eski planlar arşivlendi.
+- Son kalan adım kullanıcının gerçek CachyOS/Flatpak masaüstünde uygulamayı kurup etkileşimli kullanımını doğrulaması.
 
 **Çıkış koşulu:** Test/CI sonuçları raporlanır, veri kaybı yoktur ve kalan bilinen sorunlar belgelenir.
 

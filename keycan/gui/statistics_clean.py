@@ -231,12 +231,18 @@ class StatisticsPanel(Gtk.Box):
         self.statistics_stack=Adw.ViewStack()
         self.statistics_stack.set_hhomogeneous(True)
         self.statistics_stack.set_vhomogeneous(False)
-        self.statistics_stack.set_enable_transitions(True)
+        if hasattr(self.statistics_stack, "set_enable_transitions"):
+            self.statistics_stack.set_enable_transitions(True)
 
-        switcher=Adw.InlineViewSwitcher()
+        if hasattr(Adw, "InlineViewSwitcher"):
+            switcher = Adw.InlineViewSwitcher()
+            switcher.set_homogeneous(True)
+            switcher.set_can_shrink(True)
+        else:
+            # InlineViewSwitcher was added in libadwaita 1.7. Keep the
+            # statistics navigation usable on older supported runtimes.
+            switcher = Adw.ViewSwitcher()
         switcher.set_stack(self.statistics_stack)
-        switcher.set_homogeneous(True)
-        switcher.set_can_shrink(True)
         switcher.set_margin_start(12); switcher.set_margin_end(12)
         switcher.set_margin_top(8); switcher.set_margin_bottom(8)
         self.append(switcher)

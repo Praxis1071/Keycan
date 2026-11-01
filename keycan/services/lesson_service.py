@@ -19,7 +19,7 @@ from keycan.services.lesson_catalog import (
 from keycan.utils.text import natural_sort_key
 
 if TYPE_CHECKING:
-    from keycan.data.database import Database
+    from keycan.data.managed_database import ManagedDatabase
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,7 +47,7 @@ class LessonService:
 
     def __init__(
         self,
-        database: Database,
+        database: ManagedDatabase,
         catalog: LessonCatalog | None = None,
     ) -> None:
         self.database = database

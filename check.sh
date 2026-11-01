@@ -2,22 +2,20 @@
 set -euo pipefail
 project_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 cd "$project_dir"
-python -m py_compile main.py keycan/__init__.py keycan/app.py keycan/window.py keycan/core/__init__.py keycan/core/typing_engine.py keycan/data/__init__.py keycan/data/database.py keycan/data/database_runtime.py keycan/gui/content_manager2.py keycan/gui/settings2.py keycan/gui/statistics_clean.py keycan/gui/statistics_runtime.py keycan/gui/search.py keycan/gui/workspace.py keycan/gui/profile.py keycan/services/preferences.py keycan/services/lesson_catalog.py keycan/services/lesson_service.py keycan/services/progression.py keycan/services/translations.py keycan/services/i18n.py tests/test_stage1_database.py tests/test_stage3_database.py tests/test_custom_content.py tests/test_lesson_catalog.py tests/test_lesson_service.py tests/test_database_runtime.py
+python -m py_compile main.py keycan/__init__.py keycan/app.py keycan/window.py keycan/core/__init__.py keycan/core/typing_engine.py keycan/core/session_metrics.py keycan/data/__init__.py keycan/data/database.py keycan/data/managed_database.py keycan/data/database_runtime.py keycan/gui/content_manager2.py keycan/gui/settings.py keycan/gui/settings2.py keycan/gui/statistics.py keycan/gui/statistics_clean.py keycan/gui/window_layout.py keycan/gui/statistics_runtime.py keycan/gui/search.py keycan/gui/workspace.py keycan/gui/profile.py keycan/services/preferences.py keycan/services/lesson_catalog.py keycan/services/lesson_service.py keycan/services/session_recorder.py keycan/services/progression.py keycan/services/translations.py keycan/services/i18n.py tests/test_stage1_database.py tests/test_stage3_database.py tests/test_custom_content.py tests/test_lesson_catalog.py tests/test_lesson_service.py tests/test_database_runtime.py tests/test_session_metrics.py
 python - <<'PY'
 import shutil
 import sqlite3
 import tempfile
 from pathlib import Path
 
-from keycan.data.database import Database
+from keycan.data.managed_database import ManagedDatabase
 from keycan.services.lesson_catalog import load_lesson_catalog
-from keycan.data.database_runtime import install_database_runtime
-install_database_runtime()
 
 with tempfile.TemporaryDirectory() as temp_dir:
     database_path = Path(temp_dir) / "typing_data.db"
     shutil.copy2("typing_data.db", database_path)
-    database = Database(database_path)
+    database = ManagedDatabase(database_path)
     connection = database.conn
     try:
         connection.execute("PRAGMA foreign_keys = ON")

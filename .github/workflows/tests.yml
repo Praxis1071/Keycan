@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install test dependencies
-        run: python -m pip install --upgrade pip pytest
+        run: python -m pip install --upgrade pip pytest ruff
       - name: Run Stage 5 tests
         run: pytest -q tests/test_stage5_statistics.py
 
@@ -31,7 +31,7 @@ jobs:
       - name: Install test dependencies
         run: python -m pip install --upgrade pip pytest
       - name: Validate Stage 6 Python modules
-        run: python -m py_compile main.py keycan/app.py keycan/window.py keycan/gui/settings2.py keycan/gui/profile.py keycan/gui/content_manager2.py keycan/gui/statistics_clean.py keycan/gui/keyboard_guide.py keycan/services/preferences.py keycan/services/i18n.py keycan/services/translations.py keycan/services/progression.py keycan/data/database.py keycan/data/database_runtime.py keycan/gui/workspace.py keycan/gui/search.py
+        run: python -m py_compile main.py keycan/app.py keycan/window.py keycan/gui/window_layout.py keycan/services/session_recorder.py keycan/gui/settings2.py keycan/gui/profile.py keycan/gui/content_manager2.py keycan/gui/statistics_clean.py keycan/gui/keyboard_guide.py keycan/services/preferences.py keycan/services/i18n.py keycan/services/translations.py keycan/services/progression.py keycan/data/database.py keycan/data/database_runtime.py keycan/gui/workspace.py keycan/gui/search.py
       - name: Run Stage 6 preference tests
         run: pytest -q tests/test_stage6_preferences.py tests/test_stage6_i18n.py
 
@@ -49,6 +49,112 @@ jobs:
       - name: Run Stage 7 progression tests
         run: pytest -q tests/test_stage7_progression.py
 
+
+  gtk-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install GTK test runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 xvfb xauth
+      - name: Launch Keycan and complete a practice session
+        env:
+          GSETTINGS_BACKEND: memory
+          GTK_A11Y: none
+          NO_AT_BRIDGE: 1
+        run: |
+          xvfb-run -a /usr/bin/python3 - <<'PY'
+          import shutil
+          import tempfile
+          import time
+          import uuid
+          from pathlib import Path
+
+          import gi
+          gi.require_version("Adw", "1")
+          gi.require_version("Gtk", "4.0")
+          from gi.repository import Adw
+
+          from keycan.window import KeycanWindow
+
+          app = Adw.Application(application_id="org.keycan.Keycan.CISmoke")
+          app.register(None)
+          with tempfile.TemporaryDirectory() as directory:
+              database_path = Path(directory) / "typing_data.db"
+              shutil.copy2("typing_data.db", database_path)
+              window = KeycanWindow(app, database_path)
+              assert window.content_stack.get_child_by_name("statistics") is not None
+              assert window.content_stack.get_child_by_name("profile") is not None
+
+              window.settings_page._content(None)
+              content_window = window.settings_page.content_window
+              assert content_window.group_list.get_first_child() is not None
+              content_window.close()
+
+              lessons = window.lesson_service.lessons(window.lesson_service.sources()[0][0])
+              assert lessons
+              window.current_lesson_id = lessons[0][0]
+              window.current_text = "bir iki"
+              window.session_uuid = uuid.uuid4().hex
+              window.started_at = time.monotonic() - 3
+              window.duration_spin.set_value(1)
+              input_buffer = window.input_view.get_buffer()
+              input_buffer.set_text("bir iki")
+              window.privacy_enabled = True
+              window._apply_privacy_state()
+              privacy_tag = input_buffer.get_tag_table().lookup("privacy-hidden")
+              assert privacy_tag is not None
+              assert input_buffer.get_iter_at_offset(0).has_tag(privacy_tag)
+              window.privacy_enabled = False
+              window._apply_privacy_state()
+              assert not input_buffer.get_iter_at_offset(0).has_tag(privacy_tag)
+
+              window.preferences.values["language"] = "en"
+              window.apply_language()
+              assert window.statistics_page.language == "en"
+              window.preferences.values["language"] = "tr"
+              window.apply_language()
+
+              window._finish_now()
+
+              saved = window.db.conn.execute(
+                  "SELECT COUNT(*) FROM practice_results WHERE session_uuid = ?",
+                  (window.session_uuid,),
+              ).fetchone()[0]
+              assert saved == 1
+              assert "Toplam: 2" in window.status.get_text()
+              assert window.finished
+
+              window._restart()
+              window.started_at = time.monotonic() - 2
+              window.input_view.get_buffer().set_text("bir iki")
+              retry_uuid = window.session_uuid
+              original_save = window.db.save_result
+              fail_once = {"value": True}
+
+              def fail_once_save(**payload):
+                  if fail_once["value"]:
+                      fail_once["value"] = False
+                      raise RuntimeError("temporary save failure")
+                  return original_save(**payload)
+
+              window.db.save_result = fail_once_save
+              window._finish_now()
+              assert len(window.session_recorder.pending_saves) == 1
+              window.db.save_result = original_save
+              window._retry_save_results(None)
+              assert window.session_recorder.pending_saves == []
+              retry_saved = window.db.conn.execute(
+                  "SELECT COUNT(*) FROM practice_results WHERE session_uuid = ?",
+                  (retry_uuid,),
+              ).fetchone()[0]
+              assert retry_saved == 1
+              window._allow_close_with_pending_saves = True
+              assert window._on_close_request(window) is False
+          print("GTK smoke test passed: window, pages, typing session, persistence and status.")
+          PY
+
   regression:
     runs-on: ubuntu-latest
     steps:
@@ -57,8 +163,10 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install test dependencies
-        run: python -m pip install --upgrade pip pytest
+        run: python -m pip install --upgrade pip pytest ruff
       - name: Run repository checks
         run: ./check.sh
+      - name: Check undefined Python names
+        run: ruff check --select F821 keycan tests
       - name: Run full test suite
         run: pytest -q

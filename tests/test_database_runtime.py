@@ -5,19 +5,23 @@ import sys
 from pathlib import Path
 
 
-def test_database_runtime_registration_is_explicit_and_idempotent() -> None:
+def test_managed_database_is_an_explicit_subclass_without_runtime_patching() -> None:
     project_root = Path(__file__).resolve().parents[1]
     script = """
 from keycan.data.database import Database
 assert not hasattr(Database, "managed_groups")
-import keycan.data.database_runtime
+from keycan.data.managed_database import ManagedDatabase
+from keycan.data.database_runtime import ManagedDatabase as CompatibilityManagedDatabase
 assert not hasattr(Database, "managed_groups")
-from keycan.data.database_runtime import install_database_runtime
-install_database_runtime()
-assert hasattr(Database, "managed_groups")
-registered = Database.managed_groups
-install_database_runtime()
-assert Database.managed_groups is registered
+assert issubclass(ManagedDatabase, Database)
+assert CompatibilityManagedDatabase is ManagedDatabase
+assert hasattr(ManagedDatabase, "managed_groups")
+assert hasattr(ManagedDatabase, "export_data")
+assert hasattr(ManagedDatabase, "restore_defaults")
+assert "sources" in ManagedDatabase.__dict__
+assert "create_custom_group" in ManagedDatabase.__dict__
+assert "export_data" in ManagedDatabase.__dict__
+assert "import_data" in ManagedDatabase.__dict__
 """
     subprocess.run(
         [sys.executable, "-c", script],

@@ -5,26 +5,23 @@ from pathlib import Path
 
 import pytest
 
-from keycan.data.database import Database
-from keycan.data.database_runtime import install_database_runtime
-
-install_database_runtime()
+from keycan.data.managed_database import ManagedDatabase
 from keycan.services.lesson_service import LessonService
 
 
 @pytest.fixture
-def database(tmp_path: Path) -> Database:
+def database(tmp_path: Path) -> ManagedDatabase:
     source = Path(__file__).resolve().parents[1] / "typing_data.db"
     target = tmp_path / "typing_data.db"
     shutil.copy2(source, target)
-    db = Database(target)
+    db = ManagedDatabase(target)
     try:
         yield db
     finally:
         db.close()
 
 
-def test_catalog_covers_every_bundled_default_id(database: Database) -> None:
+def test_catalog_covers_every_bundled_default_id(database: ManagedDatabase) -> None:
     service = LessonService(database)
     coverage = service.coverage()
 
@@ -33,7 +30,7 @@ def test_catalog_covers_every_bundled_default_id(database: Database) -> None:
     assert sum(len(group.lessons) for group in service.catalog.groups) == 1833
 
 
-def test_service_uses_clean_catalog_content_without_rewriting_sqlite(database: Database) -> None:
+def test_service_uses_clean_catalog_content_without_rewriting_sqlite(database: ManagedDatabase) -> None:
     service = LessonService(database)
     group = service.catalog.groups[0]
     lesson = group.lessons[0]
@@ -58,7 +55,7 @@ def test_service_uses_clean_catalog_content_without_rewriting_sqlite(database: D
     ).fetchone()[0] == original_text
 
 
-def test_service_preserves_user_renames_and_lesson_edits(database: Database) -> None:
+def test_service_preserves_user_renames_and_lesson_edits(database: ManagedDatabase) -> None:
     service = LessonService(database)
     group = service.catalog.groups[0]
     lesson = group.lessons[0]
@@ -73,7 +70,7 @@ def test_service_preserves_user_renames_and_lesson_edits(database: Database) -> 
     assert next(row[1] for row in service.managed_lessons(group.id) if row[0] == lesson.id) == edited
 
 
-def test_service_preserves_custom_groups_and_lessons(database: Database) -> None:
+def test_service_preserves_custom_groups_and_lessons(database: ManagedDatabase) -> None:
     service = LessonService(database)
     group_id = database.create_custom_group("Kendi Derslerim")
     lesson_id = database.create_custom_lesson(group_id, "benim ozel metnim")
@@ -83,7 +80,7 @@ def test_service_preserves_custom_groups_and_lessons(database: Database) -> None
     assert any(row[0] == lesson_id and row[1] == "benim ozel metnim" for row in service.managed_lessons(group_id))
 
 
-def test_service_resolves_all_built_in_texts_to_catalog(database: Database) -> None:
+def test_service_resolves_all_built_in_texts_to_catalog(database: ManagedDatabase) -> None:
     service = LessonService(database)
     for group in service.catalog.groups:
         rows = service.managed_lessons(group.id)
@@ -94,7 +91,7 @@ def test_service_resolves_all_built_in_texts_to_catalog(database: Database) -> N
             assert resolved[lesson.id] == lesson.text
 
 
-def test_service_preserves_catalog_group_order(database: Database) -> None:
+def test_service_preserves_catalog_group_order(database: ManagedDatabase) -> None:
     service = LessonService(database)
     catalog_ids = {group.id for group in service.catalog.groups}
     visible_default_ids = [
@@ -106,7 +103,7 @@ def test_service_preserves_catalog_group_order(database: Database) -> None:
 
 
 def test_service_falls_back_to_sqlite_when_catalog_is_unavailable(
-    database: Database,
+    database: ManagedDatabase,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from keycan.services.lesson_catalog import LessonCatalogError

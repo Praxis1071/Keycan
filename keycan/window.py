@@ -4,7 +4,6 @@ import logging
 import time
 import uuid
 from pathlib import Path
-from collections import Counter
 import gi
 
 gi.require_version("Gtk", "4.0")
@@ -12,40 +11,30 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, GLib, Gtk
 
 from keycan.core.typing_engine import TypingEngine
-from keycan.data.database import Database
-from keycan.gui.workspace import TypingWorkspace
-from keycan.gui.search import SourceSearchDropdown
+from keycan.core.session_metrics import calculate_session_metrics
+from keycan.services.session_recorder import SessionRecorder
+from keycan.data.managed_database import ManagedDatabase
 from keycan.gui.settings2 import SettingsPanel
 from keycan.gui.statistics_clean import StatisticsPanel
 from keycan.gui.profile import ProfilePanel
 from keycan.gui.keyboard_guide import KeyboardGuidePanel
+from keycan.gui.window_layout import WindowLayoutMixin
 from keycan.services.i18n import apply_to_widget_tree
 from keycan.services.translations import translate
 from keycan.services.preferences import Preferences
 from keycan.services.lesson_service import LessonService
-from keycan.utils.text import WORD_PATTERN, format_remaining
+from keycan.utils.text import format_remaining
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-CSS = """
-headerbar.keycan-header { background: var(--headerbar-bg-color); color: var(--headerbar-fg-color); }
-.keycan-content, .keycan-controls, .keycan-bottom { background: var(--window-bg-color); color: var(--window-fg-color); }
-.keycan-controls label, .keycan-status { color: var(--window-fg-color); }
-.keycan-editor { background: var(--view-bg-color); color: var(--view-fg-color); border: 1px solid var(--border-color); }
-.keycan-editor textview, .keycan-editor textview text { background: var(--view-bg-color); color: var(--view-fg-color); }
-.keycan-editor textview { padding: 10px; }
-.keycan-status { padding: 2px 2px 4px; }
-.keycan-countdown { color: var(--window-fg-color); font-weight: 700; font-size: 16px; }
-"""
 
-
-class KeycanWindow(Adw.ApplicationWindow):
+class _BaseKeycanWindow(WindowLayoutMixin, Adw.ApplicationWindow):
     def __init__(self, app: Adw.Application, database_path: Path) -> None:
         super().__init__(application=app, title="Keycan — On Parmak")
         self.set_default_size(1200, 760)
-        self.db = Database(database_path)
+        self.db = ManagedDatabase(database_path)
         self.lesson_service = LessonService(self.db)
         self.engine = TypingEngine()
         self.preferences = Preferences()
@@ -53,7 +42,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.current_text = ""
         self.typed = ""
         self.session_uuid = uuid.uuid4().hex
-        self.pending_saves: list[dict[str, object]] = []
+        self.session_recorder = SessionRecorder(self.db)
         self._pending_close_dialog = None
         self._allow_close_with_pending_saves = False
         self.finished = False
@@ -105,199 +94,21 @@ class KeycanWindow(Adw.ApplicationWindow):
             keyboard_guide_page.set_language(language)
         apply_to_widget_tree(self, language)
 
-    def _install_css(self) -> None:
-        provider = Gtk.CssProvider()
-        provider.load_from_data(CSS, -1)
-        display = Gdk.Display.get_default()
-        if display:
-            Gtk.StyleContext.add_provider_for_display(
-                display,
-                provider,
-                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-            )
-
-    def _build_ui(self) -> None:
-        toolbar = Adw.ToolbarView()
-        toolbar.set_top_bar_style(Adw.ToolbarStyle.FLAT)
-        header = Adw.HeaderBar()
-        header.add_css_class("keycan-header")
-        self.header = header
-        toolbar.add_top_bar(header)
-        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        root.add_css_class("keycan-content")
-        root.set_hexpand(True)
-        root.set_vexpand(True)
-        toolbar.set_content(root)
-        self.set_content(toolbar)
-
-        controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        controls.set_hexpand(True)
-        controls.set_margin_top(10)
-        controls.set_margin_start(0)
-        controls.set_margin_end(0)
-        controls.set_margin_bottom(8)
-        controls.add_css_class("keycan-controls")
-        root.append(controls)
-
-        left_controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        left_controls.set_hexpand(True)
-        left_controls.set_halign(Gtk.Align.FILL)
-        left_controls.set_margin_start(12)
-        controls.append(left_controls)
-
-        right_controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        right_controls.set_halign(Gtk.Align.END)
-        right_controls.set_margin_start(12)
-        right_controls.set_margin_end(12)
-        controls.append(right_controls)
-
-        left_controls.append(self._label("Ders grubu:"))
-        self.source_dropdown = SourceSearchDropdown()
-        self.source_dropdown.on_selected_changed = self._on_source_changed
-        self.source_dropdown.set_hexpand(True)
-        self.source_dropdown.set_halign(Gtk.Align.FILL)
-        left_controls.append(self.source_dropdown)
-
-        left_controls.append(self._label("Metin:"))
-        self.lesson_dropdown = Gtk.DropDown()
-        self.lesson_dropdown.set_hexpand(True)
-        self.lesson_dropdown.set_halign(Gtk.Align.FILL)
-        self.lesson_dropdown.connect("notify::selected", self._on_lesson_changed)
-        left_controls.append(self.lesson_dropdown)
-
-        right_controls.append(self._label("Süre:"))
-        adj = Gtk.Adjustment(value=1, lower=1, upper=180, step_increment=1, page_increment=10)
-        self.duration_spin = Gtk.SpinButton(adjustment=adj, climb_rate=1, digits=0)
-        self.duration_spin.set_numeric(True)
-        self.duration_spin.set_width_chars(3)
-        self.duration_spin.connect("value-changed", self._on_duration_changed)
-        right_controls.append(self.duration_spin)
-        right_controls.append(self._label("dakika"))
-
-        self.countdown = Gtk.Label(label="01:00")
-        self.countdown.add_css_class("keycan-countdown")
-        right_controls.append(self.countdown)
-
-        self.restart_button = Gtk.Button(label="Baştan Başla")
-        self.restart_button.add_css_class("suggested-action")
-        self.restart_button.connect("clicked", self._restart)
-        right_controls.append(self.restart_button)
-
-        narrow_breakpoint = Adw.Breakpoint.new(
-            Adw.BreakpointCondition.parse("max-width: 900sp")
-        )
-        narrow_breakpoint.add_setter(controls, "orientation", Gtk.Orientation.VERTICAL)
-        narrow_breakpoint.add_setter(controls, "spacing", 6)
-        narrow_breakpoint.add_setter(left_controls, "spacing", 4)
-        narrow_breakpoint.add_setter(right_controls, "spacing", 4)
-        narrow_breakpoint.add_setter(left_controls, "margin-end", 12)
-        narrow_breakpoint.add_setter(right_controls, "margin-start", 12)
-        narrow_breakpoint.add_setter(right_controls, "halign", Gtk.Align.FILL)
-        self.add_breakpoint(narrow_breakpoint)
-
-        compact_breakpoint = Adw.Breakpoint.new(
-            Adw.BreakpointCondition.parse("max-width: 620sp")
-        )
-        compact_breakpoint.add_setter(left_controls, "orientation", Gtk.Orientation.VERTICAL)
-        compact_breakpoint.add_setter(left_controls, "halign", Gtk.Align.FILL)
-        compact_breakpoint.add_setter(self.source_dropdown, "hexpand", True)
-        compact_breakpoint.add_setter(self.lesson_dropdown, "hexpand", True)
-        self.add_breakpoint(compact_breakpoint)
-
-        short_breakpoint = Adw.Breakpoint.new(
-            Adw.BreakpointCondition.parse("max-height: 650sp")
-        )
-        short_breakpoint.add_setter(controls, "margin-top", 6)
-        short_breakpoint.add_setter(controls, "margin-bottom", 4)
-        self.add_breakpoint(short_breakpoint)
-
-        self.workspace = TypingWorkspace(self.text_size)
-        workspace_key_controller = Gtk.EventControllerKey()
-        workspace_key_controller.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
-        workspace_key_controller.connect("key-pressed", self._on_workspace_key_pressed)
-        self.workspace.add_controller(workspace_key_controller)
-        self.target_view = self.workspace.target_view
-        self.input_view = self.workspace.input_view
-
-        input_key_controller = Gtk.EventControllerKey()
-        input_key_controller.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
-        input_key_controller.connect("key-pressed", self._on_input_key_pressed)
-        self.input_view.add_controller(input_key_controller)
-        self.status = self.workspace.status
-        self.workspace.retry_save_button.connect("clicked", self._retry_save_results)
-        self.size_spin = self.workspace.size_spin
-        self.workspace.preferences_button.connect("clicked", self._toggle_preferences)
-        self.input_view.get_buffer().connect("changed", self._on_input_changed)
-        self.size_spin.connect("value-changed", self._on_text_size_changed)
-        root.append(self.workspace)
-        self._build_preferences_popover()
-
-    def _build_preferences_popover(self) -> None:
-        popover = Gtk.Popover()
-        popover.set_size_request(360, -1)
-        popover.set_has_arrow(True)
-
-        group = Adw.PreferencesGroup()
-        group.set_title("Tercihler")
-        group.set_description("Bu çalışma alanındaki yazma seçenekleri")
-        group.set_margin_top(8)
-        group.set_margin_bottom(8)
-        group.set_margin_start(8)
-        group.set_margin_end(8)
-
-        privacy = Adw.SwitchRow()
-        privacy.set_title("Yazım metnini karart")
-        privacy.set_subtitle("Yazarken girdiğin metni gizler")
-        privacy.set_active(self.privacy_enabled)
-        privacy.connect("notify::active", self._on_privacy_changed)
-        group.add(privacy)
-        self.privacy_switch = privacy
-
-        backspace = Adw.SwitchRow()
-        backspace.set_title("Geri tuşunu devre dışı bırak")
-        backspace.set_subtitle("Yazarken önceki karakteri silmeyi engeller")
-        backspace.set_active(not self.backspace_enabled)
-        backspace.connect("notify::active", self._on_backspace_changed)
-        group.add(backspace)
-        self.backspace_switch = backspace
-
-        popover.set_child(group)
-        self.preferences_popover = popover
-
-    def _toggle_preferences(self, _button: Gtk.Button) -> None:
-        if self.preferences_popover is None:
-            return
-        if self.preferences_popover.get_parent() is None:
-            self.preferences_popover.set_parent(self.workspace.preferences_button)
-        if self.preferences_popover.is_visible():
-            self.preferences_popover.popdown()
-        else:
-            self.preferences_popover.popup()
-
-    def _on_privacy_changed(self, row: Adw.SwitchRow, _param) -> None:
-        self.privacy_enabled = row.get_active()
-        self._apply_privacy_state()
-
-    def _on_backspace_changed(self, row: Adw.SwitchRow, _param) -> None:
-        self.backspace_enabled = not row.get_active()
-        self.workspace.set_backspace_enabled(self.backspace_enabled)
-
-    @staticmethod
-    def _label(text: str) -> Gtk.Label:
-        label = Gtk.Label(label=text)
-        label.set_xalign(0)
-        return label
-
-    def _on_text_size_changed(self, spin: Gtk.SpinButton) -> None:
-        self.text_size = int(spin.get_value())
-        self.workspace.set_text_size(self.text_size)
-
     def _load_sources(self) -> None:
         sources = self.lesson_service.sources()
-        self.source_ids = [i for i, _ in sources]
-        self.source_dropdown.set_model(Gtk.StringList.new([n for _, n in sources]))
+        self.source_ids = [source_id for source_id, _name in sources]
+        self.source_dropdown.set_model(
+            Gtk.StringList.new([name for _source_id, name in sources])
+        )
         if sources:
             self.source_dropdown.set_selected(0)
+            return
+
+        self.lesson_ids = []
+        self.lesson_dropdown.set_model(Gtk.StringList.new([]))
+        self.current_lesson_id = None
+        self.current_text = ""
+        self._restart()
 
     def _load_lessons(self, source_id: int) -> None:
         lessons = self.lesson_service.lessons(source_id)
@@ -364,36 +175,12 @@ class KeycanWindow(Adw.ApplicationWindow):
     def _set_target_text(self, text: str) -> None:
         self.workspace.set_target_text(text)
 
-    def _editor_foreground(self) -> str:
-        return "#f2f2f2" if Adw.StyleManager.get_default().get_dark() else "#111111"
-
-    @staticmethod
-    def _get_tag(buffer: Gtk.TextBuffer, name: str, foreground: str) -> Gtk.TextTag:
-        table = buffer.get_tag_table()
-        tag = table.lookup(name)
-        if tag is None:
-            tag = buffer.create_tag(name, foreground=foreground)
-        return tag
-
     def _apply_privacy_state(self) -> None:
-        active = self.privacy_enabled and self.started_at is not None
-        buffer = self.input_view.get_buffer()
-        table = buffer.get_tag_table()
-        hidden = table.lookup("privacy-hidden")
-        if hidden is None:
-            hidden = buffer.create_tag("privacy-hidden", invisible=True)
-        else:
-            hidden.set_property("invisible", True)
-        hidden.set_priority(max(0, table.get_size() - 1))
-
-        start, end = buffer.get_start_iter(), buffer.get_end_iter()
-        if active:
-            buffer.apply_tag(hidden, start, end)
-        else:
-            buffer.remove_tag(hidden, start, end)
-
-        self.input_view.set_cursor_visible(
-            not active and not self.finished and self.current_lesson_id is not None
+        self.workspace.apply_privacy_state(
+            privacy_enabled=self.privacy_enabled,
+            session_started=self.started_at is not None,
+            finished=self.finished,
+            has_lesson=self.current_lesson_id is not None,
         )
 
     def _start_session(self) -> None:
@@ -491,69 +278,30 @@ class KeycanWindow(Adw.ApplicationWindow):
         elapsed = 0.0 if self.started_at is None else min(
             time.monotonic() - self.started_at, self._duration_seconds()
         )
-        result = self.engine.match_words(self.current_text, self.typed)
-
-        target_word_count = len(WORD_PATTERN.findall(self.current_text))
-        typed_word_count = len(WORD_PATTERN.findall(self.typed))
-        total_characters = len(self.typed)
-        character_correctness = self.engine.character_correctness(
-            self.current_text, self.typed
+        metrics = calculate_session_metrics(
+            self.engine,
+            self.current_text,
+            self.typed,
+            elapsed,
         )
-        correct_characters = sum(character_correctness)
-        wrong_characters = total_characters - correct_characters
-        minutes = elapsed / 60.0 if elapsed > 0 else 0.0
-        words_per_minute = typed_word_count / minutes if minutes else 0.0
-        characters_per_minute = total_characters / minutes if minutes else 0.0
-        accuracy_percent = (
-            result.correct / typed_word_count * 100.0 if typed_word_count else 0.0
+        result = metrics.result
+        save_payload = metrics.to_save_payload(
+            lesson_id=self.current_lesson_id,
+            session_uuid=self.session_uuid,
         )
-        wrong_letters = Counter()
-        for index, typed_char in enumerate(self.typed):
-            if index < len(self.current_text) and not character_correctness[index]:
-                expected = self.current_text[index]
-                if expected.isalpha():
-                    wrong_letters[expected.lower()] += 1
-                elif typed_char.isalpha():
-                    wrong_letters[typed_char.lower()] += 1
-        if len(self.typed) > len(self.current_text):
-            for typed_char in self.typed[len(self.current_text):]:
-                if typed_char.isalpha():
-                    wrong_letters[typed_char.lower()] += 1
 
-        save_payload = {
-            "lesson_id": self.current_lesson_id,
-            "duration": elapsed,
-            "correct": result.correct,
-            "wrong": result.wrong,
-            "target_word_count": target_word_count,
-            "typed_word_count": typed_word_count,
-            "total_characters": total_characters,
-            "correct_characters": correct_characters,
-            "wrong_characters": wrong_characters,
-            "words_per_minute": words_per_minute,
-            "characters_per_minute": characters_per_minute,
-            "accuracy_percent": accuracy_percent,
-            "wrong_letter_counts": dict(wrong_letters),
-            "session_uuid": self.session_uuid,
-        }
-
-        save_error = None
+        save_error = self.session_recorder.save(save_payload)
         profile_error = None
         statistics_error = None
-        try:
-            self.db.save_result(**save_payload)
-        except Exception as exc:
-            save_error = exc
-            # Retrying uses the same UUID, so an ambiguous commit outcome can
-            # never create a duplicate statistics row.
-            self.pending_saves.append(save_payload)
+        if save_error is not None:
             self.workspace.retry_save_button.set_label(
                 translate("Tekrar kaydet", self.preferences.get("language"))
             )
             self.workspace.retry_save_button.set_visible(True)
-            LOGGER.exception(
-                "Failed to save practice result for lesson_id=%s",
+            LOGGER.error(
+                "Failed to save practice result for lesson_id=%s: %s",
                 self.current_lesson_id,
+                save_error,
             )
         else:
             try:
@@ -571,11 +319,13 @@ class KeycanWindow(Adw.ApplicationWindow):
         self.finished = True
         render_error = None
         try:
-            self._render_target_results(result.matched_target_indices)
+            self.workspace.render_target_results(
+                self.current_text, result.matched_target_indices
+            )
         except Exception as exc:
             render_error = exc
         try:
-            self._render_input_results(result.correctness)
+            self.workspace.render_input_results(self.typed, result.correctness)
         except Exception as exc:
             if render_error is None:
                 render_error = exc
@@ -590,7 +340,7 @@ class KeycanWindow(Adw.ApplicationWindow):
 
         base_message = (
             f"Süre doldu. Doğru: {result.correct}  |  Yanlış: {result.wrong}  |  "
-            f"Toplam: {typed_word_count}"
+            f"Toplam: {metrics.typed_word_count}"
         )
         base_message = translate(base_message, self.preferences.get("language"))
         if save_error is not None:
@@ -619,22 +369,19 @@ class KeycanWindow(Adw.ApplicationWindow):
             self.status.set_text(base_message)
 
     def _retry_save_results(self, _button: Gtk.Button) -> None:
-        if not self.pending_saves:
+        if not self.session_recorder.pending_saves:
             self.workspace.retry_save_button.set_visible(False)
             return
 
-        remaining = []
-        for payload in self.pending_saves:
-            try:
-                self.db.save_result(**payload)
-            except Exception:
-                remaining.append(payload)
-                LOGGER.exception(
-                    "Retrying practice result save failed for lesson_id=%s",
-                    payload.get("lesson_id"),
-                )
+        failures = self.session_recorder.retry_pending()
+        for payload, error in failures:
+            LOGGER.error(
+                "Retrying practice result save failed for lesson_id=%s: %s",
+                payload.get("lesson_id"),
+                error,
+            )
 
-        self.pending_saves = remaining
+        remaining = self.session_recorder.pending_saves
         self.workspace.retry_save_button.set_visible(bool(remaining))
         if remaining:
             self.status.set_text(
@@ -666,35 +413,6 @@ class KeycanWindow(Adw.ApplicationWindow):
                 )
             )
 
-    def _render_target_results(self, matched: set[int]) -> None:
-        buffer = self.target_view.get_buffer()
-        buffer.set_text(self.current_text)
-        start, end = buffer.get_start_iter(), buffer.get_end_iter()
-        buffer.remove_all_tags(start, end)
-        base = self._get_tag(buffer, "editor-default", self._editor_foreground())
-        green = self._get_tag(buffer, "correct-target", "#16803c")
-        base.set_priority(0)
-        green.set_priority(buffer.get_tag_table().get_size() - 1)
-        buffer.apply_tag(base, start, end)
-        matches = list(WORD_PATTERN.finditer(self.current_text))
-        for index in matched:
-            match = matches[index]
-            buffer.apply_tag(green, buffer.get_iter_at_offset(match.start()), buffer.get_iter_at_offset(match.end()))
-
-    def _render_input_results(self, correctness: list[bool]) -> None:
-        buffer = self.input_view.get_buffer()
-        start, end = buffer.get_start_iter(), buffer.get_end_iter()
-        buffer.remove_all_tags(start, end)
-        base = self._get_tag(buffer, "editor-default", "#111111")
-        green = self._get_tag(buffer, "correct-input", "#16803c")
-        red = self._get_tag(buffer, "wrong-input", "#e01b24")
-        base.set_priority(0)
-        green.set_priority(buffer.get_tag_table().get_size() - 1)
-        red.set_priority(buffer.get_tag_table().get_size() - 1)
-        buffer.apply_tag(base, start, end)
-        for match, ok in zip(WORD_PATTERN.finditer(self.typed), correctness):
-            buffer.apply_tag(green if ok else red, buffer.get_iter_at_offset(match.start()), buffer.get_iter_at_offset(match.end()))
-
     def _check_time(self) -> bool:
         if self.finished:
             self.tick_id = None
@@ -710,7 +428,7 @@ class KeycanWindow(Adw.ApplicationWindow):
         return GLib.SOURCE_CONTINUE
 
     def _on_close_request(self, _window: Adw.ApplicationWindow) -> bool:
-        if self.pending_saves and not self._allow_close_with_pending_saves:
+        if self.session_recorder.pending_saves and not self._allow_close_with_pending_saves:
             if self._pending_close_dialog is None:
                 dialog = Gtk.AlertDialog(
                     message=translate(
@@ -755,7 +473,7 @@ class KeycanWindow(Adw.ApplicationWindow):
             self.close()
 
 
-class ConfiguredKeycanWindow(KeycanWindow):
+class KeycanWindow(_BaseKeycanWindow):
     """Production application shell composed from the base typing window."""
 
     def __init__(self, app: Adw.Application, database_path: Path):
@@ -864,22 +582,3 @@ class ConfiguredKeycanWindow(KeycanWindow):
         label = Gtk.Label(label=title); label.set_xalign(0); label.set_hexpand(True); box.append(label)
         row.set_child(box); return row
 
-    def _load_sources(self) -> None:
-        sources = self.lesson_service.sources()
-        self.source_ids = [source_id for source_id, _name in sources]
-        self.source_dropdown.set_model(Gtk.StringList.new([name for _source_id, name in sources]))
-        if sources:
-            self.source_dropdown.set_selected(0)
-            return
-        self.lesson_ids = []
-        self.lesson_dropdown.set_model(Gtk.StringList.new([]))
-        self.current_lesson_id = None; self.current_text = ""; self._restart()
-
-    def _on_source_changed(self, _dropdown, _param) -> None:
-        index = self.source_dropdown.get_selected()
-        if 0 <= index < len(self.source_ids):
-            self._load_lessons(self.source_ids[index])
-
-
-# Export the fully composed window so app.py needs no monkey-patching from main.py.
-KeycanWindow = ConfiguredKeycanWindow

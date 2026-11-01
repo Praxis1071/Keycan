@@ -4,10 +4,7 @@ import sqlite3
 from datetime import date, timedelta
 from pathlib import Path
 
-from keycan.data.database import Database
-from keycan.data.database_runtime import install_database_runtime
-
-install_database_runtime()
+from keycan.data.managed_database import ManagedDatabase
 from keycan.services.progression import (
     badge_keys,
     level_for_xp,
@@ -92,7 +89,7 @@ def test_stage7_badges_are_derived_from_progress() -> None:
     assert "fifty_sessions" not in unlocked
 
 
-def _make_db(path: Path) -> Database:
+def _make_db(path: Path) -> ManagedDatabase:
     connection = sqlite3.connect(path)
     connection.executescript(
         """
@@ -136,7 +133,7 @@ def _make_db(path: Path) -> Database:
     )
     connection.commit()
     connection.close()
-    return Database(path)
+    return ManagedDatabase(path)
 
 
 def test_stage7_database_summary_is_local_and_derived(tmp_path: Path) -> None:

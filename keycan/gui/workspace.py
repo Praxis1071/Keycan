@@ -1,7 +1,7 @@
 """Typing workspace UI for Keycan.
 
-This module owns the typing surface and result-display widgets only. Application
-state, typing logic, privacy state, and persistence remain in the main window.
+This module owns the typing surface, editor privacy presentation, and result highlighting.
+Session timing, application state, and persistence remain in the main window.
 
 The practice views deliberately disable clipboard editing and drag-and-drop
 paths so a session cannot be completed by importing or exporting text through
@@ -13,9 +13,12 @@ from __future__ import annotations
 import gi
 
 gi.require_version("Adw", "1")
+gi.require_version("Adw", "1")
 gi.require_version("Gdk", "4.0")
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gdk, Gtk
+from gi.repository import Adw, Gdk, Gtk
+
+from keycan.utils.text import WORD_PATTERN
 
 
 class PracticeTextView(Gtk.TextView):
@@ -252,3 +255,80 @@ class TypingWorkspace(Gtk.Box):
     def get_input_text(self) -> str:
         buffer = self.input_view.get_buffer()
         return buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter(), True)
+
+    @staticmethod
+    def _editor_foreground() -> str:
+        return "#f2f2f2" if Adw.StyleManager.get_default().get_dark() else "#111111"
+
+    @staticmethod
+    def _get_tag(buffer: Gtk.TextBuffer, name: str, foreground: str) -> Gtk.TextTag:
+        table = buffer.get_tag_table()
+        tag = table.lookup(name)
+        if tag is None:
+            tag = buffer.create_tag(name, foreground=foreground)
+        return tag
+
+    def apply_privacy_state(
+        self,
+        *,
+        privacy_enabled: bool,
+        session_started: bool,
+        finished: bool,
+        has_lesson: bool,
+    ) -> None:
+        active = privacy_enabled and session_started
+        buffer = self.input_view.get_buffer()
+        table = buffer.get_tag_table()
+        hidden = table.lookup("privacy-hidden")
+        if hidden is None:
+            hidden = buffer.create_tag("privacy-hidden", invisible=True)
+        else:
+            hidden.set_property("invisible", True)
+        hidden.set_priority(max(0, table.get_size() - 1))
+
+        start, end = buffer.get_start_iter(), buffer.get_end_iter()
+        if active:
+            buffer.apply_tag(hidden, start, end)
+        else:
+            buffer.remove_tag(hidden, start, end)
+
+        self.input_view.set_cursor_visible(not active and not finished and has_lesson)
+
+    def render_target_results(self, target_text: str, matched: set[int]) -> None:
+        buffer = self.target_view.get_buffer()
+        buffer.set_text(target_text)
+        start, end = buffer.get_start_iter(), buffer.get_end_iter()
+        buffer.remove_all_tags(start, end)
+        base = self._get_tag(buffer, "editor-default", self._editor_foreground())
+        green = self._get_tag(buffer, "correct-target", "#16803c")
+        base.set_priority(0)
+        green.set_priority(buffer.get_tag_table().get_size() - 1)
+        buffer.apply_tag(base, start, end)
+        matches = list(WORD_PATTERN.finditer(target_text))
+        for index in matched:
+            if 0 <= index < len(matches):
+                match = matches[index]
+                buffer.apply_tag(
+                    green,
+                    buffer.get_iter_at_offset(match.start()),
+                    buffer.get_iter_at_offset(match.end()),
+                )
+
+    def render_input_results(self, typed_text: str, correctness: list[bool]) -> None:
+        buffer = self.input_view.get_buffer()
+        start, end = buffer.get_start_iter(), buffer.get_end_iter()
+        buffer.remove_all_tags(start, end)
+        base = self._get_tag(buffer, "editor-default", "#111111")
+        green = self._get_tag(buffer, "correct-input", "#16803c")
+        red = self._get_tag(buffer, "wrong-input", "#e01b24")
+        base.set_priority(0)
+        green.set_priority(buffer.get_tag_table().get_size() - 1)
+        red.set_priority(buffer.get_tag_table().get_size() - 1)
+        buffer.apply_tag(base, start, end)
+        for match, ok in zip(WORD_PATTERN.finditer(typed_text), correctness):
+            buffer.apply_tag(
+                green if ok else red,
+                buffer.get_iter_at_offset(match.start()),
+                buffer.get_iter_at_offset(match.end()),
+            )
+
