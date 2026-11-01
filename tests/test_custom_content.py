@@ -4,7 +4,7 @@ import json
 import sqlite3
 from pathlib import Path
 
-from keycan.data.database_runtime import ManagedDatabase
+from keycan.data.managed_database import ManagedDatabase
 
 
 def make_db(path: Path) -> ManagedDatabase:
