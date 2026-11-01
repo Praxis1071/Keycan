@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install test dependencies
-        run: python -m pip install --upgrade pip pytest
+        run: python -m pip install --upgrade pip pytest ruff
       - name: Run Stage 5 tests
         run: pytest -q tests/test_stage5_statistics.py
 
@@ -60,5 +60,7 @@ jobs:
         run: python -m pip install --upgrade pip pytest
       - name: Run repository checks
         run: ./check.sh
+      - name: Check undefined Python names
+        run: ruff check --select F821 keycan tests
       - name: Run full test suite
         run: pytest -q
