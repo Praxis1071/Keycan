@@ -4,13 +4,10 @@ import json
 import sqlite3
 from pathlib import Path
 
-from keycan.data.database import Database
-from keycan.data.database_runtime import install_database_runtime
-
-install_database_runtime()
+from keycan.data.database_runtime import ManagedManagedDatabase
 
 
-def make_db(path: Path) -> Database:
+def make_db(path: Path) -> ManagedDatabase:
     connection = sqlite3.connect(path)
     connection.executescript("""
         CREATE TABLE sources (id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, relative_path TEXT NOT NULL UNIQUE DEFAULT '');
@@ -21,7 +18,7 @@ def make_db(path: Path) -> Database:
     """)
     connection.commit()
     connection.close()
-    return Database(path)
+    return ManagedDatabase(path)
 
 
 def test_multiple_custom_groups_can_be_created_with_unique_legacy_paths(tmp_path: Path) -> None:
@@ -50,7 +47,7 @@ def test_old_custom_groups_with_empty_paths_are_migrated(tmp_path: Path) -> None
         )
         db.conn.commit()
         db.close()
-        db = Database(tmp_path / "legacy.db")
+        db = ManagedDatabase(tmp_path / "legacy.db")
         row = db.conn.execute(
             "SELECT relative_path FROM sources WHERE id = 10"
         ).fetchone()
@@ -285,7 +282,7 @@ def test_backup_preserves_custom_lesson_inside_default_group(tmp_path: Path) -> 
     finally:
         target.close()
 
-def make_shifted_default_db(path: Path) -> Database:
+def make_shifted_default_db(path: Path) -> ManagedDatabase:
     connection = sqlite3.connect(path)
     connection.executescript("""
         CREATE TABLE sources (
@@ -320,7 +317,7 @@ def make_shifted_default_db(path: Path) -> Database:
     """)
     connection.commit()
     connection.close()
-    return Database(path)
+    return ManagedDatabase(path)
 
 
 def test_default_backup_maps_by_content_identity_when_numeric_ids_shift(tmp_path: Path) -> None:
@@ -482,7 +479,7 @@ def test_legacy_sessions_receive_stable_ids_during_migration(tmp_path: Path) -> 
     finally:
         db.close()
 
-    migrated = Database(path)
+    migrated = ManagedDatabase(path)
     try:
         session_uuid = migrated.conn.execute(
             "SELECT session_uuid FROM practice_results"
@@ -556,7 +553,7 @@ def test_deleted_default_group_is_not_restored_from_an_old_snapshot(tmp_path: Pa
     try:
         db.delete_group(1)
         db.close()
-        db = Database(path)
+        db = ManagedDatabase(path)
         restored_groups, restored_lessons = db.restore_defaults()
         assert (restored_groups, restored_lessons) == (0, 0)
         assert db.sources() == []
@@ -591,7 +588,7 @@ def test_full_reset_restore_point_survives_database_reopen(tmp_path: Path) -> No
     finally:
         db.close()
 
-    restored = Database(path)
+    restored = ManagedDatabase(path)
     try:
         assert restored.restore_defaults() == (1, 1)
         assert restored.lesson(1)[2] == "son çalışma alanı metni"
@@ -630,7 +627,7 @@ def test_restore_defaults_keeps_only_remaining_default_groups(tmp_path: Path) ->
         )
         db.conn.commit()
         db.close()
-        db = Database(path)
+        db = ManagedDatabase(path)
         db.delete_group(2)
 
         assert db.restore_defaults() == (1, 1)
