@@ -9,7 +9,7 @@ import sqlite3
 import tempfile
 from pathlib import Path
 
-from keycan.data.database_runtime import ManagedDatabase
+from keycan.data.managed_database import ManagedDatabase
 from keycan.services.lesson_catalog import load_lesson_catalog
 
 with tempfile.TemporaryDirectory() as temp_dir:
