@@ -99,7 +99,23 @@ jobs:
               window.session_uuid = uuid.uuid4().hex
               window.started_at = time.monotonic() - 3
               window.duration_spin.set_value(1)
-              window.input_view.get_buffer().set_text("bir iki")
+              input_buffer = window.input_view.get_buffer()
+              input_buffer.set_text("bir iki")
+              window.privacy_enabled = True
+              window._apply_privacy_state()
+              privacy_tag = input_buffer.get_tag_table().lookup("privacy-hidden")
+              assert privacy_tag is not None
+              assert input_buffer.get_iter_at_offset(0).has_tag(privacy_tag)
+              window.privacy_enabled = False
+              window._apply_privacy_state()
+              assert not input_buffer.get_iter_at_offset(0).has_tag(privacy_tag)
+
+              window.preferences.values["language"] = "en"
+              window.apply_language()
+              assert window.statistics_page.language == "en"
+              window.preferences.values["language"] = "tr"
+              window.apply_language()
+
               window._finish_now()
 
               saved = window.db.conn.execute(
