@@ -110,7 +110,7 @@ A mechanical group-name cleanup creates collisions (for example, the F/Q keyboar
 - The catalog already contains many repeated texts across different groups. The cleanup introduces one additional duplicate cluster of four lessons: two legacy labels (YARGITAY 16-A and 18-A) collapse to the same letter-only text, repeated in the current and previous Yargıtay groups. All four lesson IDs and positions are retained; no lesson was removed.
 - Curated unique group names rather than relying on a blind regex. F/Q keyboard variants and other similar groups remain distinguishable without digits or punctuation.
 - Fixed the JSON backup null-identity bug. The tracked database is copied to a temporary location for migration/integrity checks; the repository database is not modified.
-- Latest GitHub Actions run: all four jobs passed (Stage 5, Stage 6, Stage 7, and regression/full checks).
+- Latest GitHub Actions run: all five jobs passed, including the GTK/Xvfb smoke test.
 
 **Current migration boundary:** The GUI now reads built-in display names and unchanged lesson text from JSON through `LessonService`, while SQLite continues to hold the editable workspace, custom content, ordering/deletion state, and history. This is a deliberate compatibility phase, not a destructive database migration. No SQLite tables or old files have been removed. The next gate is to harden JSON error handling and verify restore/reset/backup round trips against the new service before any database responsibilities are consolidated.
 
@@ -138,7 +138,7 @@ The JSON catalog is read through `LessonService`; GUI consumers do not read JSON
 - `check.sh` now copies the tracked database to a temporary directory, applies the real `Database` migrations to that copy, and performs integrity/schema/snapshot checks there. This validates migrations without mutating the checked-in database.
 - The check also verifies that all group and lesson IDs in the packaged JSON catalog match the default-content snapshot IDs in the migrated database.
 - Current repository database validation reports 83 active sources (82 built-in groups plus one active custom group) and 1,833 active lessons.
-- The full CI workflow runs `check.sh`, Ruff's undefined-name check, the full pytest suite, and an Xvfb GTK smoke test. Latest successful run: [41298757790](https://github.com/Praxis1071/Keycan/actions/runs/41298757790); 52 focused checks, 70 pytest tests, Ruff F821, and GTK window/session/persistence smoke test all passed.
+- The full CI workflow runs `check.sh`, Ruff's undefined-name check, the full pytest suite, and an Xvfb GTK smoke test. Latest successful run: [41298923011](https://github.com/Praxis1071/Keycan/actions/runs/41298923011); 52 focused checks, 70 pytest tests, Ruff F821, and GTK window/session/persistence smoke test all passed.
 
 
 ## 10. Duplicate-module audit update (historical findings, updated below)
