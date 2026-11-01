@@ -161,7 +161,7 @@ The JSON catalog is read through `LessonService`; GUI consumers do not read JSON
 - Extracted typing-session metrics from `window.py` into pure `core/session_metrics.py` calculations and added focused tests.
 - Moved editor privacy presentation and result highlighting from the application window into `gui/workspace.py`, which already owns the two text views.
 - Fixed a completion-status reference uncovered during the extraction and added an Xvfb-based GTK smoke test that constructs the real window and completes a persisted practice session.
-- GitHub Actions run 41298757790 passed all five jobs: 52 `check.sh` checks, 70 pytest tests, Ruff F821, and GTK/Xvfb launch/session/persistence smoke test.
+- GitHub Actions run 41298923011 passed all five jobs: 52 `check.sh` checks, 70 pytest tests, Ruff F821, and GTK/Xvfb launch/session/persistence smoke test.
 - The latest smoke test also exercises the settings content manager, privacy tag toggling and live language switch.
 - Full interactive human verification on the user's desktop remains a separate final gate.
 
