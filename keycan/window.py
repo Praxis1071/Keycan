@@ -4,7 +4,6 @@ import logging
 import time
 import uuid
 from pathlib import Path
-from collections import Counter
 import gi
 
 gi.require_version("Gtk", "4.0")
@@ -12,6 +11,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, GLib, Gtk
 
 from keycan.core.typing_engine import TypingEngine
+from keycan.core.session_metrics import calculate_session_metrics
 from keycan.data.database_runtime import ManagedDatabase
 from keycan.gui.workspace import TypingWorkspace
 from keycan.gui.search import SourceSearchDropdown
@@ -491,51 +491,17 @@ class KeycanWindow(Adw.ApplicationWindow):
         elapsed = 0.0 if self.started_at is None else min(
             time.monotonic() - self.started_at, self._duration_seconds()
         )
-        result = self.engine.match_words(self.current_text, self.typed)
-
-        target_word_count = len(WORD_PATTERN.findall(self.current_text))
-        typed_word_count = len(WORD_PATTERN.findall(self.typed))
-        total_characters = len(self.typed)
-        character_correctness = self.engine.character_correctness(
-            self.current_text, self.typed
+        metrics = calculate_session_metrics(
+            self.engine,
+            self.current_text,
+            self.typed,
+            elapsed,
         )
-        correct_characters = sum(character_correctness)
-        wrong_characters = total_characters - correct_characters
-        minutes = elapsed / 60.0 if elapsed > 0 else 0.0
-        words_per_minute = typed_word_count / minutes if minutes else 0.0
-        characters_per_minute = total_characters / minutes if minutes else 0.0
-        accuracy_percent = (
-            result.correct / typed_word_count * 100.0 if typed_word_count else 0.0
+        result = metrics.result
+        save_payload = metrics.to_save_payload(
+            lesson_id=self.current_lesson_id,
+            session_uuid=self.session_uuid,
         )
-        wrong_letters = Counter()
-        for index, typed_char in enumerate(self.typed):
-            if index < len(self.current_text) and not character_correctness[index]:
-                expected = self.current_text[index]
-                if expected.isalpha():
-                    wrong_letters[expected.lower()] += 1
-                elif typed_char.isalpha():
-                    wrong_letters[typed_char.lower()] += 1
-        if len(self.typed) > len(self.current_text):
-            for typed_char in self.typed[len(self.current_text):]:
-                if typed_char.isalpha():
-                    wrong_letters[typed_char.lower()] += 1
-
-        save_payload = {
-            "lesson_id": self.current_lesson_id,
-            "duration": elapsed,
-            "correct": result.correct,
-            "wrong": result.wrong,
-            "target_word_count": target_word_count,
-            "typed_word_count": typed_word_count,
-            "total_characters": total_characters,
-            "correct_characters": correct_characters,
-            "wrong_characters": wrong_characters,
-            "words_per_minute": words_per_minute,
-            "characters_per_minute": characters_per_minute,
-            "accuracy_percent": accuracy_percent,
-            "wrong_letter_counts": dict(wrong_letters),
-            "session_uuid": self.session_uuid,
-        }
 
         save_error = None
         profile_error = None
