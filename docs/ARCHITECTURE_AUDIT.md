@@ -1,7 +1,7 @@
 # Keycan — Güncel Mimari Denetim Raporu
 
 **Denetim tarihi:** 2026-11-01  
-**İncelenen dal:** main  
+**İncelenen dal:** `architecture/maintenance-refactor` (başlangıç noktası: main)  
 **Temel sürüm:** v2.5.0  
 **Denetim türü:** GitHub kaynak kodu, mevcut mimari belgeler, test tanımları ve GitHub Actions sonuçlarının statik incelemesi  
 **Durum:** Statik denetim güncellendi; yerel GTK masaüstü doğrulaması ayrıca yapılmalı.
@@ -26,16 +26,16 @@ Güncel ve onaylanmış yaklaşım:
 
 Kullanıcı içeriğini JSON'a taşıma kararı alınmış değildir. Bu yönde bir migrasyon, ancak mevcut SQLite modelinin yetersizliği kanıtlanır ve ayrı tasarım/güvenlik kapısından geçerse gündeme alınabilir.
 
-## 3. Veritabanı runtime uyumluluk katmanı
+## 3. Veritabanı sınıf sınırı
 
-- database.py temel şema, migrasyon ve veritabanı davranışlarını içerir.
-- database_runtime.py hâlâ bazı Database davranışlarını açık bir kayıt fonksiyonu üzerinden sınıfa ekleyen geçiş/uyumluluk katmanıdır.
-- Önceki raporda belirtildiği gibi bunun yalnızca import yan etkisiyle çalıştığı ifadesi artık güncel değildir: kayıt açıkça yapılmaktadır.
-- Buna rağmen metotların iki dosya arasında bölünmüş olması ve sınıf davranışının kayıt sırasına bağlı kalması hâlâ mimari borçtur.
-- database_runtime.py kaldırılmadan önce her metot, çağrı noktası, test ve yan etki karşılaştırılmalıdır.
+- `database.py` temel `Database` sınıfını, şema migrasyonlarını ve istatistik/oturum sorgularını içerir.
+- Önceki uygulama yolu, `database_runtime.py` içindeki kayıt fonksiyonuyla metotları çalışma anında `Database` sınıfına atıyordu. Bu yöntem kaldırıldı.
+- Yeni `ManagedDatabase`, temel `Database` sınıfından türeyen açık bir alt sınıftır. İçerik CRUD, varsayılan içerik snapshot/restore, ilerleme özeti ve JSON yedekleme davranışları bu uygulama sınıfında sunulur.
+- `app.py` artık kayıt fonksiyonu çağırmaz; pencere doğrudan `ManagedDatabase` kullanır.
+- `LessonService` tür sözleşmesi de `ManagedDatabase` API'sini açıkça belirtir.
+- Temel `Database` sınıfı, `database_runtime.py` import edildiğinde değişmez. Bu davranış alt süreç regresyon testiyle doğrulanır.
 
-**Öneri:** Kayıt mekanizmasını hemen silme. Önce metotları tek tek gerçek sınıf metotlarına veya gerekli servis/repository sınırlarına taşı; her adımda ilgili testleri çalıştır.
-
+**Kalan iş:** `database_runtime.py` içindeki modül düzeyi fonksiyonlar hâlâ alt sınıf metotlarına bağlanır. Bunları okunabilir sınıf metotlarına veya uygun repository/service bileşenlerine taşımak sonraki, ayrı bir sadeleştirme adımıdır.
 ## 4. Ders kataloğu servisi
 
 - Paketlenmiş Türkçe katalog JSON olarak bulunur.
@@ -76,15 +76,15 @@ KC-001–KC-005 düzeltmeleri main'e alınmıştır. Ayrıntılı hata geçmişi
 
 ## 9. Öncelikli mimari riskler
 
-1. database_runtime.py içindeki uyumluluk metotlarının Database sınıfına kayıt yoluyla eklenmesi.
-2. window.py dosyasının pencere koordinasyonunun ötesinde çalışma oturumu ve ders akışlarını da yönetmesi.
+1. `window.py` dosyasının pencere koordinasyonunun ötesinde çalışma oturumu ve ders akışlarını da yönetmesi.
+2. `database_runtime.py` içindeki alt sınıf metotlarının hâlâ modül düzeyindeki fonksiyonlara bağlanması ve dosya adının artık tam karşılığını yansıtmaması.
 3. Eski/aktif settings ve statistics modüllerinin çiftlerinin bulunması.
 4. JSON katalog, SQLite kullanıcı içeriği ve JSON yedekleme rollerinin dokümantasyonda karıştırılma riski.
 5. Flatpak veri yolu, ilk kurulum/var olan kullanıcı verisi geçişi ve yedek geri yükleme senaryolarının her sürümde regresyon testine ihtiyaç duyması.
 
 ## 10. Sonraki adım ve kapsam sınırı
 
-İlk uygulama adımı, kodu değiştirmeden güncel main için bağımlılık/import haritasını ve database_runtime.py metot envanterini tamamlamaktır. Ardından her risk için küçük, test edilebilir değişiklikler planlanabilir.
+İlk uygulama adımı olarak runtime sınıf mutasyonu kaldırılmış ve `ManagedDatabase` alt sınıfına geçilmiştir. Branch CI doğrulaması `check.sh` için 52 kontrolü ve tam pytest paketi için 67 testi başarıyla tamamlamıştır. Sonraki adım, `window.py` içindeki yazma oturumu hesaplama/kayıt akışını GTK yaşam döngüsünü bozmadan küçük bileşenlere ayırmak ve eski GUI modüllerinin kullanımını kesinleştirmektir.
 
 Bu çalışma sırasında:
 
