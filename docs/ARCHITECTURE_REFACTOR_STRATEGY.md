@@ -8,12 +8,12 @@ The repository already has a useful separation between `app.py`, `window.py`, `g
 
 Confirmed findings from the current branch:
 
-- `keycan/app.py` imports `database_runtime` and `statistics_runtime` only for their import-time side effects.
+- `keycan/app.py` explicitly registers the database compatibility runtime before constructing the window. This is still a transitional class-method registration mechanism, not import-time patching.
 - `database_runtime.py` replaces many `Database` methods after class creation. It contains custom content CRUD, progression queries, default-content snapshots, and JSON backup import/export.
 - `database.py` already contains overlapping database behavior and schema migrations. The two files must be compared method-by-method before consolidation.
 - `window.py` imports and coordinates the database, workspace, search, settings, statistics, profile, keyboard guide, translation, and preference components. It also owns substantial interaction state.
 - The active GUI imports `settings2.py` and `statistics_clean.py`. The older `settings.py` and `statistics.py` have no direct references in the current code-search results, but must be checked for indirect imports and tests before removal.
-- `statistics_runtime.py` monkey-patches `MetricCard.set_value` from `statistics_clean.py`.
+- The former statistics runtime patch has been removed from the active application path; the animation behavior now belongs to `MetricCard`.
 - The current backup format is already JSON (version 3), with stable identifiers and compatibility handling. It must be preserved and strengthened rather than replaced with a second unrelated format.
 - The initial CI baseline exposed `test_backup_round_trip_preserves_deleted_lesson_history`. The root cause was JSON `null` identities being converted to the literal string `None`, which selected the wrong identity-matching path. The importer now normalizes null identities before matching, and the full CI suite passes.
 
@@ -22,7 +22,7 @@ These findings are an initial map, not permission to delete modules. Full import
 ## 2. Target responsibilities
 
 - **Packaged default lessons:** version-controlled JSON files under `keycan/resources/lessons/<language>/`.
-- **Custom user-created lessons:** retain the existing SQLite-backed editing model initially. These are mutable user data, not application resources.
+- **Custom user-created lessons and user edits:** retain the existing SQLite-backed editing model. Do not migrate this mutable user data to JSON without a separately justified and approved design.
 - **User progress and history:** SQLite, including practice sessions, statistics inputs, profile progression and stable lesson references.
 - **Backup/restore:** versioned JSON export/import. A backup includes custom content and user history; it is not the live application database.
 - **Lesson access:** one `LessonService` API. GUI components must not know whether a lesson came from packaged JSON or a custom-content repository.
@@ -84,7 +84,7 @@ Content normalization rules:
 - Never delete the existing database, lesson catalog, or backup until a verified replacement and recovery path exist.
 - Do not rewrite the whole application.
 - Do not add Rust, new frameworks, or abstraction layers without a measured need.
-- Make one coherent change per commit and keep all work on the dedicated refactor branch.
+- Make one coherent change per commit. Future implementation work should use a dedicated refactor branch; documentation corrections may be committed directly to main when explicitly requested.
 - A phase is complete only when its tests pass and existing features are checked.
 - If tests cannot be executed in the current environment, report that limitation; do not claim they passed.
 
@@ -154,3 +154,26 @@ The JSON catalog is ready, but GUI consumers should not read JSON directly. The 
 - Tests and the repository check script call the registration function explicitly.
 - Registration is idempotent and covered by a subprocess test that starts with an unpatched `Database` class.
 - This is an intermediate safety improvement only. The registration function still assigns methods onto `Database`; the remaining task is to move these implementations into explicit database/repository classes and make the compatibility module a no-op.
+
+
+## 12. Current main-branch decisions (2026-11-01)
+
+This section supersedes any older wording in this document that suggests all user lesson content must move to JSON.
+
+- Packaged built-in lesson catalog: version-controlled JSON under keycan/resources/lessons/.
+- User-created groups, editable content, ordering/deletion state and personal changes: retain the current SQLite-backed model.
+- Practice sessions, statistics inputs, profile-derived progress and history: SQLite.
+- Backup/restore: keep the existing versioned JSON export/import format as a portable backup contract. It is not the live store for user content.
+- LessonService: the GUI-facing read boundary for packaged built-in lessons. User content writes continue through the existing database layer unless a future, separately approved architecture decision changes that.
+- No database tables, user content stores or backup formats are to be removed merely to achieve a JSON-first design.
+
+### Verified stabilization update
+
+The stabilization pull request [#2](https://github.com/Praxis1071/Keycan/pull/2) was merged into main on 2026-10-31 (merge commit 3c5c80180c3d911696903a61868abffd43a7b2df). Its validation report records 45 passing tests and successful Stage 5, Stage 6, Stage 7 and full regression jobs. Manual GTK checks remain a separate requirement; CI success is not evidence that desktop interactions were manually verified.
+
+### Remaining high-risk work
+
+- database_runtime.py still contains compatibility behavior registered onto Database. Move behavior into explicit methods/services only after a method-by-method comparison and focused tests.
+- window.py still coordinates multiple pages and typing-session state. Extract responsibilities incrementally; preserve GTK signal/lifecycle behavior.
+- Legacy settings/statistics modules should not be deleted until import, packaging, tests and external compatibility are checked.
+- Backup restore, reset/restore defaults and historical session identity must remain regression-gated.
