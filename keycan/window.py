@@ -556,7 +556,7 @@ class KeycanWindow(Adw.ApplicationWindow):
 
         base_message = (
             f"Süre doldu. Doğru: {result.correct}  |  Yanlış: {result.wrong}  |  "
-            f"Toplam: {typed_word_count}"
+            f"Toplam: {metrics.typed_word_count}"
         )
         base_message = translate(base_message, self.preferences.get("language"))
         if save_error is not None:
