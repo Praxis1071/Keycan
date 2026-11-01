@@ -23,7 +23,7 @@ from keycan.services.i18n import apply_to_widget_tree
 from keycan.services.translations import translate
 from keycan.services.preferences import Preferences
 from keycan.services.lesson_service import LessonService
-from keycan.utils.text import WORD_PATTERN, format_remaining
+from keycan.utils.text import format_remaining
 
 
 LOGGER = logging.getLogger(__name__)
