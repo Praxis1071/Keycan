@@ -19,7 +19,7 @@ from keycan.services.lesson_catalog import (
 from keycan.utils.text import natural_sort_key
 
 if TYPE_CHECKING:
-    from keycan.data.database_runtime import ManagedDatabase
+    from keycan.data.managed_database import ManagedDatabase
 
 
 @dataclass(frozen=True, slots=True)
