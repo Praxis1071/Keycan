@@ -35,7 +35,7 @@ Kullanıcı içeriğini JSON'a taşıma kararı alınmış değildir. Bu yönde 
 - `LessonService` tür sözleşmesi de `ManagedDatabase` API'sini açıkça belirtir.
 - Temel `Database` sınıfı, `database_runtime.py` import edildiğinde değişmez. Bu davranış alt süreç regresyon testiyle doğrulanır.
 
-**Kalan iş:** `managed_database.py` içindeki modül düzeyi fonksiyonlar hâlâ alt sınıf metotlarına bağlanır. Bunları okunabilir sınıf metotlarına veya uygun repository/service bileşenlerine taşımak sonraki, ayrı bir sadeleştirme adımıdır.
+`managed_database.py` içindeki uygulama işlemleri artık `ManagedDatabase` sınıfında normal metotlar olarak tanımlıdır; sınıf gövdesinde sonradan fonksiyon ataması veya runtime monkey-patch yoktur. Eski `database_runtime.py` yalnızca uyumluluk dışa aktarımıdır.
 ## 4. Ders kataloğu servisi
 
 - Paketlenmiş Türkçe katalog JSON olarak bulunur.
@@ -48,9 +48,11 @@ Katalog doğrulaması, yinelenen kimlikler, bozuk kaynak, eksik kaynak ve kullan
 
 ## 5. GUI ve pencere sorumlulukları
 
-- window.py ana pencere, navigasyon ve çalışma alanı koordinasyonunun yanında ders seçimi ve yazma oturumu yaşam döngüsünün önemli bölümünü yönetir.
+- `window.py` ana pencere, sayfa navigasyonu, ders seçimi ve yazma oturumu yaşam döngüsünü koordine eder. Üretim penceresi artık `_BaseKeycanWindow` üzerine açık `KeycanWindow` sınıfı olarak kuruludur; runtime sınıf alias'ı ve yinelenen kaynak yükleme metotları kaldırılmıştır.
 - Bu dosyanın sorumluluklarını azaltmak mantıklıdır; ancak GTK sinyalleri, widget yaşam döngüsü, zamanlayıcılar ve kapanışta bekleyen kayıtlar nedeniyle büyük bir yeniden yazım yapılmamalıdır.
-- İlk ayrıştırma adımı olarak kelime/karakter/doğruluk ölçümleri ve kayıt payload'ı GTK penceresinden çıkarılarak `core/session_metrics.py` içine taşındı. Oturum başlatma, zamanlayıcı, GTK buffer okuma ve kapanışta bekleyen kayıt yönetimi hâlâ pencerededir.
+- Kelime/karakter/doğruluk ölçümleri ve kayıt payload'ı GTK penceresinden `core/session_metrics.py` içine taşındı.
+- Editörün gizlilik görünümü, sonuç renklendirme ve metin buffer sunumu `gui/workspace.py` sorumluluğuna alındı. Pencere bu işlemleri workspace API'si üzerinden çağırır.
+- Oturum başlatma, zamanlayıcı, GTK buffer'ın oturum sonunda okunması, veritabanı kayıt/yeniden deneme ve kapanışta bekleyen kayıt yönetimi hâlâ pencerededir.
 - Sonraki ayrıştırma adayları ders seçimi/yükleme ve çalışma oturumu yaşam döngüsüdür.
 - Yalnızca gerçek ve bağımsız sorumluluklar için yeni sınıf/servis oluşturulmalıdır.
 
@@ -77,15 +79,15 @@ KC-001–KC-005 düzeltmeleri main'e alınmıştır. Ayrıntılı hata geçmişi
 
 ## 9. Öncelikli mimari riskler
 
-1. `window.py` dosyasının pencere koordinasyonunun ötesinde çalışma oturumu ve ders akışlarını da yönetmesi.
-2. `managed_database.py` içindeki alt sınıf metotlarının hâlâ modül düzeyindeki fonksiyonlara bağlanması.
-3. Eski/aktif settings ve statistics modüllerinin çiftlerinin bulunması.
+1. `window.py` dosyasının oturum zamanlaması, kayıt/yeniden deneme ve kapanış koordinasyonunu da yönetmesi.
+2. Veritabanı taban sınıfı ile uygulama alt sınıfındaki tarihsel/örtüşen CRUD API'lerinin uyumluluk sınırlarının belgelenmesi.
+3. GTK masaüstü etkileşimlerinin otomatik Xvfb smoke testi ve kullanıcının gerçek masaüstü denemesiyle doğrulanması.
 4. JSON katalog, SQLite kullanıcı içeriği ve JSON yedekleme rollerinin dokümantasyonda karıştırılma riski.
 5. Flatpak veri yolu, ilk kurulum/var olan kullanıcı verisi geçişi ve yedek geri yükleme senaryolarının her sürümde regresyon testine ihtiyaç duyması.
 
 ## 10. Sonraki adım ve kapsam sınırı
 
-İlk uygulama adımı olarak runtime sınıf mutasyonu kaldırılmış ve `ManagedDatabase` alt sınıfına geçilmiştir. Branch CI doğrulaması `check.sh` için 52 kontrolü ve tam pytest paketi için 70 testi başarıyla tamamlamıştır. `window.py` içindeki saf oturum ölçüm hesaplamaları `core/session_metrics.py` içine ayrılmıştır. Sonraki adım, GTK buffer/zamanlayıcı/kapanış yaşam döngüsünü koruyarak oturum koordinasyonunu ve ders yükleme akışını daha küçük bileşenlere ayırmak; ayrıca eski GUI modüllerinin kullanımını kesinleştirmektir.
+Runtime sınıf mutasyonu kaldırılmış, managed veritabanı davranışları normal alt sınıf metotlarına dönüştürülmüş ve eski import yolları uyumluluk dışa aktarımlarıyla korunmuştur. Saf oturum ölçümleri `core/session_metrics.py` içine; editör gizliliği ve sonuç renklendirme ise `gui/workspace.py` içine ayrılmıştır. CI'da 52 depo kontrolü, 70 pytest testi ve Ruff F821 denetimi başarıyla tamamlanmıştır. Yeni GTK/Xvfb smoke testi pencere oluşturma, sayfa kurulumu, bir oturumun kaydedilmesi ve sonuç mesajını otomatik doğrulamak üzere eklendi; sonucu ayrıca raporlanacaktır.
 
 Bu çalışma sırasında:
 
