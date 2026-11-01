@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from keycan.data.database_runtime import ManagedDatabase
+from keycan.data.managed_database import ManagedDatabase
 from keycan.services.lesson_service import LessonService
 
 
