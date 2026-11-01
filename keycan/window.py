@@ -12,7 +12,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, GLib, Gtk
 
 from keycan.core.typing_engine import TypingEngine
-from keycan.data.database import Database
+from keycan.data.database_runtime import ManagedDatabase
 from keycan.gui.workspace import TypingWorkspace
 from keycan.gui.search import SourceSearchDropdown
 from keycan.gui.settings2 import SettingsPanel
@@ -45,7 +45,7 @@ class KeycanWindow(Adw.ApplicationWindow):
     def __init__(self, app: Adw.Application, database_path: Path) -> None:
         super().__init__(application=app, title="Keycan — On Parmak")
         self.set_default_size(1200, 760)
-        self.db = Database(database_path)
+        self.db = ManagedDatabase(database_path)
         self.lesson_service = LessonService(self.db)
         self.engine = TypingEngine()
         self.preferences = Preferences()
