@@ -10,7 +10,7 @@ from keycan.services.lesson_service import LessonService
 
 
 @pytest.fixture
-def database(tmp_path: Path) -> Database:
+def database(tmp_path: Path) -> ManagedDatabase:
     source = Path(__file__).resolve().parents[1] / "typing_data.db"
     target = tmp_path / "typing_data.db"
     shutil.copy2(source, target)
