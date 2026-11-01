@@ -839,5 +839,3 @@ class KeycanWindow(_BaseKeycanWindow):
         label = Gtk.Label(label=title); label.set_xalign(0); label.set_hexpand(True); box.append(label)
         row.set_child(box); return row
 
-
-__all__ = ["WindowShellMixin"]
