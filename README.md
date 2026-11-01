@@ -10,12 +10,11 @@ The app helps you improve your typing speed and accuracy. You can create your ow
 - Create, edit, delete, and reorder texts within lesson groups
 - Statistics for typing speed, accuracy, and practice history
 - Daily, weekly, monthly, yearly, and all-time statistics
-- Import and export data
-- A local profile with XP, levels, badges, goals, and practice streaks
+- A local profile with XP, levels, badges, and practice streaks
 - Turkish and English language support
 - System, light, and dark themes
 - Built-in guide to touch typing and proper keyboard finger placement
-- Local data storage with SQLite
+- Local user data and practice history stored with SQLite; bundled default lessons catalogued in JSON
 - Linux desktop interface built with GTK4 and libadwaita
 - Flatpak support
 
@@ -37,7 +36,7 @@ Visit the [GitHub Releases](https://github.com/Praxis1071/Keycan/releases) page 
 
 ## Development
 
-For development stages and planned work, see [ROADMAP.md](ROADMAP.md).
+For the current development stages, see [ROADMAP.md](ROADMAP.md). Technical architecture decisions and migration safeguards are documented in [docs/ARCHITECTURE_REFACTOR_ROADMAP.md](docs/ARCHITECTURE_REFACTOR_ROADMAP.md) and [docs/ARCHITECTURE_REFACTOR_STRATEGY.md](docs/ARCHITECTURE_REFACTOR_STRATEGY.md).
 
 ## License
 
