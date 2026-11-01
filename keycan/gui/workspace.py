@@ -1,7 +1,7 @@
 """Typing workspace UI for Keycan.
 
-This module owns the typing surface and result-display widgets only. Application
-state, typing logic, privacy state, and persistence remain in the main window.
+This module owns the typing surface, editor privacy presentation, and result highlighting.
+Session timing, application state, and persistence remain in the main window.
 
 The practice views deliberately disable clipboard editing and drag-and-drop
 paths so a session cannot be completed by importing or exporting text through
