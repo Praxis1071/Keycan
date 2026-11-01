@@ -12,7 +12,6 @@ from keycan.data.database import Database
 from keycan.utils.text import clean_source_name, natural_sort_key
 from keycan.services.progression import session_xp, streaks
 
-_ORIGINAL_INIT = Database.__init__
 
 
 def _custom_relative_path(source_id: int, custom_key: str = "") -> str:
@@ -150,17 +149,6 @@ def _sync_default_snapshot(self: Database) -> None:
         self.conn.rollback()
         raise
 
-
-def _init(self: Database, path):
-    _ORIGINAL_INIT(self, path)
-    _ensure_default_snapshot(self)
-    snapshot_pending = self.conn.execute(
-        "SELECT snapshot_pending FROM content_restore_state WHERE id = 1"
-    ).fetchone()[0]
-    if not snapshot_pending:
-        # Reconcile legacy snapshots against the actual active workspace.
-        # A full reset explicitly marks its restore point as pending.
-        _sync_default_snapshot(self)
 
 
 def _sources(self: Database):
@@ -921,33 +909,42 @@ def _import_data(self: Database, raw: str):
         raise
 
 
-def install_database_runtime() -> None:
-    """Explicitly register the legacy database integration once.
 
-    This is an interim compatibility boundary while the patched methods are
-    moved into the database/repository layer in a later refactor.
+
+class ManagedDatabase(Database):
+    """Database implementation with the application's managed-content features.
+
+    Keeping these methods on a concrete subclass avoids mutating the base
+    Database class at runtime. The base class remains suitable for statistics
+    and schema-level operations; the application uses this managed variant.
     """
-    if getattr(Database, "_runtime_installed", False):
-        return
-    Database.__init__ = _init
-    Database.sources = _sources
-    Database.lessons = _lessons
-    Database._custom_lesson_position = _custom_lesson_position
-    Database.managed_groups = _managed_groups
-    Database.managed_lessons = _managed_lessons
-    Database.rename_group = _rename_group
-    Database.delete_group = _delete_group
-    Database.create_custom_group = _create_custom_group
-    Database.create_lesson = _create_lesson
-    Database.update_lesson = _update_lesson
-    Database.delete_lesson = _delete_lesson
-    Database.move_lesson = _move_lesson
-    Database.progression_summary = _progression_summary
-    Database.reset_all_content = _reset_all_content
-    Database.restore_defaults = _restore_defaults
-    Database.export_data = _export_data
-    Database.import_data = _import_data
-    Database._runtime_installed = True
+
+    def __init__(self, path):
+        super().__init__(path)
+        _ensure_default_snapshot(self)
+        snapshot_pending = self.conn.execute(
+            "SELECT snapshot_pending FROM content_restore_state WHERE id = 1"
+        ).fetchone()[0]
+        if not snapshot_pending:
+            _sync_default_snapshot(self)
+
+    sources = _sources
+    lessons = _lessons
+    _custom_lesson_position = _custom_lesson_position
+    managed_groups = _managed_groups
+    managed_lessons = _managed_lessons
+    rename_group = _rename_group
+    delete_group = _delete_group
+    create_custom_group = _create_custom_group
+    create_lesson = _create_lesson
+    update_lesson = _update_lesson
+    delete_lesson = _delete_lesson
+    move_lesson = _move_lesson
+    progression_summary = _progression_summary
+    reset_all_content = _reset_all_content
+    restore_defaults = _restore_defaults
+    export_data = _export_data
+    import_data = _import_data
 
 
-__all__ = ["install_database_runtime"]
+__all__ = ["ManagedDatabase"]
