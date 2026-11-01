@@ -101,10 +101,11 @@ keycan/
 ### Aşama 4 — Runtime monkey-patch ve yinelenen modülleri sadeleştirme
 **Durum: Kısmen tamamlandı — database runtime monkey-patch kaldırıldı; yinelenen modül denetimi sürüyor**
 
-- `database_runtime.py` içindeki `Database` sınıfına çalışma anında metot atama mekanizması kaldırıldı. Uygulama artık açık `ManagedDatabase(Database)` alt sınıfını kullanıyor.
+- `database_runtime.py` içindeki `Database` sınıfına çalışma anında metot atama mekanizması kaldırıldı. Uygulama artık `managed_database.py` içindeki açık `ManagedDatabase(Database)` alt sınıfını kullanıyor.
+- Eski `database_runtime.py` yolu, eski importları bozmamak için küçük bir uyumluluk dışa aktarımı olarak tutuluyor.
 - Uygulama başlangıcındaki `install_database_runtime()` çağrısı kaldırıldı; `app.py` artık import sırasına bağlı veritabanı kaydı yapmıyor.
 - İçerik yönetimi, ilerleme ve yedekleme API'sini kullanan testler `ManagedDatabase` ile çalışacak şekilde güncellendi.
-- Alt süreç regresyon testi, `database_runtime.py` import edildiğinde temel `Database` sınıfının değişmediğini ve managed API'nin alt sınıfta bulunduğunu doğruluyor.
+- Alt süreç regresyon testi, hem `managed_database.py` hem de uyumluluk modülü import edildiğinde temel `Database` sınıfının değişmediğini ve managed API'nin alt sınıfta bulunduğunu doğruluyor.
 - `database.py` / `database_runtime.py`, `statistics.py` / `statistics_clean.py`, `settings.py` / `settings2.py` için tüm import ve çağrı noktalarını doğrula.
 - Yalnızca kullanılmadığı kanıtlanan veya yerine geçen dosyaları kaldır; uyumluluk gerekiyorsa geçici ince bir yönlendirme katmanı kullan.
 - Managed alt sınıfındaki modül düzeyi fonksiyonları daha sonra normal sınıf metotlarına taşı; bu adım ayrı testlerle yürütülmeli.
@@ -114,13 +115,16 @@ keycan/
 **Çıkış koşulu:** Runtime monkey-patch olmadan uygulama ve testler çalışır; yinelenen modüllerin kaldırılması için kullanım/uyumluluk kanıtı bulunur; hiçbir özellik kaybolmaz.
 
 ### Aşama 5 — `window.py` sorumluluklarını azaltma
-**Durum: Bekliyor**
+**Durum: Kısmen tamamlandı — saf oturum ölçümleri core modülüne ayrıldı; GTK oturum yaşam döngüsü hâlâ pencerede**
 
-- Pencereyi sayfa yerleşimi ve üst seviye koordinasyonla sınırla.
-- Ders seçimi/yükleme, çalışma oturumu yaşam döngüsü, oturum kaydı ve sayfa yenileme sorumluluklarını mevcut davranışlarına göre küçük bileşenlere ayır.
+- Kelime/karakter/doğruluk ölçümleri ve veritabanı kayıt payload'ı `keycan/core/session_metrics.py` içine taşındı; saf hesaplamalar GTK dışında test ediliyor.
+- Pencereyi zamanla sayfa yerleşimi ve üst seviye koordinasyonla sınırla.
+- Ders seçimi/yükleme, GTK çalışma oturumu yaşam döngüsü, oturum kaydı ve sayfa yenileme sorumluluklarını mevcut davranışlarına göre küçük bileşenlere ayır.
 - GUI widget'ları GUI katmanında; iş kuralları servislerde; kalıcı veri erişimi veri katmanında kalsın.
 - Her çıkarımda mevcut sinyal bağlantıları, GTK widget yaşam döngüsü ve kapanışta bekleyen kayıtlar korunmalı.
 - Gereksiz controller/factory/manager sınıfları oluşturma; yalnızca bağımsız sorumlulukları ayır.
+
+**Doğrulama:** Saf metrik çıkarımı sonrası CI `check.sh` 52 kontrol ve tam pytest paketi 70 test ile başarılıdır. GTK masaüstü davranışı henüz elle doğrulanmadı.
 
 **Çıkış koşulu:** `window.py` küçülür; çalışma alanı ve pencere davranışı değişmez; GTK başlangıç/kapanış ve oturum testleri geçer.
 
