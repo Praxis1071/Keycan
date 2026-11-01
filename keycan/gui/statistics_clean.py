@@ -231,7 +231,8 @@ class StatisticsPanel(Gtk.Box):
         self.statistics_stack=Adw.ViewStack()
         self.statistics_stack.set_hhomogeneous(True)
         self.statistics_stack.set_vhomogeneous(False)
-        self.statistics_stack.set_enable_transitions(True)
+        if hasattr(self.statistics_stack, "set_enable_transitions"):
+            self.statistics_stack.set_enable_transitions(True)
 
         switcher=Adw.InlineViewSwitcher()
         switcher.set_stack(self.statistics_stack)
