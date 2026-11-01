@@ -12,6 +12,7 @@ from gi.repository import Adw, Gdk, GLib, Gtk
 
 from keycan.core.typing_engine import TypingEngine
 from keycan.core.session_metrics import calculate_session_metrics
+from keycan.services.session_recorder import SessionRecorder
 from keycan.data.managed_database import ManagedDatabase
 from keycan.gui.workspace import TypingWorkspace
 from keycan.gui.search import SourceSearchDropdown
@@ -53,7 +54,7 @@ class _BaseKeycanWindow(Adw.ApplicationWindow):
         self.current_text = ""
         self.typed = ""
         self.session_uuid = uuid.uuid4().hex
-        self.pending_saves: list[dict[str, object]] = []
+        self.session_recorder = SessionRecorder(self.db)
         self._pending_close_dialog = None
         self._allow_close_with_pending_saves = False
         self.finished = False
@@ -488,23 +489,18 @@ class _BaseKeycanWindow(Adw.ApplicationWindow):
             session_uuid=self.session_uuid,
         )
 
-        save_error = None
+        save_error = self.session_recorder.save(save_payload)
         profile_error = None
         statistics_error = None
-        try:
-            self.db.save_result(**save_payload)
-        except Exception as exc:
-            save_error = exc
-            # Retrying uses the same UUID, so an ambiguous commit outcome can
-            # never create a duplicate statistics row.
-            self.pending_saves.append(save_payload)
+        if save_error is not None:
             self.workspace.retry_save_button.set_label(
                 translate("Tekrar kaydet", self.preferences.get("language"))
             )
             self.workspace.retry_save_button.set_visible(True)
-            LOGGER.exception(
-                "Failed to save practice result for lesson_id=%s",
+            LOGGER.error(
+                "Failed to save practice result for lesson_id=%s: %s",
                 self.current_lesson_id,
+                save_error,
             )
         else:
             try:
@@ -572,22 +568,19 @@ class _BaseKeycanWindow(Adw.ApplicationWindow):
             self.status.set_text(base_message)
 
     def _retry_save_results(self, _button: Gtk.Button) -> None:
-        if not self.pending_saves:
+        if not self.session_recorder.pending_saves:
             self.workspace.retry_save_button.set_visible(False)
             return
 
-        remaining = []
-        for payload in self.pending_saves:
-            try:
-                self.db.save_result(**payload)
-            except Exception:
-                remaining.append(payload)
-                LOGGER.exception(
-                    "Retrying practice result save failed for lesson_id=%s",
-                    payload.get("lesson_id"),
-                )
+        failures = self.session_recorder.retry_pending()
+        for payload, error in failures:
+            LOGGER.error(
+                "Retrying practice result save failed for lesson_id=%s: %s",
+                payload.get("lesson_id"),
+                error,
+            )
 
-        self.pending_saves = remaining
+        remaining = self.session_recorder.pending_saves
         self.workspace.retry_save_button.set_visible(bool(remaining))
         if remaining:
             self.status.set_text(
@@ -634,7 +627,7 @@ class _BaseKeycanWindow(Adw.ApplicationWindow):
         return GLib.SOURCE_CONTINUE
 
     def _on_close_request(self, _window: Adw.ApplicationWindow) -> bool:
-        if self.pending_saves and not self._allow_close_with_pending_saves:
+        if self.session_recorder.pending_saves and not self._allow_close_with_pending_saves:
             if self._pending_close_dialog is None:
                 dialog = Gtk.AlertDialog(
                     message=translate(
