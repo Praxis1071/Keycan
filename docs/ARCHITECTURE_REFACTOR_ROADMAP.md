@@ -128,7 +128,7 @@ keycan/
 - Her çıkarımda mevcut sinyal bağlantıları, GTK widget yaşam döngüsü ve kapanışta bekleyen kayıtlar korunmalı.
 - Gereksiz controller/factory/manager sınıfları oluşturma; yalnızca bağımsız sorumlulukları ayır.
 
-**Doğrulama:** [GitHub Actions run 41299614825](https://github.com/Praxis1071/Keycan/actions/runs/41299614825) beş işin tamamını başarıyla tamamladı. GTK/Xvfb smoke testi pencere, sayfalar, içerik yöneticisi, gizlilik, canlı dil değişimi, oturum kaydı, başarısız kayıt yeniden denemesi ve durum mesajını kontrol ediyor. İnsan tarafından gerçek masaüstünde yapılacak kullanım testi hâlâ gereklidir.
+**Doğrulama:** [GitHub Actions run 41299726832](https://github.com/Praxis1071/Keycan/actions/runs/41299726832) beş işin tamamını başarıyla tamamladı. GTK/Xvfb smoke testi pencere, sayfalar, içerik yöneticisi, gizlilik, canlı dil değişimi, oturum kaydı, başarısız kayıt yeniden denemesi ve durum mesajını kontrol ediyor. İnsan tarafından gerçek masaüstünde yapılacak kullanım testi hâlâ gereklidir.
 
 **Çıkış koşulu:** `window.py` küçülür; çalışma alanı ve pencere davranışı değişmez; GTK başlangıç/kapanış ve oturum testleri geçer.
 
