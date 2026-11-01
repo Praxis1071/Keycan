@@ -99,15 +99,19 @@ keycan/
 **Çıkış koşulu:** Paketlenmiş katalog ile mevcut kullanıcı içeriği arasındaki sınır testlerle doğrulanır; kullanıcı içeriği migrasyonu ancak ayrı bir karar ve kanıtlanmış ihtiyaç varsa uygulanır. Herhangi bir geçişte CRUD, geri yükleme, geçmiş ve profil tutarlılığı kanıtlanır.
 
 ### Aşama 4 — Runtime monkey-patch ve yinelenen modülleri sadeleştirme
-**Durum: Bekliyor**
+**Durum: Kısmen tamamlandı — database runtime monkey-patch kaldırıldı; yinelenen modül denetimi sürüyor**
 
-- `database_runtime.py` ve `statistics_runtime.py` içindeki çalışma zamanı sınıf/metot değiştirmelerini belirle.
-- Bu davranışları uygun sınıf veya serviste açık, normal metotlara dönüştür.
+- `database_runtime.py` içindeki `Database` sınıfına çalışma anında metot atama mekanizması kaldırıldı. Uygulama artık açık `ManagedDatabase(Database)` alt sınıfını kullanıyor.
+- Uygulama başlangıcındaki `install_database_runtime()` çağrısı kaldırıldı; `app.py` artık import sırasına bağlı veritabanı kaydı yapmıyor.
+- İçerik yönetimi, ilerleme ve yedekleme API'sini kullanan testler `ManagedDatabase` ile çalışacak şekilde güncellendi.
+- Alt süreç regresyon testi, `database_runtime.py` import edildiğinde temel `Database` sınıfının değişmediğini ve managed API'nin alt sınıfta bulunduğunu doğruluyor.
 - `database.py` / `database_runtime.py`, `statistics.py` / `statistics_clean.py`, `settings.py` / `settings2.py` için tüm import ve çağrı noktalarını doğrula.
 - Yalnızca kullanılmadığı kanıtlanan veya yerine geçen dosyaları kaldır; uyumluluk gerekiyorsa geçici ince bir yönlendirme katmanı kullan.
-- Uygulama başlangıcındaki yan etkili importları kaldır.
+- Managed alt sınıfındaki modül düzeyi fonksiyonları daha sonra normal sınıf metotlarına taşı; bu adım ayrı testlerle yürütülmeli.
 
-**Çıkış koşulu:** Monkey-patch olmadan uygulama ve testler çalışır; hiçbir özellik kaybolmaz; gereksiz dosyalar için kullanım kanıtı bulunur.
+**Doğrulama:** İlk refactor commit'inde GitHub Actions tüm dört işi başarıyla tamamladı; `check.sh` 52 kontrolü, tam pytest paketi 67 testi geçti. GTK masaüstü etkileşimleri henüz elle doğrulanmadı.
+
+**Çıkış koşulu:** Runtime monkey-patch olmadan uygulama ve testler çalışır; yinelenen modüllerin kaldırılması için kullanım/uyumluluk kanıtı bulunur; hiçbir özellik kaybolmaz.
 
 ### Aşama 5 — `window.py` sorumluluklarını azaltma
 **Durum: Bekliyor**
