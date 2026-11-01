@@ -28,7 +28,7 @@ Keycan'ın mevcut durumu ve gelecekteki geliştirme planı.
 - Metin ekleme, düzenleme, silme ve sıralama
 - Varsayılan içerikleri geri yükleme
 - Tüm ders ve metinleri sıfırlama
-- İstatistik ve içerik verilerini içe/dışa aktarma
+- Veritabanı katmanında JSON yedekleme/geri yükleme uyumluluğu (kullanıcı arayüzündeki seçenekler daha sonra kaldırıldı)
 - Kopyala/yapıştır ve metin aktarımı açıklarının engellenmesi
 
 ### ✅ Aşama 4 — 2.3.x Bakım ve Hata Düzeltmeleri
