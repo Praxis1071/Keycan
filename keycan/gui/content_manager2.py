@@ -8,13 +8,14 @@ gi.require_version("Adw", "1")
 gi.require_version("Gtk", "4.0")
 from gi.repository import Adw, Gtk
 
+from keycan.services.lesson_service import LessonService
 from keycan.services.translations import translate
 
 
 class ContentManagerWindow(Adw.Window):
     def __init__(self, parent: Gtk.Widget, database, on_changed=None, language="tr", lesson_service=None) -> None:
         super().__init__(transient_for=parent, modal=True, title=translate("Ders Gruplarını Yönet", language))
-        self.db=database; self.lesson_service=lesson_service or database; self.on_changed=on_changed; self.language=language; self.selected_group_id=None; self.selected_lesson_id=None
+        self.db=database; self.lesson_service=lesson_service or LessonService(database); self.on_changed=on_changed; self.language=language; self.selected_group_id=None; self.selected_lesson_id=None
         self.set_default_size(900,620); self.set_size_request(480,360); self._build(); self._refresh_groups(); self.set_language(language)
     @staticmethod
     def _rows(list_box):
@@ -85,7 +86,7 @@ class ContentManagerWindow(Adw.Window):
     def _group_selected(self,_list,row):
         self.selected_group_id=getattr(row,"group_id",None) if row else None; self.selected_lesson_id=None
         if self.selected_group_id is None:self._clear_lessons();return
-        group=next((g for g in self.db.managed_groups() if g[0]==self.selected_group_id),None); self.group_header.set_text(group[1] if group else translate("Ders grubu", self.language)); self.group_entry.set_text(group[1] if group else ""); self._refresh_lessons(); self._set_group_controls(True)
+        group=next((g for g in self.lesson_service.managed_groups() if g[0]==self.selected_group_id),None); self.group_header.set_text(group[1] if group else translate("Ders grubu", self.language)); self.group_entry.set_text(group[1] if group else ""); self._refresh_lessons(); self._set_group_controls(True)
     def _refresh_lessons(self):
         self._clear(self.lesson_list); self.selected_lesson_id=None
         if self.selected_group_id is None:self._set_lesson_controls(False);return
