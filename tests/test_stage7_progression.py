@@ -89,7 +89,7 @@ def test_stage7_badges_are_derived_from_progress() -> None:
     assert "fifty_sessions" not in unlocked
 
 
-def _make_db(path: Path) -> Database:
+def _make_db(path: Path) -> ManagedDatabase:
     connection = sqlite3.connect(path)
     connection.executescript(
         """
