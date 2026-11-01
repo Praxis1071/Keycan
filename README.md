@@ -36,7 +36,7 @@ Visit the [GitHub Releases](https://github.com/Praxis1071/Keycan/releases) page 
 
 ## Development
 
-For the current development stages, see [ROADMAP.md](ROADMAP.md). Technical architecture decisions and migration safeguards are documented in [docs/ARCHITECTURE_REFACTOR_ROADMAP.md](docs/ARCHITECTURE_REFACTOR_ROADMAP.md) and [docs/ARCHITECTURE_REFACTOR_STRATEGY.md](docs/ARCHITECTURE_REFACTOR_STRATEGY.md).
+For the current development stages, see [ROADMAP.md](ROADMAP.md). Technical architecture decisions and migration safeguards are documented in [docs/ARCHITECTURE_REFACTOR_ROADMAP.md](docs/ARCHITECTURE_REFACTOR_ROADMAP.md) and [docs/ARCHITECTURE_REFACTOR_STRATEGY.md](docs/ARCHITECTURE_REFACTOR_STRATEGY.md). The current architecture findings are in [docs/ARCHITECTURE_AUDIT.md](docs/ARCHITECTURE_AUDIT.md); historical plans are retained in [docs/archive/](docs/archive/).
 
 ## License
 
