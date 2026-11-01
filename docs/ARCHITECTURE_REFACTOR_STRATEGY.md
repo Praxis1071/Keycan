@@ -138,7 +138,7 @@ The JSON catalog is read through `LessonService`; GUI consumers do not read JSON
 - `check.sh` now copies the tracked database to a temporary directory, applies the real `Database` migrations to that copy, and performs integrity/schema/snapshot checks there. This validates migrations without mutating the checked-in database.
 - The check also verifies that all group and lesson IDs in the packaged JSON catalog match the default-content snapshot IDs in the migrated database.
 - Current repository database validation reports 83 active sources (82 built-in groups plus one active custom group) and 1,833 active lessons.
-- The full CI workflow runs `check.sh`, Ruff's undefined-name check, the full pytest suite, and an Xvfb GTK smoke test. Latest successful run: [41299101770](https://github.com/Praxis1071/Keycan/actions/runs/41299101770); 52 focused checks, 70 pytest tests, Ruff F821, and GTK window/session/persistence smoke test all passed.
+- The full CI workflow runs `check.sh`, Ruff's undefined-name check, the full pytest suite, and an Xvfb GTK smoke test. Latest successful run: [41299278251](https://github.com/Praxis1071/Keycan/actions/runs/41299278251); 52 focused checks, 72 pytest tests, Ruff F821, and GTK window/session/persistence/retry smoke test all passed.
 
 
 ## 10. Duplicate-module audit update (historical findings, updated below)
@@ -161,7 +161,7 @@ The JSON catalog is read through `LessonService`; GUI consumers do not read JSON
 - Extracted typing-session metrics from `window.py` into pure `core/session_metrics.py` calculations and added focused tests.
 - Moved editor privacy presentation and result highlighting from the application window into `gui/workspace.py`, which already owns the two text views.
 - Fixed a completion-status reference uncovered during the extraction and added an Xvfb-based GTK smoke test that constructs the real window and completes a persisted practice session.
-- GitHub Actions run 41299101770 passed all five jobs: 52 `check.sh` checks, 70 pytest tests, Ruff F821, and GTK/Xvfb launch/session/persistence smoke test.
+- GitHub Actions run 41299278251 passed all five jobs: 52 `check.sh` checks, 72 pytest tests, Ruff F821, and GTK/Xvfb launch/session/persistence/retry smoke test.
 - The latest smoke test also exercises the settings content manager, privacy tag toggling, live language switch and failed-save retry with stable session identity.
 - Full interactive human verification on the user's desktop remains a separate final gate.
 
@@ -185,7 +185,7 @@ The stabilization pull request [#2](https://github.com/Praxis1071/Keycan/pull/2)
 ### Remaining high-risk work
 
 - Audit overlapping legacy CRUD methods inherited from `Database`; retain them until external compatibility and all call sites are established.
-- Continue extracting session timing, retry-save coordination and lesson selection from `window.py` only where a small independent responsibility can be tested without moving GTK widget work off the main thread.
+- Continue extracting session timing and lesson selection from `window.py` only where a small independent responsibility can be tested without moving GTK widget work off the main thread. Session persistence/retry is now handled by `SessionRecorder`.
 - `window.py` still coordinates multiple pages and typing-session state. The workspace now owns editor privacy and result presentation; preserve GTK signal/lifecycle behavior in any further extraction.
 - Legacy settings/statistics module paths are retained as compatibility re-exports; their implementations now have one authoritative source.
 - Backup restore, reset/restore defaults and historical session identity must remain regression-gated.
