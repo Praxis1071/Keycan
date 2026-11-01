@@ -373,36 +373,12 @@ class _BaseKeycanWindow(Adw.ApplicationWindow):
     def _set_target_text(self, text: str) -> None:
         self.workspace.set_target_text(text)
 
-    def _editor_foreground(self) -> str:
-        return "#f2f2f2" if Adw.StyleManager.get_default().get_dark() else "#111111"
-
-    @staticmethod
-    def _get_tag(buffer: Gtk.TextBuffer, name: str, foreground: str) -> Gtk.TextTag:
-        table = buffer.get_tag_table()
-        tag = table.lookup(name)
-        if tag is None:
-            tag = buffer.create_tag(name, foreground=foreground)
-        return tag
-
     def _apply_privacy_state(self) -> None:
-        active = self.privacy_enabled and self.started_at is not None
-        buffer = self.input_view.get_buffer()
-        table = buffer.get_tag_table()
-        hidden = table.lookup("privacy-hidden")
-        if hidden is None:
-            hidden = buffer.create_tag("privacy-hidden", invisible=True)
-        else:
-            hidden.set_property("invisible", True)
-        hidden.set_priority(max(0, table.get_size() - 1))
-
-        start, end = buffer.get_start_iter(), buffer.get_end_iter()
-        if active:
-            buffer.apply_tag(hidden, start, end)
-        else:
-            buffer.remove_tag(hidden, start, end)
-
-        self.input_view.set_cursor_visible(
-            not active and not self.finished and self.current_lesson_id is not None
+        self.workspace.apply_privacy_state(
+            privacy_enabled=self.privacy_enabled,
+            session_started=self.started_at is not None,
+            finished=self.finished,
+            has_lesson=self.current_lesson_id is not None,
         )
 
     def _start_session(self) -> None:
@@ -546,11 +522,13 @@ class _BaseKeycanWindow(Adw.ApplicationWindow):
         self.finished = True
         render_error = None
         try:
-            self._render_target_results(result.matched_target_indices)
+            self.workspace.render_target_results(
+                self.current_text, result.matched_target_indices
+            )
         except Exception as exc:
             render_error = exc
         try:
-            self._render_input_results(result.correctness)
+            self.workspace.render_input_results(self.typed, result.correctness)
         except Exception as exc:
             if render_error is None:
                 render_error = exc
@@ -640,35 +618,6 @@ class _BaseKeycanWindow(Adw.ApplicationWindow):
                     self.preferences.get("language"),
                 )
             )
-
-    def _render_target_results(self, matched: set[int]) -> None:
-        buffer = self.target_view.get_buffer()
-        buffer.set_text(self.current_text)
-        start, end = buffer.get_start_iter(), buffer.get_end_iter()
-        buffer.remove_all_tags(start, end)
-        base = self._get_tag(buffer, "editor-default", self._editor_foreground())
-        green = self._get_tag(buffer, "correct-target", "#16803c")
-        base.set_priority(0)
-        green.set_priority(buffer.get_tag_table().get_size() - 1)
-        buffer.apply_tag(base, start, end)
-        matches = list(WORD_PATTERN.finditer(self.current_text))
-        for index in matched:
-            match = matches[index]
-            buffer.apply_tag(green, buffer.get_iter_at_offset(match.start()), buffer.get_iter_at_offset(match.end()))
-
-    def _render_input_results(self, correctness: list[bool]) -> None:
-        buffer = self.input_view.get_buffer()
-        start, end = buffer.get_start_iter(), buffer.get_end_iter()
-        buffer.remove_all_tags(start, end)
-        base = self._get_tag(buffer, "editor-default", "#111111")
-        green = self._get_tag(buffer, "correct-input", "#16803c")
-        red = self._get_tag(buffer, "wrong-input", "#e01b24")
-        base.set_priority(0)
-        green.set_priority(buffer.get_tag_table().get_size() - 1)
-        red.set_priority(buffer.get_tag_table().get_size() - 1)
-        buffer.apply_tag(base, start, end)
-        for match, ok in zip(WORD_PATTERN.finditer(self.typed), correctness):
-            buffer.apply_tag(green if ok else red, buffer.get_iter_at_offset(match.start()), buffer.get_iter_at_offset(match.end()))
 
     def _check_time(self) -> bool:
         if self.finished:
