@@ -1,4 +1,4 @@
-"""Runtime compatibility and user-content management for Keycan."""
+"""Managed content, progression, and backup operations for Keycan."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import json
 import math
 import uuid
 from datetime import datetime
+from pathlib import Path
 
 from keycan.data.database import Database
 from keycan.utils.text import clean_source_name, natural_sort_key
@@ -919,7 +920,7 @@ class ManagedDatabase(Database):
     and schema-level operations; the application uses this managed variant.
     """
 
-    def __init__(self, path):
+    def __init__(self, path: Path) -> None:
         super().__init__(path)
         _ensure_default_snapshot(self)
         snapshot_pending = self.conn.execute(
