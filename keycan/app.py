@@ -8,11 +8,6 @@ import gi
 gi.require_version("Adw", "1")
 from gi.repository import Adw
 
-from keycan.data.database_runtime import install_database_runtime
-
-# Register database compatibility methods before the window is imported.
-install_database_runtime()
-
 from keycan.window import KeycanWindow
 
 APP_DIR = Path(__file__).resolve().parent.parent
