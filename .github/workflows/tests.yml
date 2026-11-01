@@ -57,7 +57,7 @@ jobs:
       - name: Install GTK test runtime
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 xvfb
+          sudo apt-get install -y python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 xvfb xauth
       - name: Launch Keycan and complete a practice session
         env:
           GSETTINGS_BACKEND: memory
