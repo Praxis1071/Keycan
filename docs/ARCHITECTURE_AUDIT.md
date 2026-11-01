@@ -52,7 +52,7 @@ Katalog doğrulaması, yinelenen kimlikler, bozuk kaynak, eksik kaynak ve kullan
 - Bu dosyanın sorumluluklarını azaltmak mantıklıdır; ancak GTK sinyalleri, widget yaşam döngüsü, zamanlayıcılar ve kapanışta bekleyen kayıtlar nedeniyle büyük bir yeniden yazım yapılmamalıdır.
 - Kelime/karakter/doğruluk ölçümleri ve kayıt payload'ı GTK penceresinden `core/session_metrics.py` içine taşındı.
 - Editörün gizlilik görünümü, sonuç renklendirme ve metin buffer sunumu `gui/workspace.py` sorumluluğuna alındı. Pencere bu işlemleri workspace API'si üzerinden çağırır.
-- Oturum başlatma, zamanlayıcı, GTK buffer'ın oturum sonunda okunması, veritabanı kayıt/yeniden deneme ve kapanışta bekleyen kayıt yönetimi hâlâ pencerededir.
+- Oturum başlatma, zamanlayıcı, GTK buffer'ın oturum sonunda okunması ve kapanışta bekleyen kayıt uyarısı hâlâ pencerededir. Veritabanına kaydetme ve başarısız kayıt kuyruğunu yeniden deneme `services/session_recorder.py` tarafından yönetilir.
 - Sonraki ayrıştırma adayları ders seçimi/yükleme ve çalışma oturumu yaşam döngüsüdür.
 - Yalnızca gerçek ve bağımsız sorumluluklar için yeni sınıf/servis oluşturulmalıdır.
 
@@ -79,7 +79,7 @@ KC-001–KC-005 düzeltmeleri main'e alınmıştır. Ayrıntılı hata geçmişi
 
 ## 9. Öncelikli mimari riskler
 
-1. `window.py` dosyasının oturum zamanlaması, kayıt/yeniden deneme ve kapanış koordinasyonunu da yönetmesi.
+1. `window.py` dosyasının oturum zamanlaması, GTK yaşam döngüsü ve kapanış koordinasyonunu da yönetmesi; kayıt kuyruğu artık `SessionRecorder` servisindedir.
 2. Veritabanı taban sınıfı ile uygulama alt sınıfındaki tarihsel/örtüşen CRUD API'lerinin uyumluluk sınırlarının belgelenmesi.
 3. GTK masaüstü etkileşimlerinin otomatik Xvfb smoke testi ve kullanıcının gerçek masaüstü denemesiyle doğrulanması.
 4. JSON katalog, SQLite kullanıcı içeriği ve JSON yedekleme rollerinin dokümantasyonda karıştırılma riski.
@@ -87,7 +87,7 @@ KC-001–KC-005 düzeltmeleri main'e alınmıştır. Ayrıntılı hata geçmişi
 
 ## 10. Sonraki adım ve kapsam sınırı
 
-Runtime sınıf mutasyonu kaldırılmış, managed veritabanı davranışları normal alt sınıf metotlarına dönüştürülmüş ve eski import yolları uyumluluk dışa aktarımlarıyla korunmuştur. Saf oturum ölçümleri `core/session_metrics.py` içine; editör gizliliği ve sonuç renklendirme ise `gui/workspace.py` içine ayrılmıştır. CI'da 52 depo kontrolü, 70 pytest testi ve Ruff F821 denetimi başarıyla tamamlanmıştır. GTK/Xvfb smoke testi başarılı: pencere ve sayfalar oluşturuldu; içerik yöneticisi açıldı; gizlilik etiketi ve canlı dil değişimi kontrol edildi; örnek yazım oturumu SQLite'a kaydedildi, başarısız kayıt yeniden denendi ve aynı oturum kimliğiyle tek kayıt doğrulandı; sonuç mesajı kontrol edildi. Beş CI işi de başarılı.
+Runtime sınıf mutasyonu kaldırılmış, managed veritabanı davranışları normal alt sınıf metotlarına dönüştürülmüş ve eski import yolları uyumluluk dışa aktarımlarıyla korunmuştur. Saf oturum ölçümleri `core/session_metrics.py` içine; editör gizliliği ve sonuç renklendirme ise `gui/workspace.py` içine ayrılmıştır. CI'da 52 depo kontrolü, 72 pytest testi ve Ruff F821 denetimi başarıyla tamamlanmıştır. GTK/Xvfb smoke testi başarılı: pencere ve sayfalar oluşturuldu; içerik yöneticisi açıldı; gizlilik etiketi ve canlı dil değişimi kontrol edildi; örnek yazım oturumu SQLite'a kaydedildi, başarısız kayıt yeniden denendi ve aynı oturum kimliğiyle tek kayıt doğrulandı; sonuç mesajı kontrol edildi. Beş CI işi de başarılı. `SessionRecorder` başarısız kayıtları sabit oturum kimliğiyle kuyruğa alıp yeniden dener; birim ve GTK smoke testleri bu akışı doğrular.
 
 Bu çalışma sırasında:
 
