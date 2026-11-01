@@ -109,7 +109,7 @@ keycan/
 - `statistics.py` artık `statistics_clean.py` modülünden; `settings.py` ise `settings2.py` modülünden küçük uyumluluk dışa aktarımları sağlar. Yinelenen uygulama kodu kaldırıldı, eski import yolları korundu.
 - `database_runtime.py` da `managed_database.py` için uyumluluk dışa aktarımıdır; aktif kod doğrudan managed modülünü kullanır.
 - Kalan modül düzeyi managed fonksiyonları normal sınıf metotlarına taşı; bu adım ayrı testlerle yürütülmeli.
-- Managed alt sınıfındaki modül düzeyi fonksiyonları daha sonra normal sınıf metotlarına taşı; bu adım ayrı testlerle yürütülmeli.
+- Managed veritabanı işlemleri normal `ManagedDatabase` sınıf metotları olarak taşındı; testler sınıfın kendi metotlarını sunduğunu doğruluyor.
 
 **Doğrulama:** Managed database ve session metrics refactor'ları için GitHub Actions tüm dört işi başarıyla tamamladı; `check.sh` 52 kontrolü, tam pytest paketi 70 testi geçti. GTK masaüstü etkileşimleri henüz elle doğrulanmadı.
 
@@ -119,13 +119,14 @@ keycan/
 **Durum: Kısmen tamamlandı — saf oturum ölçümleri core modülüne ayrıldı; GTK oturum yaşam döngüsü hâlâ pencerede**
 
 - Kelime/karakter/doğruluk ölçümleri ve veritabanı kayıt payload'ı `keycan/core/session_metrics.py` içine taşındı; saf hesaplamalar GTK dışında test ediliyor.
+- Editör gizlilik görünümü, sonuç renklendirme ve text-buffer sunumu `keycan/gui/workspace.py` içine taşındı; pencere yalnızca oturum durumunu iletir.
 - Pencereyi zamanla sayfa yerleşimi ve üst seviye koordinasyonla sınırla.
 - Ders seçimi/yükleme, GTK çalışma oturumu yaşam döngüsü, oturum kaydı ve sayfa yenileme sorumluluklarını mevcut davranışlarına göre küçük bileşenlere ayır.
 - GUI widget'ları GUI katmanında; iş kuralları servislerde; kalıcı veri erişimi veri katmanında kalsın.
 - Her çıkarımda mevcut sinyal bağlantıları, GTK widget yaşam döngüsü ve kapanışta bekleyen kayıtlar korunmalı.
 - Gereksiz controller/factory/manager sınıfları oluşturma; yalnızca bağımsız sorumlulukları ayır.
 
-**Doğrulama:** Saf metrik çıkarımı sonrası CI `check.sh` 52 kontrol ve tam pytest paketi 70 test ile başarılıdır. GTK masaüstü davranışı henüz elle doğrulanmadı.
+**Doğrulama:** CI `check.sh` 52 kontrol, tam pytest paketi 70 test ve Ruff F821 statik denetimini başarıyla tamamladı. GTK/Xvfb otomatik masaüstü smoke testi eklendi; başarılı sonuç alınmadan aşama tamamlandı sayılmayacak.
 
 **Çıkış koşulu:** `window.py` küçülür; çalışma alanı ve pencere davranışı değişmez; GTK başlangıç/kapanış ve oturum testleri geçer.
 
