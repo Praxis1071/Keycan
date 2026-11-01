@@ -18,6 +18,10 @@ assert CompatibilityManagedDatabase is ManagedDatabase
 assert hasattr(ManagedDatabase, "managed_groups")
 assert hasattr(ManagedDatabase, "export_data")
 assert hasattr(ManagedDatabase, "restore_defaults")
+assert "sources" in ManagedDatabase.__dict__
+assert "create_custom_group" in ManagedDatabase.__dict__
+assert "export_data" in ManagedDatabase.__dict__
+assert "import_data" in ManagedDatabase.__dict__
 """
     subprocess.run(
         [sys.executable, "-c", script],
