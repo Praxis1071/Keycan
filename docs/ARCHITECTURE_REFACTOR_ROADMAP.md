@@ -67,17 +67,17 @@ keycan/
 ### Aşama 1 — JSON ders formatı ve servis tasarımı
 **Durum: Kısmen tamamlandı — paketlenmiş Türkçe katalog ve okuma servisi main dalında mevcut; ek doğrulamalar sürüyor**
 
-- Türkçe ve İngilizce hazır ders katalogları için açık bir JSON şeması belirle.
+- Paketlenmiş hazır ders kataloğu için açık, sürümlenmiş JSON şemasını koru; ek dil katalogları yalnızca gerçekten yerelleştirilmiş ders içeriği mevcutsa eklenir.
 - Her grup ve ders için kararlı kimlik, ad, sıra ve metin alanlarını tanımla.
 - Kullanıcı içeriklerinin mevcut SQLite tabanlı yazma modelini ve hazır ders kataloğu JSON okuma sınırını doğrula. JSON kullanıcı deposu/override seçeneğini ancak gerekçeli karşılaştırma ve ayrı onay sonrasında ele al.
-- JSON yükleme, şema doğrulama, yinelenen kimlik kontrolü, hata raporlama ve atomik kaydetmeyi tek ders servisinde topla.
+- JSON katalog yükleme, şema doğrulama, yinelenen kimlik kontrolü ve hata raporlamayı LessonService sınırında tut. Paketlenmiş salt-okunur katalog için yazma akışı ekleme.
 - GUI'nin mevcut veritabanı API'sinden yeni servis API'sine geçiş sözleşmesini belirle.
 - JSON formatı için birim testleri ekle.
 
 **Çıkış koşulu:** Eski içerik değiştirilmeden JSON örnekleri doğrulanır; yükleme ve kaydetme testleri geçer.
 
 ### Aşama 2 — Ders grupları ve metinlerinin sadeleştirilmesi
-**Durum: Bekliyor**
+**Durum: Kısmen tamamlandı — paketlenmiş katalogda temizlenmiş içerik ve kimlik/sıra karşılaştırmaları mevcut; kalan kalite kontrolü ayrıca yapılmalı**
 
 - Mevcut JSON/SQLite ders içeriğini analiz et ve önce değişiklik önizleme raporu üret.
 - Grup adları ve ders başlıklarından sayıları, noktalama ve gereksiz açıklamaları temizle; yalnızca Türkçe/İngilizce harfler ve kelime ayırmak için tek boşluk bırak.
@@ -90,12 +90,11 @@ keycan/
 ### Aşama 3 — Ders içeriği kaynaklarının güvenli ayrıştırılması
 **Durum: Kısmen tamamlandı — hazır derslerin JSON okuma yolu mevcut; kullanıcı içeriği SQLite'ta kalıyor**
 
-- Hazır dersleri paket içindeki JSON kataloglarına taşı.
-- Kullanıcı tarafından oluşturulan grupları veya düzenlemeleri JSON'a taşımayı varsayma. Önce mevcut SQLite modelinin bakım, yedekleme ve kullanıcı deneyimi açısından yeterli olduğunu doğrula; yalnızca kanıtlanmış ihtiyaç varsa ayrı migrasyon tasarla.
-- SQLite'taki eski ders tablolarını ilk geçişte silme; geçiş sırasında eski veriyi JSON'a dönüştür ve kayıt sayısı/kimlik/metin karşılaştırması yap.
-- Çalışma geçmişi için kararlı ders kimlikleri ve mevcut snapshot alanları üzerinden ilişkiyi koru. Eski `lesson_id` kayıtlarını kayıpsız dönüştürmeden hiçbir tabloyu kaldırma.
-- Eski veritabanıyla açılışta güvenli, tek seferlik geçiş uygula; geçiş tamamlanma işareti ve tekrar çalıştırma güvenliği ekle.
-- Yerleşik katalog okuma akışını LessonService üzerinden sürdür; kullanıcı içeriği CRUD, sıralama, silme/geri yükleme ve yedekleme davranışını mevcut SQLite API'siyle uyumlu tut.
+- Paketlenmiş hazır ders kataloğunun JSON kaynağı ve LessonService okuma sınırı main dalında zaten bulunur; bu sınırın kapsama ve fallback testlerini koru.
+- JSON kataloğundaki grup/ders kimlikleri ve sıralaması ile mevcut SQLite varsayılan içerik snapshot'larını karşılaştır; tarihsel referansların kopmadığını doğrula.
+- Kullanıcı tarafından oluşturulan gruplar, düzenlemeler, sıralama/silme durumu ve çalışma geçmişi SQLite'ta kalır. Bu veriler için otomatik JSON migrasyonu yapılmaz.
+- Eski SQLite tabloları, snapshot kayıtları veya uyumluluk alanları ancak kullanım analizi, yedek ve geri dönüş yolu ile ayrı testlerden sonra kaldırılabilir.
+- LessonService hazır katalog okumalarını yönetir; kullanıcı içeriği CRUD, sıralama, silme/geri yükleme ve yedekleme mevcut SQLite API'siyle uyumlu kalır.
 
 **Çıkış koşulu:** Paketlenmiş katalog ile mevcut kullanıcı içeriği arasındaki sınır testlerle doğrulanır; kullanıcı içeriği migrasyonu ancak ayrı bir karar ve kanıtlanmış ihtiyaç varsa uygulanır. Herhangi bir geçişte CRUD, geri yükleme, geçmiş ve profil tutarlılığı kanıtlanır.
 
