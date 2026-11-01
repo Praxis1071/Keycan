@@ -40,7 +40,7 @@ Bu dosyanın aşağıdaki KC-001–KC-005 bölümleri ilk hata teşhislerini ve 
 
 ---
 
-## KC-001 – Gizlilik modu açıkken oturum sonuçlarının gösterilmemesi
+## Tarihsel ilk teşhisler (PR #2 öncesi)\n\nAşağıdaki kayıtlar ilk teşhis dönemini korur. Güncel çözüm durumu için yukarıdaki tablo ve birleştirilmiş PR kaydı esas alınmalıdır.\n\n## KC-001 – Gizlilik modu açıkken oturum sonuçlarının gösterilmemesi
 
 **Durum:** Kullanıcı testiyle doğrulandı.
 
