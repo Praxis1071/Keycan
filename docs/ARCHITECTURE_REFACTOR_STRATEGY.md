@@ -94,7 +94,7 @@ The current default catalog contains 82 active groups and 1,833 lessons. A first
 
 A mechanical group-name cleanup creates collisions (for example, the F/Q keyboard variants, groups distinguished by the number of matching initial letters, multiple tekerleme parts, and several date-based KM collections). Therefore group names must be reviewed with a unique-name check; a blind regex cleanup is not acceptable. Preserve group and lesson IDs/order while changing visible names and lesson text.
 
-## 7. Work completed on the refactor branch
+## 7. Work completed and present on main
 
 - Added `keycan/resources/lessons/tr/catalog.json` with schema version 1, 82 uniquely named groups, and 1,833 lessons. Each group also carries its exact bundled `legacy_name` so the service can distinguish a legacy label from a user rename.
 - Added `keycan/services/lesson_catalog.py` to load and validate the packaged catalog without GTK or third-party dependencies.
@@ -115,7 +115,7 @@ A mechanical group-name cleanup creates collisions (for example, the F/Q keyboar
 ## 8. Dependency and runtime map
 
 - `main.py` delegates to `keycan.app.main()`.
-- `app.py` imports `KeycanWindow`, then imports `database_runtime` and `statistics_runtime` for side effects. The runtime modules mutate class methods at import time.
+- `app.py` explicitly registers the database compatibility runtime before constructing the window. `statistics_runtime.py` is no longer part of the active application import path.
 - `KeycanWindow` imports the base `Database` class. Its behavior changes globally only because the app later imports the runtime patch module before the window is instantiated.
 - Tests that require runtime database methods now call `install_database_runtime()` explicitly. A subprocess regression test verifies that importing the module alone does not patch the class and that repeated registration is idempotent.
 - The database constructor first runs the schema migrations in `database.py`; the patched initializer then migrates custom paths, creates/loads default-content snapshots, and reconciles the snapshot with active content.
@@ -139,11 +139,11 @@ The JSON catalog is ready, but GUI consumers should not read JSON directly. The 
 - The full CI workflow now runs `check.sh` plus the full pytest suite. Latest verified run: all four jobs succeeded; the repository check passed (44 focused tests) and the full suite passed (59 tests).
 
 
-## 10. Duplicate-module audit update
+## 10. Duplicate-module audit update (historical findings, updated below)
 
 - Confirmed that `settings2.py` and `statistics_clean.py` are the active GUI implementations. The older `settings.py` and `statistics.py` are not imported by the current application path; both files are retained.
 - Moved the metric-card animation cancellation/reset logic into `MetricCard.set_value`. The former `statistics_runtime.py` file remains as a side-effect-free compatibility import, and the application no longer imports it.
-- The database runtime module still patches `Database` methods at import time. It has not been removed or rewritten; its initializer, snapshot behavior, custom-content CRUD, progression summary, and backup implementation must be migrated carefully before the side effect can be eliminated.
+- The database runtime compatibility module still registers additional `Database` methods explicitly. It has not been removed or rewritten; its initializer, snapshot behavior, custom-content CRUD, progression summary, and backup implementation must be migrated carefully before the registration layer can be eliminated.
 - `window.py` currently contains a base `KeycanWindow` plus `ConfiguredKeycanWindow`, with overlapping source-loading methods. This is a candidate for a later small refactor, not a reason to rewrite the window in one pass.
 
 
